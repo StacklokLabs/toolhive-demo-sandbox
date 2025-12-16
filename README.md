@@ -1,6 +1,10 @@
 # ToolHive platform in a box on Kubernetes
 
-This repo attempts to set up a complete ToolHive platform locally in Kubernetes using kind. So far, it includes:
+This repo attempts to set up a complete ToolHive platform locally in Kubernetes using kind.
+
+The goal is to have a fully functional ToolHive platform running locally to exercise all core features and interoperability with minimal external dependencies, making it suitable for demos, development, and testing.
+
+So far, it includes:
 
 - A ToolHive Registry Server with a few servers filtered from the main ToolHive registry and with auto-discovery enabled
 - A Virtual MCP Server running a few basic MCP servers including fetch and GitHub
@@ -32,7 +36,9 @@ Setup:
 1. Clone this repo
 2. Run `./bootstrap.sh` from the repo root
 3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway
-4. Run `thv config set-registry https://REPLACE_WITH_NGROK_HOSTNAME/registry` to point your ToolHive CLI to the local registry server (replace with your ngrok hostname)
+4. Run `thv config set-registry https://YOUR_NGROK_HOSTNAME/registry` (or set a custom registry in the UI settings) to point your ToolHive instance to the local registry server
+5. Access the MKP MCP server at `http://mcp-<TRAEFIK_IP_WITH_DASHES>.traefik.me/mkp/mcp` to manage the local cluster (you can quickly test using `thv mcp list tools --server <URL>`)
+6. Access the vMCP server at `http://mcp-<TRAEFIK_IP_WITH_DASHES>.traefik.me/vmcp-demo/mcp`
 
 Known issues:
 

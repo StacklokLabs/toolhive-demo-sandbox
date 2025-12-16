@@ -56,7 +56,7 @@ kubectl create secret generic github-token --namespace toolhive-system --from-li
 echo "Installing Registry Server..."
 kubectl apply -f registry-server.yaml
 
-read -p "Now, run 'cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once the IP is assigned..."
+read -p "Now, run 'cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
 
 TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}")
 TRAEFIK_HOSTNAME="mcp-${TRAEFIK_IP//./-}.traefik.me"
