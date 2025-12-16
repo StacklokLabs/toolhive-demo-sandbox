@@ -19,23 +19,23 @@ THV_NGROK_API_KEY_REF="ngrok-api-key"
 
 read -p "Enter your ngrok domain (hostname only, e.g., example.ngrok-free.dev): " NGROK_DOMAIN
 
-# echo "Creating Kind cluster..."
-# kind create cluster --name toolhive-demo-in-a-box
-# kind get kubeconfig --name toolhive-demo-in-a-box > kubeconfig-toolhive-demo.yaml
-# export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
+echo "Creating Kind cluster..."
+kind create cluster --name toolhive-demo-in-a-box
+kind get kubeconfig --name toolhive-demo-in-a-box > kubeconfig-toolhive-demo.yaml
+export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 
-# # Traefik chart installs Gateway API CRDs automatically, installing them separately breaks things.
-# #echo "Installing Gateway API..."
-# #kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+# Traefik chart installs Gateway API CRDs automatically, installing them separately breaks things.
+#echo "Installing Gateway API..."
+#kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 
-# # Add Helm repos and update
-# helm repo add traefik https://traefik.github.io/charts
-# helm repo add ngrok https://charts.ngrok.com
-# helm repo update
+# Add Helm repos and update
+helm repo add traefik https://traefik.github.io/charts
+helm repo add ngrok https://charts.ngrok.com
+helm repo update
 
-# # Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
-# echo "Installing Traefik..."
-# helm upgrade --install traefik traefik/traefik --version 37.4.0 --namespace traefik --create-namespace --values traefik-helm-values.yaml --wait
+# Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
+echo "Installing Traefik..."
+helm upgrade --install traefik traefik/traefik --version 37.4.0 --namespace traefik --create-namespace --values traefik-helm-values.yaml --wait
 
 # Reference: https://ngrok.com/docs/getting-started/kubernetes/gateway-api
 echo "Installing ngrok Operator..."
