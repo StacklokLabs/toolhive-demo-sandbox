@@ -1,0 +1,49 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-demo
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$TRAEFIK_HOSTNAME/vmcp-demo/mcp"
+    toolhive.stacklok.dev/registry-description: |
+      Simple vMCP server with registry export enabled.
+spec:
+  groupRef:
+    name: demo-tools
+  incomingAuth:
+    type: anonymous
+  outgoingAuth:
+    source: inline
+  aggregation:
+    conflictResolution: prefix
+    conflictResolutionConfig:
+      prefixFormat: "{workload}_"
+  serviceType: ClusterIP
+  telemetry:
+    prometheus:
+      enabled: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-demo-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-demo
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-demo
+          port: 4483

@@ -1,0 +1,5 @@
+.env
+kubeconfig-toolhive-demo.yaml
+
+.vscode/*
+.DS_Store

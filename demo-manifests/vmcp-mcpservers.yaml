@@ -1,0 +1,58 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: demo-tools
+  namespace: toolhive-system
+spec:
+  description: Demo group for vMCP aggregation
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: fetch
+  namespace: toolhive-system
+spec:
+  image: ghcr.io/stackloklabs/gofetch/server:1.0.2
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8080
+  groupRef: demo-tools
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: osv
+  namespace: toolhive-system
+spec:
+  image: ghcr.io/stackloklabs/osv-mcp/server:0.0.7
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8080
+  groupRef: demo-tools
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: github
+  namespace: toolhive-system
+spec:
+  image: ghcr.io/github/github-mcp-server:0.25.0
+  groupRef: demo-tools
+  transport: stdio
+  proxyPort: 8080
+  secrets:
+    - name: github-token
+      key: token
+      targetEnvName: GITHUB_PERSONAL_ACCESS_TOKEN
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: oci-registry
+  namespace: toolhive-system
+spec:
+  image: ghcr.io/stackloklabs/ocireg-mcp/server:0.0.6
+  groupRef: demo-tools
+  transport: sse
+  mcpPort: 8080
+  proxyPort: 8080

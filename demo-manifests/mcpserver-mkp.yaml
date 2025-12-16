@@ -1,0 +1,66 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: mkp
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: http://$TRAEFIK_HOSTNAME/mkp/mcp
+    toolhive.stacklok.dev/registry-description: Manage this Kubernetes cluster.
+spec:
+  image: ghcr.io/stackloklabs/mkp/server:0.2.4
+  transport: streamable-http
+  mcpPort: 8080
+  proxyPort: 8080
+  args:
+    - --read-write=true
+  serviceAccount: mkp-sa
+  telemetry:
+    prometheus:
+      enabled: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mkp-sa
+  namespace: toolhive-system
+---
+# NOTE: This ClusterRoleBinding uses cluster-admin for example purposes only.
+# In production, you should create a custom ClusterRole with the minimum
+# permissions required by your MCP server instead of using cluster-admin.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mkp-sa-cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: mkp-sa
+    namespace: toolhive-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mkp-mcp-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /mkp
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: mcp-mkp-proxy
+          port: 8080

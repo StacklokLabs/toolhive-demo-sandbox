@@ -1,0 +1,208 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-api-config
+  namespace: toolhive-system
+data:
+  config.yaml: |
+    registryName: my-registry
+    registries:
+      - name: toolhive
+        format: toolhive
+        git:
+          repository: https://github.com/stacklok/toolhive.git
+          branch: main
+          path: pkg/registry/data/registry.json
+        syncPolicy:
+          interval: "15m"
+        filter:
+          names:
+            include:
+              - io.github.stacklok/notion-remote
+              - io.github.stacklok/stripe-remote
+              - io.github.stacklok/aws-documentation
+              - io.github.stacklok/mcp-spec
+              - io.github.stacklok/time
+              - io.github.stacklok/toolhive-doc-mcp-remote
+      - name: k8s
+        format: toolhive
+        kubernetes: {}
+    auth:
+      mode: anonymous
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry-api
+  namespace: toolhive-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry-api
+  template:
+    metadata:
+      labels:
+        app: registry-api
+    spec:
+      serviceAccountName: registry-api
+      containers:
+        - name: registry-api
+          image: ghcr.io/stacklok/thv-registry-api:latest
+          args:
+            - serve
+            - --config=/etc/registry/config.yaml
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/registry
+              readOnly: true
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: registry-api-config
+            items:
+              - key: config.yaml
+                path: config.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry-api
+  namespace: toolhive-system
+spec:
+  selector:
+    app: registry-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    toolhive.stacklok.io/registry-name: registry-api
+  name: registry-api
+  namespace: toolhive-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    toolhive.stacklok.io/registry-name: registry-api
+  name: registry-api
+  namespace: toolhive-system
+rules:
+  - apiGroups:
+      - toolhive.stacklok.dev
+    resources:
+      - mcpservers
+      - mcpremoteproxies
+      - virtualmcpservers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    toolhive.stacklok.io/registry-name: registry-api
+  name: registry-api
+  namespace: toolhive-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: registry-api
+subjects:
+  - kind: ServiceAccount
+    name: registry-api
+    namespace: toolhive-system
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: registry-api-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: ngrok-gateway
+      namespace: ngrok-operator
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /registry
+      backendRefs:
+        - name: registry-api
+          port: 80
