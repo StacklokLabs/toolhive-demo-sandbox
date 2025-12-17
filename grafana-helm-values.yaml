@@ -3,6 +3,19 @@ env:
   GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
   GF_AUTH_DISABLE_LOGIN_FORM: true
 
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -19,3 +32,14 @@ datasources:
         editable: false
         apiVersion: 1
         uid: tempo
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        orgId: 1
+        url: http://prometheus-server
+        basicAuth: false
+        isDefault: false
+        version: 1
+        editable: false
+        apiVersion: 1
+        uid: prometheus

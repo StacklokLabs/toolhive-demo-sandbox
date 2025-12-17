@@ -22,6 +22,12 @@ spec:
         timeout: 5s
 
     exporters:
+      otlp/tempo:
+        endpoint: tempo:4317
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: 0.0.0.0:8889
       debug: {}
 
     service:
@@ -29,8 +35,8 @@ spec:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [debug]
+          exporters: [otlp/tempo, debug]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [debug]
+          exporters: [prometheus, debug]

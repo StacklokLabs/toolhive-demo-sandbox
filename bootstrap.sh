@@ -85,6 +85,7 @@ echo -n "Adding Helm repositories..."
 run_quiet helm repo add traefik https://traefik.github.io/charts || die "Failed to add Traefik repo"
 run_quiet helm repo add ngrok https://charts.ngrok.com || die "Failed to add ngrok repo"
 run_quiet helm repo add grafana https://grafana.github.io/helm-charts || die "Failed to add Grafana repo"
+run_quiet helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || die "Failed to add Prometheus repo"
 echo " ✓"
 
 echo -n "Updating Helm repositories..."
@@ -103,8 +104,8 @@ if ! namespace_exists ngrok-operator; then
 fi
 if ! secret_exists ngrok-operator-credentials ngrok-operator; then
     run_quiet kubectl create secret generic ngrok-operator-credentials --namespace ngrok-operator \
-        --from-literal=API_KEY="$NGROK_API_KEY" \
-        --from-literal=AUTHTOKEN="$NGROK_AUTHTOKEN" || die "Failed to create ngrok credentials secret"
+    --from-literal=API_KEY="$NGROK_API_KEY" \
+    --from-literal=AUTHTOKEN="$NGROK_AUTHTOKEN" || die "Failed to create ngrok credentials secret"
 fi
 run_quiet helm upgrade --install ngrok-operator ngrok/ngrok-operator --version 0.21.1 --namespace ngrok-operator --create-namespace --set defaultDomainReclaimPolicy=Retain --set credentials.secret.name=ngrok-operator-credentials --wait || die "Failed to install ngrok Operator"
 run_quiet sh -c "envsubst < ngrok-gateway.yaml | kubectl apply -f -" || die "Failed to apply ngrok gateway"
@@ -120,9 +121,10 @@ if ! namespace_exists observability; then
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
 run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager -n opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
-run_quiet kubectl apply -f otel-collector.yaml || die "Failed to apply OTel collector config"
 run_quiet helm upgrade --install tempo grafana/tempo --namespace observability --wait || die "Failed to install Tempo"
-run_quiet helm upgrade --install grafana grafana/grafana --namespace observability --values grafana-helm-values.yaml --wait || die "Failed to install Grafana"
+run_quiet helm upgrade --install prometheus prometheus-community/prometheus --namespace observability --values prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
+run_quiet helm upgrade --install grafana grafana/grafana --namespace observability --values grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=grafana-dashboard.json --wait || die "Failed to install Grafana"
+run_quiet kubectl apply -f otel-collector.yaml || die "Failed to apply OTel collector config"
 echo " ✓"
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
