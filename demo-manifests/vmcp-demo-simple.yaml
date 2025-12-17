@@ -21,8 +21,16 @@ spec:
       prefixFormat: "{workload}_"
   serviceType: ClusterIP
   telemetry:
-    prometheus:
+    openTelemetry:
       enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: vmcp-demo-server
+      metrics:
+        enabled: true
+      tracing:
+        enabled: true
+        samplingRate: "1.0"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
