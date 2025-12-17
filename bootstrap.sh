@@ -31,6 +31,7 @@ export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 # Add Helm repos and update
 helm repo add traefik https://traefik.github.io/charts
 helm repo add ngrok https://charts.ngrok.com
+helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 
 # Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
@@ -39,10 +40,20 @@ helm upgrade --install traefik traefik/traefik --version 37.4.0 --namespace trae
 
 # Reference: https://ngrok.com/docs/getting-started/kubernetes/gateway-api
 echo "Installing ngrok Operator..."
-kubectl create namespace ngrok-operator
+kubectl create namespace ngrok-operator || true
 kubectl create secret generic ngrok-operator-credentials --namespace ngrok-operator --from-literal=API_KEY=$(thv secret get $THV_NGROK_API_KEY_REF) --from-literal=AUTHTOKEN=$(thv secret get $THV_NGROK_AUTHTOKEN_REF)
 helm upgrade --install ngrok-operator ngrok/ngrok-operator --version 0.21.1 --namespace ngrok-operator --create-namespace --set defaultDomainReclaimPolicy=Retain --set credentials.secret.name=ngrok-operator-credentials --wait
 envsubst < ngrok-gateway.yaml | kubectl apply -f -
+
+echo "Installing cert-manager..."
+helm install cert-manager oci://quay.io/jetstack/charts/cert-manager --version v1.19.2 --namespace cert-manager --create-namespace --set crds.enabled=true
+
+echo "Installing observability stack..."
+kubectl create namespace observability || true
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+kubectl apply -f otel-collector.yaml
+helm upgrade --install tempo grafana/tempo --namespace observability --wait
+helm upgrade --install grafana grafana/grafana --namespace observability --values grafana-helm-values.yaml --wait
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
 echo "Installing ToolHive Operator..."
@@ -61,6 +72,10 @@ read -p "Now, run 'cloud-provider-kind' in another terminal to assign an IP to t
 TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}")
 TRAEFIK_HOSTNAME="mcp-${TRAEFIK_IP//./-}.traefik.me"
 
+# Expose Grafana via Traefik, using its own hostname for simplicity
+GRAFANA_HOSTNAME="grafana-${TRAEFIK_IP//./-}.traefik.me"
+envsubst < grafana-httproute.yaml | kubectl apply -f -
+
 echo "Installing MKP MCP server..."
 envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -
 
@@ -70,7 +85,8 @@ sleep 10 # TODO: replace with proper wait
 envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -
 # envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -
 
-echo "Bootstrap complete!"
-echo "Access the ToolHive Registry Server at https://$NGROK_DOMAIN/registry"
-echo "Access the MKP MCP server at http://$TRAEFIK_HOSTNAME/mkp/mcp"
-echo "Access the vMCP demo server at http://$TRAEFIK_HOSTNAME/vmcp-demo/mcp"
+echo "Bootstrap complete! Access your demo services at the following URLs:"
+echo " - ToolHive Registry Server at https://$NGROK_DOMAIN/registry"
+echo " - MKP MCP server at http://$TRAEFIK_HOSTNAME/mkp/mcp"
+echo " - vMCP demo server at http://$TRAEFIK_HOSTNAME/vmcp-demo/mcp"
+echo " - Grafana at http://$GRAFANA_HOSTNAME"
