@@ -5,7 +5,7 @@ metadata:
   namespace: toolhive-system
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
-    toolhive.stacklok.dev/registry-url: http://$TRAEFIK_HOSTNAME/vmcp-authenticated/mcp
+    toolhive.stacklok.dev/registry-url: http://$MCP_HOSTNAME/vmcp-authenticated/mcp
     toolhive.stacklok.dev/registry-description: |
       Authenticated vMCP server with registry export enabled.
 spec:

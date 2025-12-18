@@ -5,7 +5,7 @@ metadata:
   namespace: toolhive-system
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
-    toolhive.stacklok.dev/registry-url: http://$TRAEFIK_HOSTNAME/mkp/mcp
+    toolhive.stacklok.dev/registry-url: http://$MCP_HOSTNAME/mkp/mcp
     toolhive.stacklok.dev/registry-description: Manage this Kubernetes cluster.
 spec:
   image: ghcr.io/stackloklabs/mkp/server:0.2.4

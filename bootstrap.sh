@@ -110,19 +110,44 @@ echo " ✓"
 # fi
 # echo " ✓"
 
-read -p "Now, run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
+# Check if traefik gateway already has an IP assigned
+echo -n "Checking for Traefik Gateway IP..."
+TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}" 2>/dev/null || echo "")
 
-TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}")
-TRAEFIK_HOSTNAME="mcp-${TRAEFIK_IP//./-}.traefik.me"
+if [ -z "$TRAEFIK_IP" ]; then
+    echo " (no IP yet)"
+    echo ""
+    read -p "Run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
+    
+    # Wait for the IP to be assigned (with timeout)
+    echo -n "Waiting for IP assignment..."
+    for i in {1..30}; do
+        TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}" 2>/dev/null || echo "")
+        if [ -n "$TRAEFIK_IP" ]; then
+            echo " ✓ ($TRAEFIK_IP)"
+            break
+        fi
+        sleep 1
+    done
+    
+    if [ -z "$TRAEFIK_IP" ]; then
+        die "Timeout waiting for Traefik Gateway IP. Is cloud-provider-kind running?"
+    fi
+else
+    echo " ✓ ($TRAEFIK_IP)"
+fi
+
+TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.traefik.me"
+MCP_HOSTNAME="mcp-${TRAEFIK_HOSTNAME_BASE}"
 
 echo -n "Installing Registry Server..."
-REGISTRY_HOSTNAME="registry-${TRAEFIK_IP//./-}.traefik.me"
+REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply -f -" || die "Failed to install Registry Server"
 echo " ✓"
 
 # Expose Grafana via Traefik, using its own hostname for simplicity
 echo -n "Configuring Grafana HTTPRoute..."
-GRAFANA_HOSTNAME="grafana-${TRAEFIK_IP//./-}.traefik.me"
+GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
 run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" || die "Failed to apply Grafana HTTPRoute"
 echo " ✓"
 
@@ -141,6 +166,6 @@ echo " ✓"
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
-echo " - MKP MCP server at http://$TRAEFIK_HOSTNAME/mkp/mcp"
-echo " - vMCP demo server at http://$TRAEFIK_HOSTNAME/vmcp-demo/mcp"
+echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
+echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"
