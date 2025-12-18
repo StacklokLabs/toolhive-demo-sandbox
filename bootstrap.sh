@@ -9,13 +9,11 @@ set -a  # automatically export all variables for subshells
 # - kubectl
 # - helm
 # - ToolHive CLI (thv)
-# - ngrok account with authtoken and API key stored as ToolHive secrets
 # - GitHub token stored as ToolHive secret
 # - Okta client secret stored as ToolHive secret
 
 # Version pins for easy updates
 TRAEFIK_CHART_VERSION="37.4.0"
-NGROK_CHART_VERSION="0.21.1"
 CERT_MANAGER_CHART_VERSION="v1.19.2"
 OPENTELEMETRY_OPERATOR_VERSION="v0.141.0"
 TEMPO_CHART_VERSION="1.24.1"
@@ -49,16 +47,6 @@ if [ -z "$GITHUB_TOKEN" ]; then
     die "ToolHive secret 'github' is empty or does not exist"
 fi
 
-NGROK_AUTHTOKEN=$(thv secret get ngrok-authtoken 2>/dev/null)
-if [ -z "$NGROK_AUTHTOKEN" ]; then
-    die "ToolHive secret 'ngrok-authtoken' is empty or does not exist"
-fi
-
-NGROK_API_KEY=$(thv secret get ngrok-api-key 2>/dev/null)
-if [ -z "$NGROK_API_KEY" ]; then
-    die "ToolHive secret 'ngrok-api-key' is empty or does not exist"
-fi
-
 # OKTA_CLIENT_SECRET=$(thv secret get okta-client-secret 2>/dev/null)
 # if [ -z "$OKTA_CLIENT_SECRET" ]; then
 #     die "ToolHive secret 'okta-client-secret' is empty or does not exist"
@@ -68,12 +56,6 @@ echo " ✓"
 # Load environment variables from .env if it exists
 if [ -f "$(dirname "$0")/.env" ]; then
     source "$(dirname "$0")/.env"
-fi
-
-# Prompt for ngrok domain if not set in .env
-if [ -z "$NGROK_DOMAIN" ]; then
-    read -p "Enter your ngrok domain (hostname only, e.g., example.ngrok-free.dev): " NGROK_DOMAIN
-    export NGROK_DOMAIN
 fi
 
 echo -n "Creating Kind cluster..."
@@ -93,7 +75,6 @@ export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 # Add Helm repos and update
 echo -n "Adding Helm repositories..."
 run_quiet helm repo add traefik https://traefik.github.io/charts || die "Failed to add Traefik repo"
-run_quiet helm repo add ngrok https://charts.ngrok.com || die "Failed to add ngrok repo"
 run_quiet helm repo add grafana https://grafana.github.io/helm-charts || die "Failed to add Grafana repo"
 run_quiet helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || die "Failed to add Prometheus repo"
 echo " ✓"
@@ -105,20 +86,6 @@ echo " ✓"
 # Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
 echo -n "Installing Traefik..."
 run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
-echo " ✓"
-
-# Reference: https://ngrok.com/docs/getting-started/kubernetes/gateway-api
-echo -n "Installing ngrok Operator..."
-if ! namespace_exists ngrok-operator; then
-    run_quiet kubectl create namespace ngrok-operator || die "Failed to create ngrok-operator namespace"
-fi
-if ! secret_exists ngrok-operator-credentials ngrok-operator; then
-    run_quiet kubectl create secret generic ngrok-operator-credentials --namespace ngrok-operator \
-    --from-literal=API_KEY="$NGROK_API_KEY" \
-    --from-literal=AUTHTOKEN="$NGROK_AUTHTOKEN" || die "Failed to create ngrok credentials secret"
-fi
-run_quiet helm upgrade --install ngrok-operator ngrok/ngrok-operator --version "$NGROK_CHART_VERSION" --namespace ngrok-operator --create-namespace --set defaultDomainReclaimPolicy=Retain --set credentials.secret.name=ngrok-operator-credentials --wait || die "Failed to install ngrok Operator"
-run_quiet sh -c "envsubst < infra/ngrok-gateway.yaml | kubectl apply -f -" || die "Failed to apply ngrok gateway"
 echo " ✓"
 
 echo -n "Installing cert-manager..."
@@ -152,14 +119,15 @@ fi
 # fi
 echo " ✓"
 
-echo -n "Installing Registry Server..."
-run_quiet kubectl apply -f demo-manifests/registry-server.yaml || die "Failed to install Registry Server"
-echo " ✓"
-
 read -p "Now, run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
 
 TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}")
 TRAEFIK_HOSTNAME="mcp-${TRAEFIK_IP//./-}.traefik.me"
+
+echo -n "Installing Registry Server..."
+REGISTRY_HOSTNAME="registry-${TRAEFIK_IP//./-}.traefik.me"
+run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply -f -" || die "Failed to install Registry Server"
+echo " ✓"
 
 # Expose Grafana via Traefik, using its own hostname for simplicity
 echo -n "Configuring Grafana HTTPRoute..."
@@ -180,7 +148,8 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply
 echo " ✓"
 
 echo "Bootstrap complete! Access your demo services at the following URLs:"
-echo " - ToolHive Registry Server at https://$NGROK_DOMAIN/registry"
+echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
+echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$TRAEFIK_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$TRAEFIK_HOSTNAME/vmcp-demo/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"
