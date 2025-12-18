@@ -57,6 +57,7 @@ None at this time. Please open issues if you encounter any problems.
 - [x] Add pre-configured Grafana dashboard for MCP server metrics
 - [x] Harden the bootstrap script with more error checking and idempotency
 - [ ] Add toolhive-cloud-ui deployment
+- [ ] Deploy registry server using the ToolHive Operator instead of manually
 - [ ] Add an authenticated version of the vMCP server using Okta
 - [ ] Persona-specific vMCP server demos
 - [ ] Default to an in-cluster Keycloak instance for authentication instead of Okta

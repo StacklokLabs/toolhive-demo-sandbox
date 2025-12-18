@@ -12,19 +12,19 @@ set -e
 # - GitHub token stored as ToolHive secret
 # - Okta client secret stored as ToolHive secret
 
+# Version pins for easy updates
+TRAEFIK_CHART_VERSION="37.4.0"
+NGROK_CHART_VERSION="0.21.1"
+CERT_MANAGER_CHART_VERSION="v1.19.2"
+OPENTELEMETRY_OPERATOR_VERSION="v0.141.0"
+TEMPO_CHART_VERSION="1.24.1"
+PROMETHEUS_CHART_VERSION="27.52.0"
+GRAFANA_CHART_VERSION="10.3.2"
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.85"
+TOOLHIVE_OPERATOR_CHART_VERSION="0.5.13"
+
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
-
-# Version pins for easy updates
-TRAEFIK_VERSION="37.4.0"
-NGROK_OPERATOR_VERSION="0.21.1"
-CERT_MANAGER_VERSION="v1.19.2"
-OPENTELEMETRY_OPERATOR_VERSION="v0.141.0"
-TEMPO_VERSION="1.24.1"
-PROMETHEUS_VERSION="27.52.0"
-GRAFANA_VERSION="10.3.2"
-TOOLHIVE_OPERATOR_CRDS_VERSION="0.0.85"
-TOOLHIVE_OPERATOR_VERSION="0.5.13"
 
 echo "Running preflight checks..."
 
@@ -105,7 +105,7 @@ echo " ✓"
 
 # Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
 echo -n "Installing Traefik..."
-run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
+run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
 echo " ✓"
 
 # Reference: https://ngrok.com/docs/getting-started/kubernetes/gateway-api
@@ -118,12 +118,12 @@ if ! secret_exists ngrok-operator-credentials ngrok-operator; then
     --from-literal=API_KEY="$NGROK_API_KEY" \
     --from-literal=AUTHTOKEN="$NGROK_AUTHTOKEN" || die "Failed to create ngrok credentials secret"
 fi
-run_quiet helm upgrade --install ngrok-operator ngrok/ngrok-operator --version "$NGROK_OPERATOR_VERSION" --namespace ngrok-operator --create-namespace --set defaultDomainReclaimPolicy=Retain --set credentials.secret.name=ngrok-operator-credentials --wait || die "Failed to install ngrok Operator"
+run_quiet helm upgrade --install ngrok-operator ngrok/ngrok-operator --version "$NGROK_CHART_VERSION" --namespace ngrok-operator --create-namespace --set defaultDomainReclaimPolicy=Retain --set credentials.secret.name=ngrok-operator-credentials --wait || die "Failed to install ngrok Operator"
 run_quiet sh -c "envsubst < infra/ngrok-gateway.yaml | kubectl apply -f -" || die "Failed to apply ngrok gateway"
 echo " ✓"
 
 echo -n "Installing cert-manager..."
-run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_VERSION" --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
+run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_CHART_VERSION" --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
 echo " ✓"
 
 echo -n "Installing observability stack..."
@@ -132,16 +132,16 @@ if ! namespace_exists observability; then
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
 run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager -n opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
-run_quiet helm upgrade --install tempo grafana/tempo --version "$TEMPO_VERSION" --namespace observability --wait || die "Failed to install Tempo"
-run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
-run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
+run_quiet helm upgrade --install tempo grafana/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
+run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
+run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
 run_quiet kubectl apply -f infra/otel-collector.yaml || die "Failed to apply OTel collector config"
 echo " ✓"
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
 echo -n "Installing ToolHive Operator..."
-run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
-run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
+run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
+run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
 echo -n "Creating secrets..."
