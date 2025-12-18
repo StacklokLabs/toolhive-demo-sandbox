@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -a  # automatically export all variables for subshells
 
 # Bootstrap script for ToolHive demo-in-a-box Kubernetes cluster
 
@@ -66,9 +67,7 @@ echo " ✓"
 
 # Load environment variables from .env if it exists
 if [ -f "$(dirname "$0")/.env" ]; then
-    set -a  # automatically export all variables
     source "$(dirname "$0")/.env"
-    set +a  # turn off automatic export
 fi
 
 # Prompt for ngrok domain if not set in .env
