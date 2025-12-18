@@ -33,21 +33,6 @@ spec:
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
 metadata:
-  name: github
-  namespace: toolhive-system
-spec:
-  image: ghcr.io/github/github-mcp-server:0.25.0
-  groupRef: demo-tools
-  transport: stdio
-  proxyPort: 8080
-  secrets:
-    - name: github-token
-      key: token
-      targetEnvName: GITHUB_PERSONAL_ACCESS_TOKEN
----
-apiVersion: toolhive.stacklok.dev/v1alpha1
-kind: MCPServer
-metadata:
   name: oci-registry
   namespace: toolhive-system
 spec:
@@ -56,3 +41,15 @@ spec:
   transport: sse
   mcpPort: 8080
   proxyPort: 8080
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: context7
+  namespace: toolhive-system
+spec:
+  image: ghcr.io/stacklok/dockyard/npx/context7:1.0.26
+  groupRef: demo-tools
+  transport: stdio
+  proxyPort: 8080
+  proxyMode: streamable-http

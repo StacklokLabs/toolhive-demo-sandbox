@@ -7,10 +7,10 @@ The goal is a fully functional ToolHive platform running locally to exercise all
 So far, it includes:
 
 - A ToolHive Registry Server with a few servers filtered from the main ToolHive registry and with auto-discovery enabled
-- A Virtual MCP Server running a few basic MCP servers including fetch and GitHub
+- A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
 - ~~An authenticated version of the same vMCP server using Okta~~
-- Traefik as the gateway for routing traffic into the cluster
 - The MKP MCP server for managing the cluster, exposed directly
+- Traefik as the gateway for routing traffic into the cluster
 - An observability stack to capture traces and metrics from the MCP servers
 - Grafana dashboard to view MCP server metrics
 
@@ -21,9 +21,6 @@ So far, it includes:
 - [cloud-provider-kind](https://kubernetes-sigs.github.io/cloud-provider-kind/#/user/install/install_go)
 - A GitHub personal access token with repo scope
 - ~~An Okta developer account with an application created for ToolHive (contact Dan to use his)~~
-- ToolHive CLI (thv) or UI with secrets created for:
-  - GitHub personal access token (`thv secret set github`)
-  - ~~Okta client secret (`thv secret set okta-client-secret`)~~
 
 ## Recommended
 
@@ -68,7 +65,6 @@ A successful bootstrap should end with output similar to this:
 
 Running preflight checks...
   Checking required binaries... ✓
-  Fetching ToolHive secrets... ✓
 Creating Kind cluster... ✓
 Adding Helm repositories... ✓
 Updating Helm repositories... ✓
@@ -76,7 +72,6 @@ Installing Traefik... ✓
 Installing cert-manager... ✓
 Installing observability stack... ✓
 Installing ToolHive Operator... ✓
-Creating secrets... ✓
 Now, run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running...
 Installing Registry Server... ✓
 Configuring Grafana HTTPRoute... ✓

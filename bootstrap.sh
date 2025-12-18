@@ -9,8 +9,6 @@ set -a  # automatically export all variables for subshells
 # - kubectl
 # - helm
 # - ToolHive CLI (thv)
-# - GitHub token stored as ToolHive secret
-# - Okta client secret stored as ToolHive secret
 
 # Version pins for easy updates
 TRAEFIK_CHART_VERSION="37.4.0"
@@ -41,17 +39,13 @@ fi
 echo " ✓"
 
 # Fetch and validate ToolHive secrets
-echo -n "  Fetching ToolHive secrets..."
-GITHUB_TOKEN=$(thv secret get github 2>/dev/null)
-if [ -z "$GITHUB_TOKEN" ]; then
-    die "ToolHive secret 'github' is empty or does not exist"
-fi
+# echo -n "  Fetching ToolHive secrets..."
 
 # OKTA_CLIENT_SECRET=$(thv secret get okta-client-secret 2>/dev/null)
 # if [ -z "$OKTA_CLIENT_SECRET" ]; then
 #     die "ToolHive secret 'okta-client-secret' is empty or does not exist"
 # fi
-echo " ✓"
+# echo " ✓"
 
 # Load environment variables from .env if it exists
 if [ -f "$(dirname "$0")/.env" ]; then
@@ -69,8 +63,8 @@ run_quiet sh -c "kind get kubeconfig --name toolhive-demo-in-a-box > kubeconfig-
 export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 
 # Traefik chart installs Gateway API CRDs automatically, installing them separately breaks things.
-#echo "Installing Gateway API..."
-#kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+# echo "Installing Gateway API..."
+# kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 
 # Add Helm repos and update
 echo -n "Adding Helm repositories..."
@@ -110,14 +104,11 @@ run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/t
 run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
-echo -n "Creating secrets..."
-if ! secret_exists github-token toolhive-system; then
-    run_quiet kubectl create secret generic github-token --namespace toolhive-system --from-literal=token="$GITHUB_TOKEN" || die "Failed to create github-token secret"
-fi
+# echo -n "Creating secrets..."
 # if ! secret_exists okta-client-secret toolhive-system; then
 #     run_quiet kubectl create secret generic okta-client-secret --namespace toolhive-system --from-literal=token="$OKTA_CLIENT_SECRET" || die "Failed to create okta-client-secret secret"
 # fi
-echo " ✓"
+# echo " ✓"
 
 read -p "Now, run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
 
