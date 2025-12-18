@@ -17,7 +17,7 @@ export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 # Explicitly delete ngrok Operator resources to avoid leaving orphaned resources in your ngrok account
 echo -n "Cleaning up ngrok resources..."
 run_quiet kubectl delete httproutes.gateway.networking.k8s.io --all --all-namespaces || true
-run_quiet kubectl delete -f ngrok-gateway.yaml || true
+run_quiet kubectl delete -f infra/ngrok-gateway.yaml || true
 run_quiet kubectl delete domains.ingress.k8s.ngrok.com --all --all-namespaces || true
 run_quiet sh -c "kubectl get crd -o name | grep 'ngrok' | xargs -r kubectl delete" || true
 run_quiet helm uninstall ngrok-operator --namespace ngrok-operator || true

@@ -1,0 +1,67 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-authenticated
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: http://$TRAEFIK_HOSTNAME/vmcp-authenticated/mcp
+    toolhive.stacklok.dev/registry-description: |
+      Authenticated vMCP server with registry export enabled.
+spec:
+  groupRef:
+    name: demo-tools
+  incomingAuth:
+    type: oidc
+    oidcConfig:
+      type: inline
+      resourceUrl: http://localhost:4483/mcp
+      inline:
+        issuer: "https://integrator-9462356.okta.com/oauth2/ausxkyvkmwgNYhYsp697"
+        audience: "toolhive"
+        clientId: 0oaxkyvybajRMNzUf697
+        jwksUrl: "https://integrator-9462356.okta.com/oauth2/ausxkyvkmwgNYhYsp697/v1/keys"
+        clientSecretRef:
+          name: okta-client-secret
+          key: token
+  outgoingAuth:
+    source: inline
+  aggregation:
+    conflictResolution: prefix
+    conflictResolutionConfig:
+      prefixFormat: "{workload}_"
+  serviceType: ClusterIP
+  telemetry:
+    prometheus:
+      enabled: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-authenticated-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-authenticated
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-authenticated
+          port: 4483
+    - matches:
+        - path:
+            type: Exact
+            value: /.well-known/oauth-protected-resource/vmcp-authenticated/mcp
+      backendRefs:
+        - name: vmcp-vmcp-authenticated
+          port: 4483
