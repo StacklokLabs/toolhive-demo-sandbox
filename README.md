@@ -1,8 +1,8 @@
-# ToolHive platform in a box on Kubernetes
+# ToolHive platform-in-a-box on Kubernetes
 
-This repo attempts to set up a complete ToolHive platform locally in Kubernetes using kind.
+This repo sets up a complete ToolHive stack locally in Kubernetes using kind.
 
-The goal is to have a fully functional ToolHive platform running locally to exercise all core features and interoperability with minimal external dependencies, making it suitable for demos, development, and testing.
+The goal is a fully functional ToolHive platform running locally to exercise all core features and interoperability with minimal external dependencies, making it suitable for demos, development, and testing.
 
 So far, it includes:
 
@@ -10,10 +10,11 @@ So far, it includes:
 - A Virtual MCP Server running a few basic MCP servers including fetch and GitHub
 - ~~An authenticated version of the same vMCP server using Okta~~
 - The MKP MCP server for managing the cluster, exposed directly
-- ngrok tunneling for secure access to the Registry Server
-- traefik gateway for local access to MCP servers and vMCP endpoints
+- ngrok tunneling for secure access to the Registry Server and traefik for local access to MCP and vMCP servers
+- An observability stack to capture traces and metrics from the MCP servers
+- Grafana dashboard to view MCP server metrics
 
-You need:
+## Prerequisites
 
 - macOS or Linux system with Docker (Podman should work too, but untested)
 - kind, kubectl, and helm
@@ -27,29 +28,67 @@ You need:
   - GitHub personal access token (`thv secret set github`)
   - ~~Okta client secret (`thv secret set okta-client-secret`)~~
 
-Recommended:
+## Recommended
 
 - k9s for viewing cluster resources
 
-Setup:
+## Setup
 
 1. Clone this repo
-2. Run `./bootstrap.sh` from the repo root
-3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway
-4. Run `thv config set-registry https://YOUR_NGROK_HOSTNAME/registry` (or set a custom registry in the UI settings) to point your ToolHive instance to the local registry server
-5. Access the MKP MCP server at `http://mcp-<TRAEFIK_IP_WITH_DASHES>.traefik.me/mkp/mcp` to manage the local cluster (you can quickly test using `thv mcp list tools --server <URL>`)
-6. Access the vMCP server at `http://mcp-<TRAEFIK_IP_WITH_DASHES>.traefik.me/vmcp-demo/mcp`
+2. Optionally, copy `.env.example` to `.env` and add your own ngrok domain (otherwise you'll be prompted during bootstrap)
+3. Run `./bootstrap.sh` from the repo root
+4. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway
+5. Run `thv config set-registry https://<YOUR_NGROK_DOMAIN>/registry` (or set a custom registry in the UI settings) to point your ToolHive instance to the local registry server
+6. Access the MCP servers and Grafana via the URLs printed at the end of the bootstrap process
 
-Known issues:
+The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
-- The local IP created by `cloud-provider-kind` is different on each system and depends on your local docker networking setup.
-- Manual edits are needed to set the right hostname in the HTTPRoute resources; find instances of `REPLACE_WITH_NGROK_HOSTNAME` and replace them with the hostname assigned by ngrok for the registry server (e.g. `abcd1234.ngrok.io`).
-- The vMCP tends to start up before the backend MCP servers are ready, causing incomplete tool discovery. Restarting or recreating the vMCP pod resolves this.
-- Error handling and prerequisite checks in the bootstrap is pretty much non-existent.
+## Cleanup
 
-Roadmap:
+Run the `./cleanup.sh` script to clean up your ngrok account (this is important to avoid hitting ngrok's free tier limits) and delete the cluster.
 
-- [ ] Add an observability stack (OTel Collector + Jaeger + Prometheus + Grafana) to catch traces/metrics
-- [ ] Replace ngrok with sslip.io + LetsEncrypt for local tunneling or similar solution (ToolHive CLI/UI requires a secure registry endpoint)
+## Known issues
+
+None at this time. Please open issues if you encounter any problems.
+
+## Roadmap
+
+- [x] Add an observability stack to catch traces/metrics
+- [x] Add pre-configured Grafana dashboard for MCP server metrics
+- [x] Harden the bootstrap script with more error checking and idempotency
+- [ ] Add toolhive-cloud-ui deployment
+- [ ] Add an authenticated version of the vMCP server using Okta
+- [ ] Persona-specific vMCP server demos
 - [ ] Default to an in-cluster Keycloak instance for authentication instead of Okta
-- [ ] Persona-specific vMCP server setups
+- [ ] (Maybe) Replace ngrok with another secure tunneling solution with fewer limitations (ToolHive CLI/UI requires a secure registry endpoint)
+
+## Example
+
+A successful bootstrap should end with output similar to this:
+
+```text
+./bootstrap.sh
+
+Running preflight checks...
+  Checking required binaries... ✓
+  Fetching ToolHive secrets... ✓
+Creating Kind cluster... ✓
+Adding Helm repositories... ✓
+Updating Helm repositories... ✓
+Installing Traefik... ✓
+Installing ngrok Operator... ✓
+Installing cert-manager... ✓
+Installing observability stack... ✓
+Installing ToolHive Operator... ✓
+Creating secrets... ✓
+Installing Registry Server... ✓
+Now, run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running...
+Configuring Grafana HTTPRoute... ✓
+Installing MKP MCP server... ✓
+Installing vMCP demo servers... ✓
+Bootstrap complete! Access your demo services at the following URLs:
+ - ToolHive Registry Server at https://<YOUR_NGROK_DOMAIN>/registry
+ - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
+ - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
+ - Grafana at http://grafana-172-19-0-3.traefik.me
+```
