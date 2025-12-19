@@ -3,6 +3,10 @@ kind: ConfigMap
 metadata:
   name: registry-api-config
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
 data:
   config.yaml: |
     registryName: my-registry
@@ -35,6 +39,10 @@ kind: Deployment
 metadata:
   name: registry-api
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
 spec:
   replicas: 1
   selector:
@@ -44,6 +52,8 @@ spec:
     metadata:
       labels:
         app: registry-api
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: toolhive
     spec:
       serviceAccountName: registry-api
       containers:
@@ -95,6 +105,10 @@ kind: Service
 metadata:
   name: registry-api
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
 spec:
   selector:
     app: registry-api
@@ -108,18 +122,24 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  labels:
-    toolhive.stacklok.io/registry-name: registry-api
   name: registry-api
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
+    toolhive.stacklok.io/registry-name: registry-api
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  labels:
-    toolhive.stacklok.io/registry-name: registry-api
   name: registry-api
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
+    toolhive.stacklok.io/registry-name: registry-api
 rules:
   - apiGroups:
       - toolhive.stacklok.dev
@@ -174,10 +194,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    toolhive.stacklok.io/registry-name: registry-api
   name: registry-api
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
+    toolhive.stacklok.io/registry-name: registry-api
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -192,6 +215,10 @@ kind: HTTPRoute
 metadata:
   name: registry-api-route
   namespace: toolhive-system
+  labels:
+    app: registry-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
 spec:
   parentRefs:
     - name: traefik-gateway
