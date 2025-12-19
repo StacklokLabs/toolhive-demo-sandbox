@@ -1,8 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mock-auth
+  name: oidc-mock
   namespace: toolhive-system
+  labels:
+    app: oidc-mock
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
 spec:
   type: ClusterIP
   ports:
@@ -11,25 +15,31 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: mock-auth
+    app: oidc-mock
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mock-auth
+  name: oidc-mock
   namespace: toolhive-system
+  labels:
+    app: oidc-mock
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
 spec:
   selector:
     matchLabels:
-      app: mock-auth
+      app: oidc-mock
   template:
     metadata:
       labels:
-        app: mock-auth
+        app: oidc-mock
+        app.kubernetes.io/component: auth
+        app.kubernetes.io/part-of: toolhive
     spec:
       containers:
-        - name: toolhive-mock-oidc-provider
-          image: toolhive-mock-oidc-provider:demo-v1
+        - name: cloud-ui-oidc-mock
+          image: toolhive-cloud-ui-oidc-mock:demo-v1
           resources:
             limits:
               memory: "128Mi"
@@ -175,6 +185,10 @@ kind: HTTPRoute
 metadata:
   name: ui-route
   namespace: toolhive-system
+  labels:
+    app: cloud-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: toolhive
 spec:
   parentRefs:
     - name: traefik-gateway
@@ -196,6 +210,10 @@ kind: HTTPRoute
 metadata:
   name: auth-route
   namespace: toolhive-system
+  labels:
+    app: oidc-mock
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
 spec:
   parentRefs:
     - name: traefik-gateway
@@ -209,5 +227,5 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: mock-auth
+        - name: oidc-mock
           port: 4000

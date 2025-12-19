@@ -7,7 +7,7 @@
 
 # Remove local Docker images used by the demo (do this first, regardless of cluster state)
 echo -n "Removing demo Docker images..."
-run_quiet docker rmi toolhive-mock-oidc-provider:demo-v1 2>/dev/null || true
+run_quiet docker rmi toolhive-cloud-ui-oidc-mock:demo-v1 2>/dev/null || true
 echo " ✓"
 
 # Check if cluster exists

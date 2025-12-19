@@ -154,8 +154,8 @@ run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply 
 echo " ✓"
 
 echo -n "Installing Cloud UI..."
-run_quiet docker build -t toolhive-mock-oidc-provider:demo-v1 demo-manifests/mock-oidc || die "Failed to build mock-auth image"
-run_quiet kind load docker-image toolhive-mock-oidc-provider:demo-v1 --name toolhive-demo-in-a-box || die "Failed to load mock-auth image into Kind cluster"
+run_quiet docker build -t toolhive-cloud-ui-oidc-mock:demo-v1 demo-manifests/oidc-mock || die "Failed to build mock-auth image"
+run_quiet kind load docker-image toolhive-cloud-ui-oidc-mock:demo-v1 --name toolhive-demo-in-a-box || die "Failed to load mock-auth image into Kind cluster"
 run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
 echo " ✓"
 
