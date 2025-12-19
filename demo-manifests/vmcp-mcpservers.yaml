@@ -11,6 +11,8 @@ kind: MCPServer
 metadata:
   name: fetch
   namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stackloklabs/gofetch/server:1.0.2
   transport: streamable-http
@@ -23,6 +25,8 @@ kind: MCPServer
 metadata:
   name: osv
   namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stackloklabs/osv-mcp/server:0.0.7
   transport: streamable-http
@@ -35,6 +39,8 @@ kind: MCPServer
 metadata:
   name: oci-registry
   namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stackloklabs/ocireg-mcp/server:0.0.6
   groupRef: demo-tools
@@ -47,6 +53,8 @@ kind: MCPServer
 metadata:
   name: context7
   namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stacklok/dockyard/npx/context7:1.0.26
   groupRef: demo-tools

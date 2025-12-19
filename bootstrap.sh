@@ -178,8 +178,8 @@ echo " ✓"
 
 echo -n "Installing vMCP demo servers..."
 run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to apply vMCP MCP servers"
-# Wait for MCPServer resources to reach Running phase
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=300s mcpserver --all -n toolhive-system || die "MCPServer resources failed to become ready"
+# Wait for vMCP backend MCPServer resources to reach Running phase
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=300s mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
 # run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
 echo " ✓"
