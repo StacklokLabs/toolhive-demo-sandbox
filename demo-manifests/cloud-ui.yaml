@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-auth
+  namespace: toolhive-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 4000
+      targetPort: 4000
+      protocol: TCP
+      name: http
+  selector:
+    app: mock-auth
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-auth
+  namespace: toolhive-system
+spec:
+  selector:
+    matchLabels:
+      app: mock-auth
+  template:
+    metadata:
+      labels:
+        app: mock-auth
+    spec:
+      containers:
+        - name: toolhive-mock-oidc-provider
+          image: toolhive-mock-oidc-provider:demo-v1
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          ports:
+            - containerPort: 4000
+          env:
+            - name: OIDC_ISSUER_URL
+              value: https://$AUTH_HOSTNAME
+            - name: PORT
+              value: "4000"
+            - name: UI_HOSTNAME
+              value: $UI_HOSTNAME
+            - name: DEBUG
+              value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-ui
+  namespace: toolhive-system
+  labels:
+    app: cloud-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: toolhive
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: cloud-ui
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-ui
+  namespace: toolhive-system
+  labels:
+    app: cloud-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: toolhive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-ui
+  template:
+    metadata:
+      labels:
+        app: cloud-ui
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: toolhive
+    spec:
+      serviceAccountName: default
+      securityContext:
+        fsGroup: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cloud-ui
+          image: ghcr.io/stacklok/toolhive-cloud-ui:v0.0.6
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: API_BASE_URL
+              value: http://registry-api.toolhive-system:80
+            # Better Auth configuration
+            - name: BETTER_AUTH_SECRET
+              value: demo-secret-change-in-production
+            - name: BETTER_AUTH_URL
+              value: https://$UI_HOSTNAME
+            # OIDC configuration
+            - name: OIDC_ISSUER_URL
+              value: https://$AUTH_HOSTNAME
+            - name: OIDC_CLIENT_ID
+              value: better-auth-dev
+            - name: OIDC_CLIENT_SECRET
+              value: dev-secret-change-in-production
+            - name: OIDC_PROVIDER_ID
+              value: okta
+            - name: NODE_ENV
+              value: development
+            # Allow self-signed certificates (demo/dev only)
+            - name: NODE_TLS_REJECT_UNAUTHORIZED
+              value: "0"
+          startupProbe:
+            failureThreshold: 20
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 3
+            successThreshold: 1
+            timeoutSeconds: 2
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 2
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ui-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $UI_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: cloud-ui
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: auth-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $AUTH_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: mock-auth
+          port: 4000

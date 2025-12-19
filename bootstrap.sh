@@ -77,13 +77,18 @@ echo -n "Updating Helm repositories..."
 run_quiet helm repo update || die "Failed to update Helm repos"
 echo " ✓"
 
-# Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
-echo -n "Installing Traefik..."
-run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
-echo " ✓"
+if ! namespace_exists traefik; then
+    run_quiet kubectl create namespace traefik || die "Failed to create traefik namespace"
+fi
 
 echo -n "Installing cert-manager..."
 run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_CHART_VERSION" --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
+run_quiet kubectl apply -f infra/cert-manager-certs.yaml || die "Failed to apply cert-manager certs"
+echo " ✓"
+
+# Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
+echo -n "Installing Traefik..."
+run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
 echo " ✓"
 
 echo -n "Installing observability stack..."
@@ -139,15 +144,23 @@ fi
 
 TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.traefik.me"
 MCP_HOSTNAME="mcp-${TRAEFIK_HOSTNAME_BASE}"
+REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
+UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
+AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
+GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
 
 echo -n "Installing Registry Server..."
-REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply -f -" || die "Failed to install Registry Server"
+echo " ✓"
+
+echo -n "Installing Cloud UI..."
+run_quiet docker build -t toolhive-mock-oidc-provider:demo-v1 demo-manifests/mock-oidc || die "Failed to build mock-auth image"
+run_quiet kind load docker-image toolhive-mock-oidc-provider:demo-v1 --name toolhive-demo-in-a-box || die "Failed to load mock-auth image into Kind cluster"
+run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
 echo " ✓"
 
 # Expose Grafana via Traefik, using its own hostname for simplicity
 echo -n "Configuring Grafana HTTPRoute..."
-GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
 run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" || die "Failed to apply Grafana HTTPRoute"
 echo " ✓"
 
@@ -164,6 +177,7 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply
 echo " ✓"
 
 echo "Bootstrap complete! Access your demo services at the following URLs:"
+echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
