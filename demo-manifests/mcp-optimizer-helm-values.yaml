@@ -1,0 +1,10 @@
+groupFiltering:
+  allowedGroups:
+    - "demo-tools"
+
+mcpserver:
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    # toolhive.stacklok.dev/registry-url is set in bootstrap.sh during installation
+    toolhive.stacklok.dev/registry-description: |
+      MCP Optimizer for intelligent tool calling across multiple MCP servers.

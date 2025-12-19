@@ -11,6 +11,7 @@ So far, it includes:
 - A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
 - ~~An authenticated version of the same vMCP server using Okta~~
 - The MKP MCP server for managing the cluster, exposed directly
+- An MCP Optimizer server for intelligent tool calling across multiple MCP servers
 - Traefik as the gateway for routing traffic into the cluster
 - An observability stack to capture traces and metrics from the MCP servers
 - Grafana dashboard to view MCP server metrics
@@ -60,10 +61,12 @@ None at this time. Please open issues if you encounter any problems.
 - [x] Add pre-configured Grafana dashboard for MCP server metrics
 - [x] Harden the bootstrap script with more error checking and idempotency
 - [x] Add toolhive-cloud-ui deployment
+- [x] Add MCP Optimizer demo server
 - [ ] Deploy registry server using the ToolHive Operator instead of manually
 - [ ] Add an authenticated version of the vMCP server using Okta
 - [ ] Persona-specific vMCP server demos
 - [ ] Default to an in-cluster Keycloak instance for authentication instead of Okta
+- [ ] Investigate using Kustomize instead of envsubst for manifest templating
 - [x] Remove ngrok (ToolHive supports a non-https registry server with `--allow-private-ip` flag)
 
 ## Example

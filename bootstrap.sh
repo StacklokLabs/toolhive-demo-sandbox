@@ -19,6 +19,7 @@ PROMETHEUS_CHART_VERSION="27.52.0"
 GRAFANA_CHART_VERSION="10.3.2"
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.86"
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.16"
+MCP_OPTIMIZER_CHART_VERSION="0.2.0"
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
@@ -82,13 +83,15 @@ if ! namespace_exists traefik; then
 fi
 
 echo -n "Installing cert-manager..."
-run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_CHART_VERSION" --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
+run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_CHART_VERSION" \
+  --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
 run_quiet kubectl apply -f infra/cert-manager-certs.yaml || die "Failed to apply cert-manager certs"
 echo " ✓"
 
 # Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
 echo -n "Installing Traefik..."
-run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
+run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace \
+  --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
 echo " ✓"
 
 echo -n "Installing observability stack..."
@@ -96,17 +99,22 @@ if ! namespace_exists observability; then
     run_quiet kubectl create namespace observability || die "Failed to create observability namespace"
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
-run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager -n opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
+run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager \
+  --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
 run_quiet helm upgrade --install tempo grafana/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
-run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
-run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
+run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability \
+  --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
+run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml \
+  --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
 run_quiet kubectl apply -f infra/otel-collector.yaml || die "Failed to apply OTel collector config"
 echo " ✓"
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
 echo -n "Installing ToolHive Operator..."
-run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
-run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
+run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds \
+  --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
+run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator \
+  --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
 # echo -n "Creating secrets..."
@@ -176,10 +184,19 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply
 # run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
 echo " ✓"
 
+echo -n "Installing MCP Optimizer..."
+run_quiet helm upgrade --install mcp-optimizer oci://ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer \
+  --version "$MCP_OPTIMIZER_CHART_VERSION" \
+  --values demo-manifests/mcp-optimizer-helm-values.yaml --set "mcpserver.annotations.toolhive\.stacklok\.dev/registry-url=http://${MCP_HOSTNAME}/mcp-optimizer/mcp" \
+  --namespace toolhive-system --wait || die "Failed to install MCP Optimizer"
+run_quiet sh -c "envsubst < demo-manifests/mcp-optimizer-httproute.yaml | kubectl apply -f -" || die "Failed to apply MCP Optimizer HTTPRoute"
+echo " ✓"
+
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
+echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"
