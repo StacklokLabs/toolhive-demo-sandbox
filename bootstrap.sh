@@ -10,7 +10,7 @@ set -a  # automatically export all variables for subshells
 # - helm
 # - ToolHive CLI (thv)
 
-# Version pins for easy updates
+# Version pins to ensure consistent demo environment
 TRAEFIK_CHART_VERSION="37.4.0"
 CERT_MANAGER_CHART_VERSION="v1.19.2"
 OPENTELEMETRY_OPERATOR_VERSION="v0.141.0"
@@ -19,6 +19,7 @@ PROMETHEUS_CHART_VERSION="27.52.0"
 GRAFANA_CHART_VERSION="10.3.2"
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.86"
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.16"
+REGISTRY_API_VERSION="v0.4.5"
 MCP_OPTIMIZER_CHART_VERSION="0.2.1"
 
 # Source common helper functions
@@ -57,7 +58,7 @@ echo -n "Creating Kind cluster..."
 if kind get clusters 2>/dev/null | grep -q "^toolhive-demo-in-a-box$"; then
     echo " (already exists, skipping)"
 else
-    run_quiet kind create cluster --name toolhive-demo-in-a-box || die "Failed to create Kind cluster"
+    run_quiet kind create cluster --config "$(dirname "$0")/kind-config.yaml" || die "Failed to create Kind cluster"
     echo " ✓"
 fi
 run_quiet sh -c "kind get kubeconfig --name toolhive-demo-in-a-box > kubeconfig-toolhive-demo.yaml" || die "Failed to get kubeconfig"
@@ -83,15 +84,13 @@ if ! namespace_exists traefik; then
 fi
 
 echo -n "Installing cert-manager..."
-run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_CHART_VERSION" \
-  --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
+run_quiet helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager --version "$CERT_MANAGER_CHART_VERSION" --namespace cert-manager --create-namespace --set crds.enabled=true || die "Failed to install cert-manager"
 run_quiet kubectl apply -f infra/cert-manager-certs.yaml || die "Failed to apply cert-manager certs"
 echo " ✓"
 
 # Reference: https://doc.traefik.io/traefik/getting-started/kubernetes/
 echo -n "Installing Traefik..."
-run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace \
-  --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
+run_quiet helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART_VERSION" --namespace traefik --create-namespace --values infra/traefik-helm-values.yaml --wait || die "Failed to install Traefik"
 echo " ✓"
 
 echo -n "Installing observability stack..."
@@ -99,22 +98,17 @@ if ! namespace_exists observability; then
     run_quiet kubectl create namespace observability || die "Failed to create observability namespace"
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
-run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager \
-  --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
+run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
 run_quiet helm upgrade --install tempo grafana/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
-run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability \
-  --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
-run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml \
-  --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
+run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
+run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
 run_quiet kubectl apply -f infra/otel-collector.yaml || die "Failed to apply OTel collector config"
 echo " ✓"
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
 echo -n "Installing ToolHive Operator..."
-run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds \
-  --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
-run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator \
-  --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
+run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
+run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
 # echo -n "Creating secrets..."

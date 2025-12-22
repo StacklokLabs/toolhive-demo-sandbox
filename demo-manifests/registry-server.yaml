@@ -58,7 +58,7 @@ spec:
       serviceAccountName: registry-api
       containers:
         - name: registry-api
-          image: ghcr.io/stacklok/thv-registry-api:latest
+          image: ghcr.io/stacklok/thv-registry-api:$REGISTRY_API_VERSION
           args:
             - serve
             - --config=/etc/registry/config.yaml
