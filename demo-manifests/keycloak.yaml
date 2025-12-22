@@ -356,7 +356,7 @@ data:
       "clientAuthenticationFlow": "clients",
       "dockerAuthenticationFlow": "docker auth",
       "attributes": {},
-      "keycloakVersion": "26.0.7",
+      "keycloakVersion": "$KEYCLOAK_VERSION",
       "userManagedAccessAllowed": false,
       "smtpServer": {},
       "eventsEnabled": false,
@@ -412,7 +412,7 @@ spec:
     spec:
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.0.7
+          image: quay.io/keycloak/keycloak:$KEYCLOAK_VERSION
           args:
             - start-dev
             - --import-realm

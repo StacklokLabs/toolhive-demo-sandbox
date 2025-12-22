@@ -24,6 +24,7 @@ TOOLHIVE_OPERATOR_CHART_VERSION="0.16.0" # renovate: datasource=docker depName=g
 REGISTRY_SERVER_CHART_VERSION="0.6.6" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
 CLOUD_UI_VERSION="v0.4.4" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 MCP_OPTIMIZER_CHART_VERSION="0.3.0" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
+KEYCLOAK_VERSION="26.4.7" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
@@ -256,6 +257,7 @@ echo " ✓"
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
 echo " - Keycloak Admin Console at https://$AUTH_HOSTNAME/admin (admin/admin)"
+echo "   Demo Users: demo/demo (developers) or test/test (developers+admins)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
