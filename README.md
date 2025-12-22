@@ -52,6 +52,7 @@ The demo uses Keycloak for OpenID Connect authentication:
   - Password: `admin`
 
 - **Demo Users**:
+
   - Username: `demo` / Password: `demo` (developers group)
   - Username: `test` / Password: `test` (developers + admins groups)
 
@@ -118,6 +119,7 @@ Waiting for all pods to be ready... ✓
 Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - Keycloak Admin Console at https://auth-172-19-0-3.traefik.me/admin (admin/admin)
+   Demo Users: demo/demo (developers) or test/test (developers+admins)
  - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (you'll have to accept the self-signed certificate)
  - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry/demo-registry
    (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry/demo-registry --allow-private-ip' to configure ToolHive to use it)
