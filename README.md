@@ -9,9 +9,11 @@ The goal is a fully functional ToolHive platform running locally to exercise all
 So far, it includes:
 
 - A ToolHive Registry Server with a few servers filtered from the official and ToolHive registries plus K8s discovery
-- The ToolHive Cloud UI connected to the registry server with a mock OIDC provider for authentication
+- Keycloak for OpenID Connect authentication (admin console and demo realm with test users)
+- The ToolHive Cloud UI connected to the registry server with Keycloak authentication
 - A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
 - A vMCP server with a composite tool chaining together multiple arXiv tools
+- An authenticated vMCP server with Keycloak OIDC authentication
 - The MKP MCP server for managing the cluster, exposed directly
 - An MCP Optimizer server for intelligent tool calling across multiple MCP servers
 - Traefik as the gateway for routing traffic into the cluster
@@ -41,6 +43,23 @@ So far, it includes:
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
+## Authentication
+
+The demo uses Keycloak for OpenID Connect authentication:
+
+- **Admin Console**: https://auth-<IP>.traefik.me/admin
+  - Username: `admin`
+  - Password: `admin`
+
+- **Demo Users**:
+  - Username: `demo` / Password: `demo` (developers group)
+  - Username: `test` / Password: `test` (developers + admins groups)
+
+- **Realm**: `toolhive-demo`
+- **Client ID**: `toolhive-cloud-ui`
+
+All credentials are for demo purposes only and should be changed in production environments.
+
 ## Troubleshooting
 
 If the bootstrap fails, check the output for errors. You can also use `kubectl` or `k9s` to inspect the cluster state.
@@ -53,7 +72,7 @@ DEBUG=1 ./bootstrap.sh
 
 ## Cleanup
 
-Run the `./cleanup.sh` script to delete the mocked OIDC provider Docker image and the cluster.
+Run the `./cleanup.sh` script to delete the cluster.
 
 ## Known issues
 
@@ -67,8 +86,8 @@ None at this time. Please open issues if you encounter any problems.
 - [x] Add toolhive-cloud-ui deployment
 - [x] Add MCP Optimizer demo server
 - [ ] Deploy registry server using the ToolHive Operator instead of manually
-- [ ] Add a Keycloak instance for authentication
-- [ ] Add an authenticated version of the vMCP server
+- [x] Add a Keycloak instance for authentication
+- [x] Add an authenticated version of the vMCP server
 - [ ] Persona-specific vMCP server demos
 
 ## Example
@@ -89,6 +108,7 @@ Installing observability stack... ✓
 Installing ToolHive Operator... ✓
 Checking for Traefik Gateway IP... ✓ (172.19.0.3)
 Installing Registry Server... ✓
+Installing Keycloak... ✓
 Installing Cloud UI... ✓
 Configuring Grafana HTTPRoute... ✓
 Installing MKP MCP server... ✓
@@ -98,11 +118,13 @@ Waiting for all pods to be ready... ✓
 Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (you'll have to accept the self-signed certificate)
+ - Keycloak Admin Console at https://auth-172-19-0-3.traefik.me/admin (admin/admin)
  - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry
    (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry --allow-private-ip' to configure ToolHive to use it)
  - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
  - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
  - vMCP composite tool demo server at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
+ - vMCP authenticated demo server at http://mcp-172-19-0-3.traefik.me/vmcp-authenticated/mcp
  - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
  - Grafana at http://grafana-172-19-0-3.traefik.me
 ```
