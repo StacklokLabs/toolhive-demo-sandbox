@@ -40,15 +40,6 @@ if [ -n "$MISSING_BINARIES" ]; then
 fi
 echo " ✓"
 
-# Fetch and validate ToolHive secrets
-# echo -n "  Fetching ToolHive secrets..."
-
-# OKTA_CLIENT_SECRET=$(thv secret get okta-client-secret 2>/dev/null)
-# if [ -z "$OKTA_CLIENT_SECRET" ]; then
-#     die "ToolHive secret 'okta-client-secret' is empty or does not exist"
-# fi
-# echo " ✓"
-
 # Load environment variables from .env if it exists
 if [ -f "$(dirname "$0")/.env" ]; then
     source "$(dirname "$0")/.env"
@@ -111,12 +102,6 @@ run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/t
 run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
-# echo -n "Creating secrets..."
-# if ! secret_exists okta-client-secret toolhive-system; then
-#     run_quiet kubectl create secret generic okta-client-secret --namespace toolhive-system --from-literal=token="$OKTA_CLIENT_SECRET" || die "Failed to create okta-client-secret secret"
-# fi
-# echo " ✓"
-
 # Check if traefik gateway already has an IP assigned
 echo -n "Checking for Traefik Gateway IP..."
 TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpath={.status.addresses[0].value}" 2>/dev/null || echo "")
@@ -155,9 +140,12 @@ echo -n "Installing Registry Server..."
 run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply -f -" || die "Failed to install Registry Server"
 echo " ✓"
 
+echo -n "Installing Keycloak..."
+run_quiet sh -c "envsubst < demo-manifests/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
+run_quiet kubectl wait --for=condition=available --timeout=300s deployment/keycloak --namespace toolhive-system || die "Keycloak failed to become ready"
+echo " ✓"
+
 echo -n "Installing Cloud UI..."
-run_quiet docker build -t toolhive-cloud-ui-oidc-mock:demo-v1 demo-manifests/oidc-mock || die "Failed to build mock-auth image"
-run_quiet kind load docker-image toolhive-cloud-ui-oidc-mock:demo-v1 --name toolhive-demo-in-a-box || die "Failed to load mock-auth image into Kind cluster"
 run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
 echo " ✓"
 
@@ -175,7 +163,7 @@ run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to
 # Wait for vMCP backend MCPServer resources to reach Running phase
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=300s mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
-# run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
 echo " ✓"
 
 echo -n "Installing MCP Optimizer..."
@@ -188,9 +176,11 @@ echo " ✓"
 
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
+echo " - Keycloak Admin Console at https://$AUTH_HOSTNAME/admin (admin/admin)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
+echo " - vMCP authenticated demo server at http://$MCP_HOSTNAME/vmcp-authenticated/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

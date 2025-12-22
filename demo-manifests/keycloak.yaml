@@ -1,0 +1,534 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-import
+  namespace: toolhive-system
+  labels:
+    app: keycloak
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+data:
+  toolhive-demo-realm.json: |
+    {
+      "realm": "toolhive-demo",
+      "enabled": true,
+      "displayName": "ToolHive Demo",
+      "displayNameHtml": "<div class=\"kc-logo-text\"><span>ToolHive Demo</span></div>",
+      "loginTheme": "keycloak",
+      "accountTheme": "keycloak",
+      "adminTheme": "keycloak",
+      "emailTheme": "keycloak",
+      "accessTokenLifespan": 300,
+      "accessTokenLifespanForImplicitFlow": 900,
+      "ssoSessionIdleTimeout": 1800,
+      "ssoSessionMaxLifespan": 36000,
+      "offlineSessionIdleTimeout": 2592000,
+      "offlineSessionMaxLifespanEnabled": false,
+      "offlineSessionMaxLifespan": 5184000,
+      "clientSessionIdleTimeout": 0,
+      "clientSessionMaxLifespan": 0,
+      "clientOfflineSessionIdleTimeout": 0,
+      "clientOfflineSessionMaxLifespan": 0,
+      "accessCodeLifespan": 60,
+      "accessCodeLifespanUserAction": 300,
+      "accessCodeLifespanLogin": 1800,
+      "actionTokenGeneratedByAdminLifespan": 43200,
+      "actionTokenGeneratedByUserLifespan": 300,
+      "oauth2DeviceCodeLifespan": 600,
+      "oauth2DevicePollingInterval": 5,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "registrationEmailAsUsername": false,
+      "rememberMe": true,
+      "verifyEmail": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "permanentLockout": false,
+      "maxFailureWaitSeconds": 900,
+      "minimumQuickLoginWaitSeconds": 60,
+      "waitIncrementSeconds": 60,
+      "quickLoginCheckMilliSeconds": 1000,
+      "maxDeltaTimeSeconds": 43200,
+      "failureFactor": 30,
+      "defaultRole": {
+        "name": "default-roles-toolhive-demo",
+        "description": "${role_default-roles}",
+        "composite": true,
+        "clientRole": false
+      },
+      "requiredCredentials": ["password"],
+      "otpPolicyType": "totp",
+      "otpPolicyAlgorithm": "HmacSHA1",
+      "otpPolicyInitialCounter": 0,
+      "otpPolicyDigits": 6,
+      "otpPolicyLookAheadWindow": 1,
+      "otpPolicyPeriod": 30,
+      "otpSupportedApplications": ["FreeOTP", "Google Authenticator"],
+      "clients": [
+        {
+          "clientId": "toolhive-cloud-ui",
+          "name": "ToolHive Cloud UI",
+          "description": "ToolHive Cloud UI web application",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "cloud-ui-secret-change-in-production",
+          "redirectUris": [
+            "https://$UI_HOSTNAME/api/auth/oauth2/callback/keycloak",
+            "https://$UI_HOSTNAME/api/auth/callback/keycloak",
+            "http://localhost:3000/*"
+          ],
+          "webOrigins": ["+"],
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "publicClient": false,
+          "frontchannelLogout": false,
+          "protocol": "openid-connect",
+          "attributes": {
+            "post.logout.redirect.uris": "https://$UI_HOSTNAME/signin##http://localhost:3000/signin",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "oidc.ciba.grant.enabled": "false"
+          },
+          "authenticationFlowBindingOverrides": {},
+          "fullScopeAllowed": true,
+          "nodeReRegistrationTimeout": -1,
+          "defaultClientScopes": ["openid", "email", "profile", "roles", "web-origins"],
+          "optionalClientScopes": ["offline_access", "mcp-access"]
+        },
+        {
+          "clientId": "mcp-vmcp-authenticated",
+          "name": "vMCP Authenticated Server",
+          "description": "MCP server with OIDC authentication",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "vmcp-secret-change-in-production",
+          "redirectUris": ["*"],
+          "webOrigins": ["+"],
+          "notBefore": 0,
+          "bearerOnly": false,
+          "consentRequired": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": true,
+          "publicClient": false,
+          "frontchannelLogout": false,
+          "protocol": "openid-connect",
+          "attributes": {
+            "access.token.lifespan": "300",
+            "backchannel.logout.session.required": "true",
+            "backchannel.logout.revoke.offline.tokens": "false",
+            "oauth2.device.authorization.grant.enabled": "false",
+            "oidc.ciba.grant.enabled": "false"
+          },
+          "authenticationFlowBindingOverrides": {},
+          "fullScopeAllowed": true,
+          "nodeReRegistrationTimeout": -1,
+          "defaultClientScopes": ["openid", "email", "profile", "roles", "web-origins"],
+          "optionalClientScopes": ["offline_access", "mcp-access"]
+        }
+      ],
+      "clientScopes": [
+        {
+          "name": "mcp-access",
+          "description": "Access to MCP servers",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true",
+            "consent.screen.text": "Access MCP servers"
+          },
+          "protocolMappers": []
+        },
+        {
+          "name": "email",
+          "description": "OpenID Connect built-in scope: email",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true",
+            "consent.screen.text": "${emailScopeConsentText}"
+          },
+          "protocolMappers": [
+            {
+              "name": "email",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "consentRequired": false,
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "email",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "email",
+                "jsonType.label": "String"
+              }
+            },
+            {
+              "name": "email verified",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "consentRequired": false,
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "emailVerified",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "email_verified",
+                "jsonType.label": "boolean"
+              }
+            }
+          ]
+        },
+        {
+          "name": "profile",
+          "description": "OpenID Connect built-in scope: profile",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true",
+            "consent.screen.text": "${profileScopeConsentText}"
+          },
+          "protocolMappers": [
+            {
+              "name": "username",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "consentRequired": false,
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "username",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "preferred_username",
+                "jsonType.label": "String"
+              }
+            },
+            {
+              "name": "full name",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-full-name-mapper",
+              "consentRequired": false,
+              "config": {
+                "userinfo.token.claim": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true"
+              }
+            },
+            {
+              "name": "given name",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "consentRequired": false,
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "firstName",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "given_name",
+                "jsonType.label": "String"
+              }
+            },
+            {
+              "name": "family name",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-property-mapper",
+              "consentRequired": false,
+              "config": {
+                "userinfo.token.claim": "true",
+                "user.attribute": "lastName",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "family_name",
+                "jsonType.label": "String"
+              }
+            }
+          ]
+        },
+        {
+          "name": "openid",
+          "description": "OpenID Connect built-in scope: openid",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "false"
+          },
+          "protocolMappers": []
+        },
+        {
+          "name": "offline_access",
+          "description": "OpenID Connect built-in scope: offline_access",
+          "protocol": "openid-connect",
+          "attributes": {
+            "consent.screen.text": "${offlineAccessScopeConsentText}",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": []
+        }
+      ],
+      "users": [
+        {
+          "username": "demo",
+          "enabled": true,
+          "totp": false,
+          "emailVerified": true,
+          "email": "demo@example.com",
+          "firstName": "Demo",
+          "lastName": "User",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "demo",
+              "temporary": false
+            }
+          ],
+          "disableableCredentialTypes": [],
+          "requiredActions": [],
+          "realmRoles": ["default-roles-toolhive-demo"],
+          "notBefore": 0,
+          "groups": ["/developers"]
+        },
+        {
+          "username": "test",
+          "enabled": true,
+          "totp": false,
+          "emailVerified": true,
+          "email": "test@example.com",
+          "firstName": "Test",
+          "lastName": "User",
+          "credentials": [
+            {
+              "type": "password",
+              "value": "test",
+              "temporary": false
+            }
+          ],
+          "disableableCredentialTypes": [],
+          "requiredActions": [],
+          "realmRoles": ["default-roles-toolhive-demo"],
+          "notBefore": 0,
+          "groups": ["/developers", "/admins"]
+        }
+      ],
+      "groups": [
+        {
+          "name": "developers",
+          "path": "/developers",
+          "attributes": {},
+          "realmRoles": [],
+          "clientRoles": {},
+          "subGroups": []
+        },
+        {
+          "name": "admins",
+          "path": "/admins",
+          "attributes": {},
+          "realmRoles": [],
+          "clientRoles": {},
+          "subGroups": []
+        }
+      ],
+      "roles": {
+        "realm": [],
+        "client": {}
+      },
+      "scopeMappings": [],
+      "clientScopeMappings": {},
+      "internationalizationEnabled": false,
+      "supportedLocales": [],
+      "authenticationFlows": [],
+      "authenticatorConfig": [],
+      "requiredActions": [],
+      "browserFlow": "browser",
+      "registrationFlow": "registration",
+      "directGrantFlow": "direct grant",
+      "resetCredentialsFlow": "reset credentials",
+      "clientAuthenticationFlow": "clients",
+      "dockerAuthenticationFlow": "docker auth",
+      "attributes": {},
+      "keycloakVersion": "26.0.7",
+      "userManagedAccessAllowed": false,
+      "smtpServer": {},
+      "eventsEnabled": false,
+      "eventsListeners": ["jboss-logging"],
+      "enabledEventTypes": [],
+      "adminEventsEnabled": false,
+      "adminEventsDetailsEnabled": false,
+      "identityProviders": [],
+      "identityProviderMappers": [],
+      "components": {},
+      "passwordPolicy": "hashIterations(27500)"
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: toolhive-system
+  labels:
+    app: keycloak
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: keycloak
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: toolhive-system
+  labels:
+    app: keycloak
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+        app.kubernetes.io/component: auth
+        app.kubernetes.io/part-of: toolhive
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0.7
+          args:
+            - start-dev
+            - --import-realm
+          env:
+            - name: KC_DB
+              value: "dev-mem"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+            - name: KC_PROXY_HEADERS
+              value: "xforwarded"
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: "admin"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: 9000
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 9000
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: realm-import
+          configMap:
+            name: keycloak-realm-import
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: keycloak-admin-route
+  namespace: toolhive-system
+  labels:
+    app: keycloak
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $AUTH_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /admin
+      backendRefs:
+        - name: keycloak
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: keycloak-realm-route
+  namespace: toolhive-system
+  labels:
+    app: keycloak
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $AUTH_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /realms/toolhive-demo
+      backendRefs:
+        - name: keycloak
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /js/
+      backendRefs:
+        - name: keycloak
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /resources/
+      backendRefs:
+        - name: keycloak
+          port: 8080

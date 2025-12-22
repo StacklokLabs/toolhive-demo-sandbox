@@ -1,3 +1,13 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-vmcp-client-secret
+  namespace: toolhive-system
+type: Opaque
+stringData:
+  client-secret: vmcp-secret-change-in-production
+---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: VirtualMCPServer
 metadata:
@@ -7,7 +17,7 @@ metadata:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: http://$MCP_HOSTNAME/vmcp-authenticated/mcp
     toolhive.stacklok.dev/registry-description: |
-      Authenticated vMCP server with registry export enabled.
+      Authenticated vMCP server with Keycloak OIDC authentication.
 spec:
   groupRef:
     name: demo-tools
@@ -17,13 +27,15 @@ spec:
       type: inline
       resourceUrl: http://localhost:4483/mcp
       inline:
-        issuer: "https://integrator-9462356.okta.com/oauth2/ausxkyvkmwgNYhYsp697"
-        audience: "toolhive"
-        clientId: 0oaxkyvybajRMNzUf697
-        jwksUrl: "https://integrator-9462356.okta.com/oauth2/ausxkyvkmwgNYhYsp697/v1/keys"
+        issuer: "http://keycloak.toolhive-system:8080/realms/toolhive-demo"
+        audience: "mcp-vmcp-authenticated"
+        clientId: mcp-vmcp-authenticated
+        jwksUrl: "http://keycloak.toolhive-system:8080/realms/toolhive-demo/protocol/openid-connect/certs"
+        insecureAllowHTTP: true
+        jwksAllowPrivateIP: true
         clientSecretRef:
-          name: okta-client-secret
-          key: token
+          name: keycloak-vmcp-client-secret
+          key: client-secret
   outgoingAuth:
     source: inline
   aggregation:
