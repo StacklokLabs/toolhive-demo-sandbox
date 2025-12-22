@@ -41,11 +41,13 @@ The bootstrap script is idempotent and can be re-run to fix any issues or reappl
 
 The demo uses Keycloak for OpenID Connect authentication:
 
-- **Admin Console**: https://auth-<IP>.traefik.me/admin
+- **Admin Console**: `https://auth-<IP>.traefik.me/admin`
+
   - Username: `admin`
   - Password: `admin`
 
 - **Demo Users**:
+
   - Username: `demo` / Password: `demo` (developers group)
   - Username: `test` / Password: `test` (developers + admins groups)
 
@@ -112,6 +114,7 @@ Installing vMCP demo servers... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (you'll have to accept the self-signed certificate)
  - Keycloak Admin Console at https://auth-172-19-0-3.traefik.me/admin (admin/admin)
+   Demo Users: demo/demo (developers) or test/test (developers+admins)
  - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry
    (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry --allow-private-ip' to configure ToolHive to use it)
  - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
