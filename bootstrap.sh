@@ -17,11 +17,12 @@ OPENTELEMETRY_OPERATOR_VERSION="v0.141.0"
 TEMPO_CHART_VERSION="1.24.1"
 PROMETHEUS_CHART_VERSION="27.52.0"
 GRAFANA_CHART_VERSION="10.3.2"
+KEYCLOAK_VERSION="26.4.7"
+
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.86"
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.16"
 REGISTRY_API_VERSION="v0.4.5"
 MCP_OPTIMIZER_CHART_VERSION="0.2.1"
-KEYCLOAK_VERSION="26.4.7"
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
@@ -142,7 +143,7 @@ run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply 
 echo " ✓"
 
 echo -n "Installing Keycloak..."
-run_quiet sh -c "envsubst < demo-manifests/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
+run_quiet sh -c "envsubst < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet kubectl wait --for=condition=available --timeout=300s deployment/keycloak --namespace toolhive-system || die "Keycloak failed to become ready"
 echo " ✓"
 
