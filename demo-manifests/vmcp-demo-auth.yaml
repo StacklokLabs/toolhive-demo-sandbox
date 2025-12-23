@@ -25,14 +25,15 @@ spec:
     type: oidc
     oidcConfig:
       type: inline
-      resourceUrl: http://localhost:4483/mcp
+      resourceUrl: http://$MCP_HOSTNAME/vmcp-authenticated/mcp
       inline:
-        issuer: "http://keycloak.toolhive-system:8080/realms/toolhive-demo"
+        issuer: "http://$AUTH_HOSTNAME/realms/toolhive-demo"
         audience: "mcp-vmcp-authenticated"
         clientId: mcp-vmcp-authenticated
-        jwksUrl: "http://keycloak.toolhive-system:8080/realms/toolhive-demo/protocol/openid-connect/certs"
+        jwksUrl: "http://$AUTH_HOSTNAME/realms/toolhive-demo/protocol/openid-connect/certs"
         insecureAllowHTTP: true
         jwksAllowPrivateIP: true
+        protectedResourceAllowPrivateIP: true
         clientSecretRef:
           name: keycloak-vmcp-client-secret
           key: client-secret
@@ -46,6 +47,21 @@ spec:
   telemetry:
     prometheus:
       enabled: true
+  podTemplateSpec:
+    spec:
+      volumes:
+        - name: keycloak-ca-cert
+          secret:
+            secretName: traefik-me-tls
+            items:
+              - key: ca.crt
+                path: ca.crt
+      containers:
+        - name: vmcp
+          volumeMounts:
+            - name: keycloak-ca-cert
+              mountPath: /etc/ssl/certs/keycloak-ca
+              readOnly: true
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
