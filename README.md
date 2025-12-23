@@ -86,7 +86,6 @@ None at this time. Please open issues if you encounter any problems.
 - [ ] Deploy registry server using the ToolHive Operator instead of manually
 - [x] Add an authenticated version of the vMCP server using Keycloak
 - [ ] Persona-specific vMCP server demos
-- [ ] Investigate using Kustomize instead of envsubst for manifest templating
 
 ## Example
 
