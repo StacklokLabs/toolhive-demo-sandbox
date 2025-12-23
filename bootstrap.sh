@@ -156,7 +156,7 @@ run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kube
 echo " ✓"
 
 echo -n "Installing Keycloak..."
-run_quiet sh -c "envsubst < demo-manifests/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
+run_quiet sh -c "envsubst < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet kubectl wait --for=condition=available --timeout=300s deployment/keycloak --namespace toolhive-system || die "Keycloak failed to become ready"
 echo " ✓"
 
