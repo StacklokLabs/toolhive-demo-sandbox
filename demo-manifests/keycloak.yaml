@@ -96,7 +96,7 @@ data:
             "post.logout.redirect.uris": "https://$UI_HOSTNAME/signin##http://localhost:3000/signin",
             "backchannel.logout.session.required": "true",
             "backchannel.logout.revoke.offline.tokens": "false",
-            "oauth2.device.authorization.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "true",
             "oidc.ciba.grant.enabled": "false"
           },
           "authenticationFlowBindingOverrides": {},
@@ -128,7 +128,7 @@ data:
             "access.token.lifespan": "300",
             "backchannel.logout.session.required": "true",
             "backchannel.logout.revoke.offline.tokens": "false",
-            "oauth2.device.authorization.grant.enabled": "false",
+            "oauth2.device.authorization.grant.enabled": "true",
             "oidc.ciba.grant.enabled": "false"
           },
           "authenticationFlowBindingOverrides": {},
@@ -483,6 +483,9 @@ spec:
     - name: traefik-gateway
       namespace: traefik
       sectionName: websecure
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: web
   hostnames:
     - $AUTH_HOSTNAME
   rules:
@@ -508,6 +511,9 @@ spec:
     - name: traefik-gateway
       namespace: traefik
       sectionName: websecure
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: web
   hostnames:
     - $AUTH_HOSTNAME
   rules:
