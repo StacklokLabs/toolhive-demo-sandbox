@@ -1,6 +1,53 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":gitSignOff",
+    ":semanticCommitsDisabled"
+  ],
+  "labels": ["dependencies"],
+  "schedule": ["* 0-7 * * 1"],
+  "timezone": "America/New_York",
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": "at any time"
+  },
+  "kubernetes": {
+    "managerFilePatterns": [
+      "/^kind-config\\.yaml$/",
+      "/^demo-manifests/.+\\.yaml$/"
+    ]
+  },
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "/^ghcr.io/stacklok/",
+        "/^ghcr.io/stackloklabs/",
+        "/^stacklok//"
+      ],
+      "schedule": ["at any time"],
+      "groupName": "ToolHive dependencies"
+    },
+    {
+      "matchManagers": ["custom.regex", "kubernetes"],
+      "matchPackageNames": [
+        "!/^ghcr.io/stacklok/",
+        "!/^ghcr.io/stackloklabs/",
+        "!/^stacklok//"
+      ],
+      "groupName": "demo infrastructure dependencies"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^bootstrap\\.sh$/"],
+      "matchStrings": [
+        "[A-Z_]+=\"(?<currentValue>[^\"]+)\"\\s*#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)(?:\\s+depName=(?<depName>[^\\s]+))?(?:\\s+registryUrl=(?<registryUrl>[^\\s]+))?(?:\\s+versioning=(?<versioning>[^\\s]+))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+))?"
+      ],
+      "datasourceTemplate": "{{{datasource}}}",
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
   ]
 }
