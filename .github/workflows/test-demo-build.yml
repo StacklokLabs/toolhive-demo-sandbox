@@ -44,3 +44,8 @@ jobs:
         env:
           # Enable debug mode for better CI logging
           DEBUG: "1"
+
+      - name: Run validation script
+        run: |
+          chmod +x validate.sh
+          ./validate.sh
