@@ -22,6 +22,12 @@
   "packageRules": [
     {
       "matchPackageNames": [
+        "/^ghcr.io/stacklok/dockyard/"
+      ],
+      "groupName": "demo infrastructure dependencies"
+    },
+    {
+      "matchPackageNames": [
         "/^ghcr.io/stacklok/",
         "!/^ghcr.io/stacklok/dockyard/",
         "/^ghcr.io/stackloklabs/",
@@ -33,7 +39,6 @@
     {
       "matchManagers": ["custom.regex", "kubernetes"],
       "matchPackageNames": [
-        "/^ghcr.io/stacklok/dockyard/",
         "!/^ghcr.io/stacklok/",
         "!/^ghcr.io/stackloklabs/",
         "!/^stacklok//"
