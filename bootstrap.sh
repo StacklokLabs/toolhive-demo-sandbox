@@ -8,19 +8,18 @@ set -a  # automatically export all variables for subshells
 # - kind
 # - kubectl
 # - helm
-# - ToolHive CLI (thv)
 
 # Version pins to ensure consistent demo environment
-TRAEFIK_CHART_VERSION="37.4.0"
-CERT_MANAGER_CHART_VERSION="v1.19.2"
-OPENTELEMETRY_OPERATOR_VERSION="v0.141.0"
-TEMPO_CHART_VERSION="1.24.1"
-PROMETHEUS_CHART_VERSION="27.52.0"
-GRAFANA_CHART_VERSION="10.3.2"
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.86"
-TOOLHIVE_OPERATOR_CHART_VERSION="0.5.16"
-REGISTRY_API_VERSION="v0.4.5"
-MCP_OPTIMIZER_CHART_VERSION="0.2.1"
+TRAEFIK_CHART_VERSION="37.4.0" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
+CERT_MANAGER_CHART_VERSION="v1.19.2" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
+OPENTELEMETRY_OPERATOR_VERSION="v0.141.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
+TEMPO_CHART_VERSION="1.24.1" # renovate: datasource=helm depName=tempo registryUrl=https://grafana.github.io/helm-charts
+PROMETHEUS_CHART_VERSION="27.52.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
+GRAFANA_CHART_VERSION="10.3.2" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.96" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
+TOOLHIVE_OPERATOR_CHART_VERSION="0.5.24" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
+REGISTRY_API_VERSION="v0.4.8" # renovate: datasource=github-releases depName=stacklok/toolhive extractVersion=^v(?<version>.*)$
+MCP_OPTIMIZER_CHART_VERSION="0.2.2" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
@@ -30,7 +29,7 @@ echo "Running preflight checks..."
 # Check for required binaries
 echo -n "  Checking required binaries..."
 MISSING_BINARIES=""
-for binary in kind cloud-provider-kind kubectl helm thv; do
+for binary in kind cloud-provider-kind kubectl helm; do
     if ! command -v "$binary" > /dev/null 2>&1; then
         MISSING_BINARIES="$MISSING_BINARIES $binary"
     fi

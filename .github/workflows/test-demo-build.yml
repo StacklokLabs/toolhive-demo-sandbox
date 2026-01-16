@@ -1,0 +1,46 @@
+name: Demo Environment Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.1
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1.13.0
+        with:
+          config: kind-config.yaml
+          cluster_name: toolhive-demo-in-a-box
+          cloud_provider: true
+
+      - name: Verify cluster is running
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Install ToolHive CLI
+        uses: StacklokLabs/toolhive-actions/install@v0
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext-base
+
+      - name: Run bootstrap script
+        run: |
+          chmod +x bootstrap.sh
+          ./bootstrap.sh
+        env:
+          # Enable debug mode for better CI logging
+          DEBUG: "1"

@@ -9,28 +9,25 @@ metadata:
     toolhive.stacklok.dev/registry-description: |
       Simple vMCP server with registry export enabled.
 spec:
-  groupRef:
-    name: demo-tools
+  config:
+    groupRef: demo-tools
+    telemetry:
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: vmcp-demo-server
+      serviceVersion: "1.0.0"
+      metricsEnabled: true
+      tracingEnabled: true
+      samplingRate: "1.0"
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
   incomingAuth:
     type: anonymous
   outgoingAuth:
     source: inline
-  aggregation:
-    conflictResolution: prefix
-    conflictResolutionConfig:
-      prefixFormat: "{workload}_"
   serviceType: ClusterIP
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: vmcp-demo-server
-      metrics:
-        enabled: true
-      tracing:
-        enabled: true
-        samplingRate: "1.0"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
