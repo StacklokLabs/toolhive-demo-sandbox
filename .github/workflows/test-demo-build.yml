@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Helm
-        uses: azure/setup-helm@v4.3.1
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
 
       - name: Create Kind cluster
-        uses: helm/kind-action@v1.13.0
+        uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
         with:
           config: kind-config.yaml
           cluster_name: toolhive-demo-in-a-box
@@ -30,7 +30,7 @@ jobs:
           kubectl get nodes
 
       - name: Install ToolHive CLI
-        uses: StacklokLabs/toolhive-actions/install@v0
+        uses: StacklokLabs/toolhive-actions/install@6a095f99aa2fd6cd92cf0bb94bdf509b99820c06 # v0
 
       - name: Install envsubst
         run: |
