@@ -186,6 +186,63 @@ run_quiet helm upgrade --install mcp-optimizer oci://ghcr.io/stackloklabs/mcp-op
 run_quiet sh -c "envsubst < demo-manifests/mcp-optimizer-httproute.yaml | kubectl apply -f -" || die "Failed to apply MCP Optimizer HTTPRoute"
 echo " ✓"
 
+echo -n "Waiting for all pods to be ready..."
+run_quiet kubectl wait --for=condition=ready --timeout=300s pod --all -n toolhive-system || die "Pods failed to become ready"
+echo " ✓"
+
+# Output endpoint information to JSON file for validation
+echo -n "Writing endpoint information to demo-endpoints.json..."
+cat > demo-endpoints.json <<EOF
+{
+  "traefik_ip": "$TRAEFIK_IP",
+  "base_hostname": "$TRAEFIK_HOSTNAME_BASE",
+  "endpoints": [
+    {
+      "name": "Cloud UI",
+      "url": "https://$UI_HOSTNAME",
+      "type": "https",
+      "expect_cert_error": true,
+      "healthcheck_path": "/"
+    },
+    {
+      "name": "Registry Server",
+      "url": "http://$REGISTRY_HOSTNAME",
+      "type": "registry",
+      "healthcheck_path": "/health",
+      "registry_api_path": "/registry/v0.1/servers"
+    },
+    {
+      "name": "MKP MCP Server",
+      "url": "http://$MCP_HOSTNAME/mkp/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/mkp/health"
+    },
+    {
+      "name": "vMCP Demo Server",
+      "url": "http://$MCP_HOSTNAME/vmcp-demo/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-demo/health"
+    },
+    {
+      "name": "MCP Optimizer",
+      "url": "http://$MCP_HOSTNAME/mcp-optimizer/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/mcp-optimizer/health"
+    },
+    {
+      "name": "Grafana",
+      "url": "http://$GRAFANA_HOSTNAME",
+      "type": "http",
+      "healthcheck_path": "/api/health"
+    }
+  ]
+}
+EOF
+echo " ✓"
+
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"

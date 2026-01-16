@@ -90,6 +90,8 @@ Configuring Grafana HTTPRoute... ✓
 Installing MKP MCP server... ✓
 Installing vMCP demo servers... ✓
 Installing MCP Optimizer... ✓
+Waiting for all pods to be ready... ✓
+Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (you'll have to accept the self-signed certificate)
  - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry
