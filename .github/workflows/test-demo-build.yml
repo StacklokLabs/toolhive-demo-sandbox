@@ -1,4 +1,4 @@
-name: Test Demo Environment Build
+name: Demo Environment Build
 
 on:
   push:
