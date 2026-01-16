@@ -22,7 +22,14 @@
   "packageRules": [
     {
       "matchPackageNames": [
+        "/^ghcr.io/stacklok/dockyard/"
+      ],
+      "groupName": "demo infrastructure dependencies"
+    },
+    {
+      "matchPackageNames": [
         "/^ghcr.io/stacklok/",
+        "!/^ghcr.io/stacklok/dockyard/",
         "/^ghcr.io/stackloklabs/",
         "/^stacklok//"
       ],
