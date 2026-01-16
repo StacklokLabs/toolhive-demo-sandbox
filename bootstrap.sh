@@ -18,7 +18,7 @@ PROMETHEUS_CHART_VERSION="27.52.0" # renovate: datasource=helm depName=prometheu
 GRAFANA_CHART_VERSION="10.3.2" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.96" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.24" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
-REGISTRY_API_VERSION="v0.4.8" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
+REGISTRY_API_VERSION="v0.4.9" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
 CLOUD_UI_VERSION="v0.0.6" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 MCP_OPTIMIZER_CHART_VERSION="0.2.2" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 
