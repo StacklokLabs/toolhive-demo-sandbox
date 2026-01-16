@@ -23,6 +23,7 @@
     {
       "matchPackageNames": [
         "/^ghcr.io/stacklok/",
+        "!/^ghcr.io/stacklok/dockyard/",
         "/^ghcr.io/stackloklabs/",
         "/^stacklok//"
       ],
@@ -32,6 +33,7 @@
     {
       "matchManagers": ["custom.regex", "kubernetes"],
       "matchPackageNames": [
+        "/^ghcr.io/stacklok/dockyard/",
         "!/^ghcr.io/stacklok/",
         "!/^ghcr.io/stackloklabs/",
         "!/^stacklok//"
