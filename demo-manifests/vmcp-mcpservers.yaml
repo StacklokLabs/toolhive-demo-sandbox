@@ -44,7 +44,7 @@ metadata:
 spec:
   image: ghcr.io/stackloklabs/ocireg-mcp/server:0.1.0
   groupRef: demo-tools
-  transport: sse
+  transport: streamable-http
   mcpPort: 8080
   proxyPort: 8080
 ---
