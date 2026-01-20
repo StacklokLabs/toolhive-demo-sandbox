@@ -16,7 +16,7 @@ OPENTELEMETRY_OPERATOR_VERSION="v0.141.0" # renovate: datasource=github-releases
 TEMPO_CHART_VERSION="1.24.1" # renovate: datasource=helm depName=tempo registryUrl=https://grafana.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="27.52.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="10.3.2" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.97" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.98" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.25" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_API_VERSION="v0.4.9" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
 CLOUD_UI_VERSION="v0.1.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
