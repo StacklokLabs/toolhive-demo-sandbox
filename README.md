@@ -19,9 +19,12 @@ So far, it includes:
 
 ## Prerequisites
 
-- macOS or Linux system with Docker (Podman might work too, but untested)
+- macOS, Linux, or Windows (with WSL2, see footnotes[^1][^2][^3]) with Docker (Podman might work too, but untested)
 - kind, kubectl, and helm
 - [cloud-provider-kind](https://kubernetes-sigs.github.io/cloud-provider-kind/#/user/install/install_go)
+
+> [!NOTE]
+> Windows support is experimental and may require additional configuration. See footnotes[^1][^2][^3] for details.
 
 ## Recommended
 
@@ -101,3 +104,9 @@ Bootstrap complete! Access your demo services at the following URLs:
  - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
  - Grafana at http://grafana-172-19-0-3.traefik.me
 ```
+
+[^1]: On Windows, the bootstrap script must be run from a WSL2 terminal with Docker Desktop configured to use the WSL2 backend.
+
+[^2]: kind requires at least version 2.5.1 of WSL2 (update using `wsl --update` if needed).
+
+[^3]: The IP assigned by cloud-provider-kind will not be reachable from Windows host applications. For example, to access the Cloud UI, you will need to use a browser inside WSL2 (e.g., Firefox or Chromium installed in WSL2) or set up port forwarding from WSL2 to Windows.
