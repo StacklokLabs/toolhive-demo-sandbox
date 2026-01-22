@@ -28,7 +28,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/stackloklabs/osv-mcp/server:0.0.7
+  image: ghcr.io/stackloklabs/osv-mcp/server:0.1.0
   transport: streamable-http
   proxyPort: 8080
   mcpPort: 8080
