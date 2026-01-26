@@ -15,7 +15,7 @@ CERT_MANAGER_CHART_VERSION="v1.19.2" # renovate: datasource=docker depName=quay.
 OPENTELEMETRY_OPERATOR_VERSION="v0.143.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
 TEMPO_CHART_VERSION="1.24.3" # renovate: datasource=helm depName=tempo registryUrl=https://grafana.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="27.52.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
-GRAFANA_CHART_VERSION="10.5.8" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
+GRAFANA_CHART_VERSION="10.5.12" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.99" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.25" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_API_VERSION="v0.4.9" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
