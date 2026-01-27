@@ -20,7 +20,7 @@ TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.104" # renovate: datasource=docker dep
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.28" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_API_VERSION="v0.4.9" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
 CLOUD_UI_VERSION="v0.1.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
-MCP_OPTIMIZER_CHART_VERSION="0.2.4" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
+MCP_OPTIMIZER_CHART_VERSION="0.2.3" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
