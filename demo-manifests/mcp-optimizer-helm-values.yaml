@@ -1,5 +1,3 @@
-# Note: groupFiltering.allowedGroups does not work due to
-# https://github.com/StacklokLabs/mcp-optimizer/issues/199
 groupFiltering:
   allowedGroups:
     - "demo-tools"

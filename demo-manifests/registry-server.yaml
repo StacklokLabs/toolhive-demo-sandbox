@@ -9,8 +9,10 @@ metadata:
     app.kubernetes.io/part-of: toolhive
 data:
   config.yaml: |
-    registryName: my-registry
+    registryName: demo-registry
     registries:
+
+      # Toolhive registry
       - name: toolhive
         format: toolhive
         git:
@@ -28,9 +30,25 @@ data:
               - io.github.stacklok/mcp-spec
               - io.github.stacklok/time
               - io.github.stacklok/toolhive-doc-mcp-remote
+
+      # Official MCP registry
+      - name: official
+        format: upstream
+        api:
+          endpoint: https://registry.modelcontextprotocol.io
+        syncPolicy:
+          interval: "1h"
+        filter:
+          names:
+            include:
+              - com.postman/postman-mcp-server
+              - com.paypal.mcp/mcp
+
+      # Auto-discover MCP servers in the current Kubernetes cluster
       - name: k8s
         format: toolhive
         kubernetes: {}
+
     auth:
       mode: anonymous
 ---
@@ -65,6 +83,9 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          env:
+            - name: THV_REGISTRY_ENABLE_AGGREGATED_ENDPOINTS
+              value: "true"
           volumeMounts:
             - name: config
               mountPath: /etc/registry
