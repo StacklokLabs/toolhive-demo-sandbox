@@ -4,7 +4,7 @@
  * IMPORTANT: This is NOT for production use. It:
  * - Auto logs-in a test user and auto-consents
  * - Issues refresh tokens unconditionally (issueRefreshToken = true)
- * - Uses very short AccessToken TTL (15s) to exercise refresh flow
+ * - Uses 1-hour AccessToken TTL for demo convenience
  * - Uses in-memory adapter and generated signing keys
  */
 import { config } from 'dotenv';
@@ -120,8 +120,8 @@ const configuration = {
   // Some clients (like Better Auth) may expect claims in the ID token
   conformIdTokenClaims: false,
   ttl: {
-    // Short-lived access tokens to force refresh during dev
-    AccessToken: 15, // seconds
+    // Access tokens valid for 1 hour
+    AccessToken: 3600, // seconds
     RefreshToken: 86400 * 30, // 30 days
   },
   // Dev-only: always issue refresh tokens to make the flow reliable locally
