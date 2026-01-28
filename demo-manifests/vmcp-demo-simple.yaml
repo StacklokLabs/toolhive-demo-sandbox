@@ -23,6 +23,17 @@ spec:
       conflictResolution: prefix
       conflictResolutionConfig:
         prefixFormat: "{workload}_"
+      tools:
+        - workload: osv
+          filter:
+            # excludes the query_vulnerabilities_batch tool
+            - "get_vulnerability"
+            - "query_vulnerability"
+        - workload: fetch
+          overrides:
+            fetch:
+              name: fetch_internal_docs
+              description: "Fetch internal documentation URLs from https://docs.stacklok.com."
   incomingAuth:
     type: anonymous
   outgoingAuth:
