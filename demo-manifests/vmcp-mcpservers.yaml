@@ -14,7 +14,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/stackloklabs/gofetch/server:1.0.2
+  image: ghcr.io/stackloklabs/gofetch/server:1.0.3
   transport: streamable-http
   proxyPort: 8080
   mcpPort: 8080
