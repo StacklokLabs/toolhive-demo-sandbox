@@ -16,11 +16,11 @@ OPENTELEMETRY_OPERATOR_VERSION="v0.143.0" # renovate: datasource=github-releases
 TEMPO_CHART_VERSION="1.24.3" # renovate: datasource=helm depName=tempo registryUrl=https://grafana.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="28.6.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="10.5.12" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.104" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.0.106" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.5.28" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
-REGISTRY_API_VERSION="v0.4.9" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
+REGISTRY_API_VERSION="v0.5.0" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
 CLOUD_UI_VERSION="v0.1.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
-MCP_OPTIMIZER_CHART_VERSION="0.2.3" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
+MCP_OPTIMIZER_CHART_VERSION="0.2.5" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
