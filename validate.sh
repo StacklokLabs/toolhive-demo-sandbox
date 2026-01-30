@@ -32,48 +32,83 @@ log_info() {
     echo "  $1"
 }
 
+# Helper: Retry a command with fixed delay
+# Args: max_attempts, delay_seconds, command...
+retry() {
+    local max_attempts="$1" delay="$2"
+    shift 2
+    local attempt=1
+
+    while [[ $attempt -le $max_attempts ]]; do
+        if "$@"; then
+            return 0
+        fi
+        if [[ $attempt -lt $max_attempts ]]; then
+            log_info "Attempt $attempt/$max_attempts failed, retrying in ${delay}s..."
+            sleep "$delay"
+        fi
+        attempt=$((attempt + 1))
+    done
+    return 1
+}
+
 # Helper: Build URL by joining base and path, handling trailing/leading slashes
 build_url() {
     echo "${1%/}/${2#/}"
 }
 
-# Helper: Test HTTP/HTTPS endpoint and log result
-# Args: url, name, allow_insecure (true/false)
-# Uses -L to follow redirects and verify final destination loads
-test_http_endpoint() {
-    local url="$1" name="$2" allow_insecure="${3:-false}"
+# Helper: Test HTTP/HTTPS endpoint (check only, no logging)
+# Args: url, allow_insecure (true/false)
+# Sets global LAST_HTTP_CODE for caller to use
+_check_http_once() {
+    local url="$1" allow_insecure="${2:-false}"
     local curl_opts="-s -o /dev/null -w %{http_code} --max-time 10 -L"
 
     [[ "$allow_insecure" == "true" ]] && curl_opts="$curl_opts -k"
 
-    local http_code
-    http_code=$(curl $curl_opts "$url" 2>/dev/null || echo "000")
+    LAST_HTTP_CODE=$(curl $curl_opts "$url" 2>/dev/null || echo "000")
+    [[ "$LAST_HTTP_CODE" =~ ^2 ]]
+}
 
-    if [[ "$http_code" =~ ^2 ]]; then
-        log_pass "$name is responding (HTTP $http_code)"
+# Helper: Test HTTP/HTTPS endpoint with retry and log result
+# Args: url, name, allow_insecure (true/false)
+# Uses -L to follow redirects and verify final destination loads
+test_http_endpoint() {
+    local url="$1" name="$2" allow_insecure="${3:-false}"
+
+    if retry 4 10 _check_http_once "$url" "$allow_insecure"; then
+        log_pass "$name is responding (HTTP $LAST_HTTP_CODE)"
         [[ "$allow_insecure" == "true" ]] && log_info "Note: Using self-signed certificate"
         return 0
     else
-        log_fail "$name returned HTTP $http_code"
+        log_fail "$name returned HTTP $LAST_HTTP_CODE"
         return 1
     fi
 }
 
-# Helper: Check health endpoint and log result
+# Helper: Check health endpoint (check only, no logging)
+# Args: url
+# Sets global LAST_HEALTH_STATUS for caller to use
+_check_health_once() {
+    local url="$1"
+    local response
+
+    response=$(curl -s --max-time 10 "$url" 2>/dev/null || echo "")
+    LAST_HEALTH_STATUS=$(echo "$response" | jq -r '.status // empty' 2>/dev/null || echo "")
+    [[ "$LAST_HEALTH_STATUS" =~ ^(healthy|ok)$ ]]
+}
+
+# Helper: Check health endpoint with retry and log result
 # Args: url, name
 # Accepts "healthy" or "ok" as valid statuses
 check_health_endpoint() {
     local url="$1" name="$2"
-    local response status
 
-    response=$(curl -s --max-time 10 "$url" 2>/dev/null || echo "")
-    status=$(echo "$response" | jq -r '.status // empty' 2>/dev/null || echo "")
-
-    if [[ "$status" =~ ^(healthy|ok)$ ]]; then
-        log_pass "$name health check passed (status: $status)"
+    if retry 4 10 _check_health_once "$url"; then
+        log_pass "$name health check passed (status: $LAST_HEALTH_STATUS)"
         return 0
     else
-        log_fail "$name health check failed (expected status=healthy or ok, got: '$status')"
+        log_fail "$name health check failed (expected status=healthy or ok, got: '$LAST_HEALTH_STATUS')"
         return 1
     fi
 }
