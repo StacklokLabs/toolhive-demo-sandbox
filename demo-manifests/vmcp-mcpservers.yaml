@@ -56,7 +56,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/stacklok/dockyard/npx/context7:2.1.0
+  image: ghcr.io/stacklok/dockyard/npx/context7:2.1.1
   groupRef: demo-tools
   transport: stdio
   proxyPort: 8080
