@@ -175,6 +175,7 @@ run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to
 # Wait for vMCP backend MCPServer resources to reach Running phase
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=300s mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
 # run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
 echo " ✓"
 
@@ -226,6 +227,13 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/vmcp-demo/health"
     },
     {
+      "name": "vMCP Composite Tool Demo Server",
+      "url": "http://$MCP_HOSTNAME/vmcp-research/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-research/health"
+    },
+    {
       "name": "MCP Optimizer",
       "url": "http://$MCP_HOSTNAME/mcp-optimizer/mcp",
       "type": "mcp",
@@ -249,5 +257,6 @@ echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
+echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

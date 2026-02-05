@@ -61,3 +61,38 @@ spec:
   transport: stdio
   proxyPort: 8080
   proxyMode: streamable-http
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: research-tools
+  namespace: toolhive-system
+spec:
+  description: Group for vMCP research workflow tools
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: arxiv
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/stacklok/dockyard/uvx/arxiv-mcp-server:0.3.2
+  groupRef: research-tools
+  transport: stdio
+  proxyPort: 8080
+  proxyMode: streamable-http
+  args:
+    - --storage-path
+    - /arxiv-papers
+  podTemplateSpec:
+    spec:
+      volumes:
+        - name: arxiv-papers
+          emptyDir: {}
+      containers:
+        - name: mcp
+          volumeMounts:
+            - name: arxiv-papers
+              mountPath: /arxiv-papers
