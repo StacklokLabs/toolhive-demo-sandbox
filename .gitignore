@@ -1,6 +1,8 @@
 .env
 kubeconfig-toolhive-demo.yaml
 demo-endpoints.json
+local-demos/*
+!local-demos/.gitkeep
 
 .vscode/*
 .DS_Store
