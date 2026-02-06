@@ -19,6 +19,14 @@ spec:
   proxyPort: 8080
   mcpPort: 8080
   groupRef: demo-tools
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: fetch-server
+      metrics:
+        enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -33,6 +41,14 @@ spec:
   proxyPort: 8080
   mcpPort: 8080
   groupRef: demo-tools
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: osv-server
+      metrics:
+        enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -47,6 +63,14 @@ spec:
   transport: streamable-http
   mcpPort: 8080
   proxyPort: 8080
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: oci-registry-server
+      metrics:
+        enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -61,6 +85,14 @@ spec:
   transport: stdio
   proxyPort: 8080
   proxyMode: streamable-http
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: context7-server
+      metrics:
+        enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPGroup
@@ -96,3 +128,11 @@ spec:
           volumeMounts:
             - name: arxiv-papers
               mountPath: /arxiv-papers
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: arxiv-server
+      metrics:
+        enabled: true

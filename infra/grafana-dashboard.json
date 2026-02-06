@@ -663,7 +663,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, rate(toolhive_mcp_request_duration_seconds_bucket[5m])) * 1000",
+          "expr": "histogram_quantile(0.95, rate(toolhive_mcp_request_duration_seconds_bucket[5m]))",
           "legendFormat": "95th percentile - {{server}} - {{mcp_method}} - {{status}}",
           "range": true,
           "refId": "A"
@@ -674,12 +674,13 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, rate(toolhive_mcp_request_duration_seconds_bucket[5m])) * 1000",
+          "expr": "histogram_quantile(0.50, rate(toolhive_mcp_request_duration_seconds_bucket[5m]))",
           "legendFormat": "50th percentile - {{server}} - {{mcp_method}} - {{status}}",
           "range": true,
           "refId": "B"
         }
       ],
+      "description": "NOTE: ToolHive histogram buckets are currently ms-scale despite the metric unit being seconds (see stacklok/toolhive#3680). When that bug is fixed, change the panel unit from ms to s.",
       "title": "MCP Request Duration",
       "type": "timeseries"
     },
@@ -874,12 +875,13 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, rate(http_client_request_duration_seconds_bucket[5m])) * 1000",
+          "expr": "histogram_quantile(0.95, rate(http_client_request_duration_seconds_bucket[5m]))",
           "legendFormat": "95th percentile - {{http_request_method}} {{server_address}}",
           "range": true,
           "refId": "A"
         }
       ],
+      "description": "NOTE: OTel default histogram buckets are ms-scale despite the metric unit being seconds (see stacklok/toolhive#3680). When that bug is fixed, change the panel unit from ms to s.",
       "title": "HTTP Client Request Duration (Outbound)",
       "type": "timeseries"
     },
