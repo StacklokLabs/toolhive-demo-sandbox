@@ -13,9 +13,9 @@ set -a  # automatically export all variables for subshells
 TRAEFIK_CHART_VERSION="39.0.0" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
 CERT_MANAGER_CHART_VERSION="v1.19.3" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
 OPENTELEMETRY_OPERATOR_VERSION="v0.144.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
-TEMPO_CHART_VERSION="1.24.4" # renovate: datasource=helm depName=tempo registryUrl=https://grafana.github.io/helm-charts
+TEMPO_CHART_VERSION="1.25.0" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="28.8.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
-GRAFANA_CHART_VERSION="10.5.15" # renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
+GRAFANA_CHART_VERSION="11.0.1" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.9.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.9.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_API_VERSION="v0.5.3" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
@@ -71,7 +71,7 @@ export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 # Add Helm repos and update
 echo -n "Adding Helm repositories..."
 run_quiet helm repo add traefik https://traefik.github.io/charts || die "Failed to add Traefik repo"
-run_quiet helm repo add grafana https://grafana.github.io/helm-charts || die "Failed to add Grafana repo"
+run_quiet helm repo add grafana-community https://grafana-community.github.io/helm-charts || die "Failed to add Grafana Community repo"
 run_quiet helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || die "Failed to add Prometheus repo"
 echo " ✓"
 
@@ -99,9 +99,9 @@ if ! namespace_exists observability; then
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
 run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
-run_quiet helm upgrade --install tempo grafana/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
+run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
 run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
-run_quiet helm upgrade --install grafana grafana/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
+run_quiet helm upgrade --install grafana grafana-community/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
 run_quiet kubectl apply -f infra/otel-collector.yaml || die "Failed to apply OTel collector config"
 echo " ✓"
 
