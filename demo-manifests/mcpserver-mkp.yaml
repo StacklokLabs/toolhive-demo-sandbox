@@ -26,6 +26,8 @@ spec:
       tracing:
         enabled: true
         samplingRate: "1.0"
+    prometheus:
+      enabled: true
 ---
 apiVersion: v1
 kind: ServiceAccount

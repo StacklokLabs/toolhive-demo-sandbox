@@ -19,6 +19,7 @@ spec:
       metricsEnabled: true
       tracingEnabled: true
       samplingRate: "1.0"
+      enablePrometheusMetricsPath: true
     aggregation:
       conflictResolution: prefix
       conflictResolutionConfig:
