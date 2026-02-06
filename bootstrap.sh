@@ -188,7 +188,7 @@ run_quiet sh -c "envsubst < demo-manifests/mcp-optimizer-httproute.yaml | kubect
 echo " ✓"
 
 echo -n "Waiting for all pods to be ready..."
-run_quiet kubectl wait --for=condition=ready --timeout=300s pod --all -n toolhive-system || die "Pods failed to become ready"
+run_quiet wait_for_pods_ready toolhive-system 300 || die "Pods failed to become ready"
 echo " ✓"
 
 # Output endpoint information to JSON file for validation
