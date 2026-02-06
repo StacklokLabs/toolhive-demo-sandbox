@@ -1,0 +1,89 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-research
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-research/mcp"
+    toolhive.stacklok.dev/registry-description: |
+      A vMCP server demonstrating a research workflow with a composite tool.
+spec:
+  config:
+    groupRef: research-tools
+    telemetry:
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: vmcp-research-server
+      serviceVersion: "1.0.0"
+      metricsEnabled: true
+      tracingEnabled: true
+      samplingRate: "1.0"
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+      tools:
+        - workload: arxiv
+          filter:
+            - "list_papers"
+    compositeTools:
+      - name: research_topic
+        description: Search arXiv for papers and read the top result
+        parameters:
+          type: object
+          properties:
+            query:
+              type: string
+              description: Research topic to search for
+          required:
+            - query
+        steps:
+          # Step 1: Search arXiv for papers matching the query
+          - id: search
+            tool: arxiv_search_papers
+            arguments:
+              query: "{{.params.query}}"
+              max_results: 1
+          # Step 2: Download the paper (required before reading)
+          # Note: fromJson is needed when the MCP server returns JSON as text
+          # rather than structured content. This is common for servers that
+          # don't fully support MCP's structuredContent field.
+          - id: download
+            tool: arxiv_download_paper
+            arguments:
+              paper_id: "{{(index (fromJson .steps.search.output.text).papers 0).id}}"
+            dependsOn: [search]
+          # Step 3: Read the downloaded paper content
+          - id: read
+            tool: arxiv_read_paper
+            arguments:
+              paper_id: "{{(index (fromJson .steps.search.output.text).papers 0).id}}"
+            dependsOn: [download]
+  incomingAuth:
+    type: anonymous
+  serviceType: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-research-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-research
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-research
+          port: 4483

@@ -8,9 +8,10 @@ The goal is a fully functional ToolHive platform running locally to exercise all
 
 So far, it includes:
 
-- A ToolHive Registry Server with a few servers filtered from the main ToolHive registry and with auto-discovery enabled
+- A ToolHive Registry Server with a few servers filtered from the official and ToolHive registries plus K8s discovery
 - The ToolHive Cloud UI connected to the registry server with a mock OIDC provider for authentication
 - A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
+- A vMCP server with a composite tool chaining together multiple arXiv tools
 - The MKP MCP server for managing the cluster, exposed directly
 - An MCP Optimizer server for intelligent tool calling across multiple MCP servers
 - Traefik as the gateway for routing traffic into the cluster
@@ -101,6 +102,7 @@ Bootstrap complete! Access your demo services at the following URLs:
    (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry --allow-private-ip' to configure ToolHive to use it)
  - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
  - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
+ - vMCP composite tool demo server at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
  - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
  - Grafana at http://grafana-172-19-0-3.traefik.me
 ```
