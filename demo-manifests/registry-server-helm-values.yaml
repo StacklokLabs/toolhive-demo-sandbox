@@ -102,3 +102,14 @@ config:
 
   auth:
     mode: anonymous
+
+  telemetry:
+    enabled: true
+    serviceName: toolhive-registry-server
+    endpoint: mcp-collector.observability:4318
+    insecure: true
+    metrics:
+      enabled: true
+    tracing:
+      enabled: true
+      sampling: 1.0
