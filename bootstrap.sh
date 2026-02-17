@@ -16,9 +16,10 @@ OPENTELEMETRY_OPERATOR_VERSION="v0.144.0" # renovate: datasource=github-releases
 TEMPO_CHART_VERSION="1.26.2" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="28.9.1" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="11.1.7" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
+CLOUDNATIVE_PG_CHART_VERSION="0.27.1" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.9.3" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.9.3" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
-REGISTRY_API_VERSION="v0.5.3" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
+REGISTRY_SERVER_CHART_VERSION="0.6.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
 CLOUD_UI_VERSION="v0.1.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 MCP_OPTIMIZER_CHART_VERSION="0.2.5" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 
@@ -73,6 +74,7 @@ echo -n "Adding Helm repositories..."
 run_quiet helm repo add traefik https://traefik.github.io/charts || die "Failed to add Traefik repo"
 run_quiet helm repo add grafana-community https://grafana-community.github.io/helm-charts || die "Failed to add Grafana Community repo"
 run_quiet helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || die "Failed to add Prometheus repo"
+run_quiet helm repo add cnpg https://cloudnative-pg.github.io/charts || die "Failed to add CloudNativePG repo"
 echo " ✓"
 
 echo -n "Updating Helm repositories..."
@@ -98,7 +100,7 @@ if ! namespace_exists observability; then
     run_quiet kubectl create namespace observability || die "Failed to create observability namespace"
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
-run_quiet kubectl wait --for=condition=available --timeout=300s deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
+run_quiet kubectl wait --for=condition=available --timeout=5m deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
 run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
 run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
 run_quiet helm upgrade --install grafana grafana-community/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
@@ -151,8 +153,15 @@ UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
 AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
 
+echo -n "Creating PostgreSQL server for ToolHive Registry Server..."
+run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
+run_quiet kubectl apply -f demo-manifests/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
+run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n toolhive-system --timeout=5m || die "PostgreSQL server for Registry Server failed to become ready"
+echo " ✓"
+
 echo -n "Installing Registry Server..."
-run_quiet sh -c "envsubst < demo-manifests/registry-server.yaml | kubectl apply -f -" || die "Failed to install Registry Server"
+run_quiet helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version "$REGISTRY_SERVER_CHART_VERSION" --namespace toolhive-system --values demo-manifests/registry-server-helm-values.yaml --wait || die "Failed to install Registry Server"
+run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
 echo " ✓"
 
 echo -n "Installing Cloud UI..."
@@ -173,7 +182,7 @@ echo " ✓"
 echo -n "Installing vMCP demo servers..."
 run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to apply vMCP MCP servers"
 # Wait for vMCP backend MCPServer resources to reach Running phase
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=300s mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
 # run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"

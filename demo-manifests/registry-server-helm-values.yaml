@@ -1,0 +1,104 @@
+# Registry Server Helm values for CloudNativePG (CNPG) backend
+
+# Environment variable for pgpass file location
+extraEnv:
+  - name: PGPASSFILE
+    value: /home/appuser/.pgpass
+  - name: THV_REGISTRY_ENABLE_AGGREGATED_ENDPOINTS
+    value: "true"
+
+# Init container to prepare pgpass file with correct permissions
+initContainers:
+  - name: pgpass-init
+    image: cgr.dev/chainguard/busybox:latest
+    command:
+      - sh
+      - -c
+      - |
+        cp /secrets/.pgpass /pgpass/.pgpass
+        chmod 600 /pgpass/.pgpass
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 65535
+    volumeMounts:
+      - name: pgpass-secret
+        mountPath: /secrets
+        readOnly: true
+      - name: pgpass
+        mountPath: /pgpass
+
+# Volumes for pgpass file
+extraVolumes:
+  - name: pgpass-secret
+    secret:
+      secretName: cnpg-pgpass
+  - name: pgpass
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: pgpass
+    mountPath: /home/appuser/.pgpass
+    subPath: .pgpass
+    readOnly: true
+
+# Registry server configuration with CNPG PostgreSQL
+config:
+  registryName: demo-registry
+  registries:
+    # Toolhive registry
+    - name: toolhive
+      format: toolhive
+      git:
+        repository: https://github.com/stacklok/toolhive.git
+        branch: main
+        path: pkg/registry/data/registry.json
+      syncPolicy:
+        interval: "15m"
+      filter:
+        names:
+          include:
+            - io.github.stacklok/notion-remote
+            - io.github.stacklok/stripe-remote
+            - io.github.stacklok/aws-documentation
+            - io.github.stacklok/mcp-spec
+            - io.github.stacklok/time
+            - io.github.stacklok/toolhive-doc-mcp-remote
+
+    # Official MCP registry
+    - name: official
+      format: upstream
+      api:
+        endpoint: https://registry.modelcontextprotocol.io
+      syncPolicy:
+        interval: "1h"
+      filter:
+        names:
+          include:
+            - com.postman/postman-mcp-server
+            - com.paypal.mcp/mcp
+
+    # Auto-discover MCP servers in the current Kubernetes cluster
+    - name: k8s
+      format: toolhive
+      kubernetes: {}
+
+  # CNPG PostgreSQL database configuration
+  # Uses the CNPG read-write service (registry-db-rw)
+  database:
+    host: registry-db-rw
+    port: 5432
+    user: db_app
+    migrationUser: db_migrator
+    database: registry
+    sslMode: disable
+    maxOpenConns: 10
+    maxIdleConns: 5
+    connMaxLifetime: "30m"
+
+  auth:
+    mode: anonymous
