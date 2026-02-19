@@ -99,6 +99,8 @@ kind: MCPServer
 metadata:
   name: grafana
   namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: docker.io/grafana/mcp-grafana:0.9.0
   groupRef: demo-tools
@@ -111,6 +113,14 @@ spec:
   env:
     - name: GRAFANA_URL
       value: http://grafana.observability.svc.cluster.local
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: grafana-server
+      metrics:
+        enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPGroup
