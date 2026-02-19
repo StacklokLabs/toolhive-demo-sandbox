@@ -95,6 +95,24 @@ spec:
         enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: grafana
+  namespace: toolhive-system
+spec:
+  image: docker.io/grafana/mcp-grafana:0.9.0
+  groupRef: demo-tools
+  transport: streamable-http
+  mcpPort: 8000
+  proxyPort: 8080
+  args:
+    - --transport
+    - streamable-http
+  env:
+    - name: GRAFANA_URL
+      value: http://grafana.observability.svc.cluster.local
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPGroup
 metadata:
   name: research-tools
