@@ -81,6 +81,7 @@ config:
           include:
             - com.postman/postman-mcp-server
             - com.paypal.mcp/mcp
+            - com.gitlab/mcp
 
     # Auto-discover MCP servers in the current Kubernetes cluster
     - name: k8s
