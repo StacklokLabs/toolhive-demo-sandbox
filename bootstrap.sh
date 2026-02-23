@@ -10,12 +10,12 @@ set -a  # automatically export all variables for subshells
 # - helm
 
 # Version pins to ensure consistent demo environment
-TRAEFIK_CHART_VERSION="39.0.1" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
+TRAEFIK_CHART_VERSION="39.0.2" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
 CERT_MANAGER_CHART_VERSION="v1.19.3" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
-OPENTELEMETRY_OPERATOR_VERSION="v0.144.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
-TEMPO_CHART_VERSION="1.26.2" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
+OPENTELEMETRY_OPERATOR_VERSION="v0.145.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
+TEMPO_CHART_VERSION="1.26.4" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="28.9.1" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
-GRAFANA_CHART_VERSION="11.1.7" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
+GRAFANA_CHART_VERSION="11.1.8" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.27.1" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.10.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.10.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
