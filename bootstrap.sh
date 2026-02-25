@@ -20,7 +20,7 @@ CLOUDNATIVE_PG_CHART_VERSION="0.27.1" # renovate: datasource=helm depName=cloudn
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.10.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.10.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_SERVER_CHART_VERSION="0.6.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
-CLOUD_UI_VERSION="v0.3.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
+CLOUD_UI_VERSION="v0.3.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 MCP_OPTIMIZER_CHART_VERSION="0.2.5" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 
 # Source common helper functions
