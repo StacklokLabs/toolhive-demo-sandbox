@@ -50,13 +50,13 @@ extraVolumeMounts:
 config:
   registryName: demo-registry
   registries:
-    # Toolhive registry
+    # ToolHive registry
     - name: toolhive
       format: toolhive
       git:
-        repository: https://github.com/stacklok/toolhive-catalog.git
-        branch: main
-        path: pkg/catalog/toolhive/data/registry.json
+        repository: https://github.com/stacklok/toolhive.git
+        tag: v0.10.0
+        path: pkg/registry/data/registry.json
       syncPolicy:
         interval: "15m"
       filter:
