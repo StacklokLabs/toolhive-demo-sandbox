@@ -13,7 +13,7 @@ set -a  # automatically export all variables for subshells
 TRAEFIK_CHART_VERSION="39.0.4" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
 CERT_MANAGER_CHART_VERSION="v1.19.4" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
 OPENTELEMETRY_OPERATOR_VERSION="v0.145.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
-TEMPO_CHART_VERSION="1.26.7" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
+TEMPO_CHART_VERSION="2.0.0" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="28.13.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="11.3.0" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.27.1" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
