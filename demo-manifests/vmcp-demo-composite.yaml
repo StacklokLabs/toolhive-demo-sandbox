@@ -1,3 +1,47 @@
+# Composite tool definition and vMCP server demonstrating a research workflow using arXiv tools.
+# Using the VirtualMCPCompositeToolDefinition resource to demonstrate the reusability of composite
+# tools across different MCP servers. The composite tool is defined once and then referenced by
+# its name in the vMCP server configuration.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPCompositeToolDefinition
+metadata:
+  name: composite-tool-research-topic
+  namespace: toolhive-system
+spec:
+  name: research_topic
+  description: Search arXiv for papers and read the top result
+  parameters:
+    type: object
+    properties:
+      query:
+        type: string
+        description: Research topic to search for
+    required:
+      - query
+  steps:
+    # Step 1: Search arXiv for papers matching the query
+    - id: search
+      tool: arxiv_search_papers
+      arguments:
+        query: "{{.params.query}}"
+        max_results: 1
+    # Step 2: Download the paper (required before reading)
+    # Note: fromJson is needed when the MCP server returns JSON as text
+    # rather than structured content. This is common for servers that
+    # don't fully support MCP's structuredContent field.
+    - id: download
+      tool: arxiv_download_paper
+      arguments:
+        paper_id: "{{(index (fromJson .steps.search.output.text).papers 0).id}}"
+      dependsOn: [search]
+    # Step 3: Read the downloaded paper content
+    - id: read
+      tool: arxiv_read_paper
+      arguments:
+        paper_id: "{{(index (fromJson .steps.search.output.text).papers 0).id}}"
+      dependsOn: [download]
+
+---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: VirtualMCPServer
 metadata:
@@ -29,39 +73,8 @@ spec:
         - workload: arxiv
           filter:
             - "list_papers"
-    compositeTools:
-      - name: research_topic
-        description: Search arXiv for papers and read the top result
-        parameters:
-          type: object
-          properties:
-            query:
-              type: string
-              description: Research topic to search for
-          required:
-            - query
-        steps:
-          # Step 1: Search arXiv for papers matching the query
-          - id: search
-            tool: arxiv_search_papers
-            arguments:
-              query: "{{.params.query}}"
-              max_results: 1
-          # Step 2: Download the paper (required before reading)
-          # Note: fromJson is needed when the MCP server returns JSON as text
-          # rather than structured content. This is common for servers that
-          # don't fully support MCP's structuredContent field.
-          - id: download
-            tool: arxiv_download_paper
-            arguments:
-              paper_id: "{{(index (fromJson .steps.search.output.text).papers 0).id}}"
-            dependsOn: [search]
-          # Step 3: Read the downloaded paper content
-          - id: read
-            tool: arxiv_read_paper
-            arguments:
-              paper_id: "{{(index (fromJson .steps.search.output.text).papers 0).id}}"
-            dependsOn: [download]
+    compositeToolRefs:
+      - name: composite-tool-research-topic
   incomingAuth:
     type: anonymous
   serviceType: ClusterIP
