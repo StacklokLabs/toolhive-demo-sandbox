@@ -7,6 +7,7 @@ metadata:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: http://$MCP_HOSTNAME/mkp/mcp
     toolhive.stacklok.dev/registry-description: Manage this Kubernetes cluster.
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"apply_resource","description":"Apply (create or update) a Kubernetes resource"},{"name":"delete_resource","description":"Delete a Kubernetes resource"},{"name":"get_resource","description":"Get a Kubernetes resource or its subresource"},{"name":"list_resources","description":"List Kubernetes resources"},{"name":"post_resource","description":"Post to a Kubernetes resource or its subresource"}]'
 spec:
   image: ghcr.io/stackloklabs/mkp/server:0.2.4
   transport: streamable-http
