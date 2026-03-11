@@ -52,11 +52,11 @@ config:
   registries:
     # ToolHive registry
     - name: toolhive
-      format: toolhive
+      format: upstream
       git:
-        repository: https://github.com/stacklok/toolhive.git
-        tag: v0.10.0
-        path: pkg/registry/data/registry.json
+        repository: https://github.com/stacklok/toolhive-catalog.git
+        branch: main
+        path: pkg/catalog/toolhive/data/official-registry.json
       syncPolicy:
         interval: "15m"
       filter:
