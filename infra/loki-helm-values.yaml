@@ -59,3 +59,11 @@ bloomCompactor:
   replicas: 0
 bloomGateway:
   replicas: 0
+
+# Reduce memcached cache sizes from chart defaults (9830Mi/1229Mi) to
+# something appropriate for a demo environment.
+chunksCache:
+  allocatedMemory: 256
+
+resultsCache:
+  allocatedMemory: 128
