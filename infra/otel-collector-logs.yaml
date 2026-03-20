@@ -1,0 +1,70 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: mcp-logs
+  namespace: observability
+spec:
+  mode: daemonset
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.146.0
+  volumeMounts:
+    - name: varlogpods
+      mountPath: /var/log/pods
+      readOnly: true
+  volumes:
+    - name: varlogpods
+      hostPath:
+        path: /var/log/pods
+  config:
+    receivers:
+      filelog:
+        include:
+          - /var/log/pods/toolhive-system_*/toolhive/*.log
+          - /var/log/pods/toolhive-system_*/vmcp/*.log
+        start_at: beginning
+        include_file_path: true
+        operators:
+          # Parse CRI log format: extract the JSON log field into attributes.log
+          - type: regex_parser
+            regex: '^(?P<time>\S+) (?P<stream>stdout|stderr) \S+ (?P<log>.*)$'
+            on_error: drop
+
+    processors:
+      # Parse the JSON log line from attributes.log into the body Map.
+      # Using an OTTL transform here instead of the stanza json_parser because
+      # json_parser with parse_to:body fails silently on complex nested maps in this
+      # version of stanza (produces "consume entries: expected { character for map value").
+      transform/parse_json:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - set(body, ParseJSON(attributes["log"]))
+      filter/audit_only:
+        error_mode: ignore
+        logs:
+          log_record:
+            # Drop entries where JSON parsing failed (body is still a Str, e.g. the
+            # "Workload started successfully" plain-text line emitted by ToolHive on startup),
+            # and non-audit JSON logs that have no audit_id field.
+            - 'not IsMap(body) or body["audit_id"] == nil'
+      resource:
+        attributes:
+          - key: service.name
+            value: toolhive-audit
+            action: upsert
+      batch:
+        timeout: 5s
+        send_batch_size: 256
+
+    exporters:
+      otlphttp/loki:
+        endpoint: http://loki.observability.svc:3100/otlp
+        tls:
+          insecure: true
+
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [transform/parse_json, filter/audit_only, resource, batch]
+          exporters: [otlphttp/loki]
