@@ -15,7 +15,7 @@ CERT_MANAGER_CHART_VERSION="v1.20.0" # renovate: datasource=docker depName=quay.
 OPENTELEMETRY_OPERATOR_VERSION="v0.146.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
 TEMPO_CHART_VERSION="2.0.0" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 LOKI_CHART_VERSION="6.57.0" # renovate: datasource=helm depName=loki registryUrl=https://grafana-community.github.io/helm-charts
-PROMTAIL_CHART_VERSION="6.17.1" # renovate: datasource=helm depName=promtail registryUrl=https://grafana.github.io/helm-charts
+FLUENT_BIT_CHART_VERSION="0.56.0" # renovate: datasource=helm depName=fluent-bit registryUrl=https://fluent.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="28.13.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="11.3.2" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.27.1" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
@@ -76,7 +76,7 @@ echo -n "Adding Helm repositories..."
 run_quiet helm repo add traefik https://traefik.github.io/charts || die "Failed to add Traefik repo"
 run_quiet helm repo add grafana-community https://grafana-community.github.io/helm-charts || die "Failed to add Grafana Community repo"
 run_quiet helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || die "Failed to add Prometheus repo"
-run_quiet helm repo add grafana https://grafana.github.io/helm-charts || die "Failed to add Grafana repo"
+run_quiet helm repo add fluent https://fluent.github.io/helm-charts || die "Failed to add Fluent repo"
 run_quiet helm repo add cnpg https://cloudnative-pg.github.io/charts || die "Failed to add CloudNativePG repo"
 echo " ✓"
 
@@ -104,12 +104,12 @@ if ! namespace_exists observability; then
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
 run_quiet kubectl wait --for=condition=available --timeout=5m deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
-run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --wait || die "Failed to install Tempo"
+run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --set metricsGenerator.enabled=true --wait || die "Failed to install Tempo"
 run_quiet helm upgrade --install loki grafana-community/loki --version "$LOKI_CHART_VERSION" --namespace observability --values infra/loki-helm-values.yaml --wait || die "Failed to install Loki"
 run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
 run_quiet helm upgrade --install grafana grafana-community/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
 run_quiet kubectl apply -f infra/otel-collector.yaml || die "Failed to apply OTel collector config"
-run_quiet helm upgrade --install promtail grafana/promtail --version "$PROMTAIL_CHART_VERSION" --namespace observability --values infra/promtail-helm-values.yaml --wait || die "Failed to install Promtail"
+run_quiet helm upgrade --install fluent-bit fluent/fluent-bit --version "$FLUENT_BIT_CHART_VERSION" --namespace observability --values infra/fluent-bit-helm-values.yaml --wait || die "Failed to install Fluent Bit"
 echo " ✓"
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s

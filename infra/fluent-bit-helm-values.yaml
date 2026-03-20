@@ -1,0 +1,72 @@
+luaScripts:
+  add_service.lua: |
+    function add_service(tag, timestamp, record)
+      if record["kubernetes"] ~= nil then
+        record["service"] = record["kubernetes"]["container_name"]
+      end
+      return 1, timestamp, record
+    end
+
+config:
+  inputs: |
+    [INPUT]
+        Name              tail
+        Tag               kube.*
+        # Target only the toolhive (MCP proxy) and vmcp (Virtual MCP) containers in toolhive-system.
+        # Both emit structured JSON covering audit events and application logs.
+        # /var/log/containers symlinks use the naming convention FluentBit's kubernetes filter expects.
+        Path              /var/log/containers/*_toolhive-system_toolhive-*.log,/var/log/containers/*_toolhive-system_vmcp-*.log
+        Parser            cri
+        DB                /var/log/flb-toolhive.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+
+  filters: |
+    [FILTER]
+        Name              kubernetes
+        Match             kube.*
+        Kube_URL          https://kubernetes.default.svc:443
+        Kube_CA_File      /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File   /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix   kube.var.log.containers.
+        Labels            Off
+        Annotations       Off
+
+    [FILTER]
+        # Add a `service` label (= container name) for Grafana Explore Logs drilldown grouping
+        Name    lua
+        Match   kube.*
+        script  /fluent-bit/scripts/add_service.lua
+        call    add_service
+
+    [FILTER]
+        # Parse the JSON log content from the `message` field (set by the CRI parser)
+        # and promote its fields (level, msg, time, etc.) to the top level of the record.
+        # This is required for Loki's detected_level to find the `level` field.
+        # Reserve_Data keeps the record intact for non-JSON lines (e.g. plain-text startup lines).
+        Name              parser
+        Match             kube.*
+        Key_Name          message
+        Parser            toolhive_json
+        Reserve_Data      True
+        Preserve_Key      False
+
+  customParsers: |
+    [PARSER]
+        # Parses ToolHive structured JSON log lines to promote fields (level, msg, etc.)
+        # to the top-level record for Loki detected_level and LogQL filtering.
+        # No Time_Key: the CRI parser already set the correct timestamp from the log prefix.
+        Name        toolhive_json
+        Format      json
+
+  outputs: |
+    [OUTPUT]
+        Name              loki
+        Match             kube.*
+        Host              loki.observability.svc
+        Port              3100
+        Labels            job=toolhive
+        Label_Keys        $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name'],$service
+        Auto_Kubernetes_Labels Off
+        # Remove internal CRI/FluentBit fields that add noise to the log body in Loki
+        Remove_Keys       logtag,stream,kubernetes
