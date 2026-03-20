@@ -104,7 +104,7 @@ if ! namespace_exists observability; then
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
 run_quiet kubectl wait --for=condition=available --timeout=5m deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
-run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --set metricsGenerator.enabled=true --wait || die "Failed to install Tempo"
+run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --values infra/tempo-helm-values.yaml --wait || die "Failed to install Tempo"
 run_quiet helm upgrade --install loki grafana-community/loki --version "$LOKI_CHART_VERSION" --namespace observability --values infra/loki-helm-values.yaml --wait || die "Failed to install Loki"
 run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
 run_quiet helm upgrade --install grafana grafana-community/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard.json --wait || die "Failed to install Grafana"
