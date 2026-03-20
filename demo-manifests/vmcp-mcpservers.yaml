@@ -27,6 +27,8 @@ spec:
       serviceName: fetch-server
       metrics:
         enabled: true
+  audit:
+    enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -49,6 +51,8 @@ spec:
       serviceName: osv-server
       metrics:
         enabled: true
+  audit:
+    enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -71,6 +75,8 @@ spec:
       serviceName: oci-registry-server
       metrics:
         enabled: true
+  audit:
+    enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -93,6 +99,8 @@ spec:
       serviceName: context7-server
       metrics:
         enabled: true
+  audit:
+    enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPServer
@@ -121,6 +129,8 @@ spec:
       serviceName: grafana-server
       metrics:
         enabled: true
+  audit:
+    enabled: true
 ---
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPGroup
@@ -164,3 +174,5 @@ spec:
       serviceName: arxiv-server
       metrics:
         enabled: true
+  audit:
+    enabled: true

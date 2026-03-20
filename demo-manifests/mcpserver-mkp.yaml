@@ -29,6 +29,8 @@ spec:
         samplingRate: "1.0"
     prometheus:
       enabled: true
+  audit:
+    enabled: true
 ---
 apiVersion: v1
 kind: ServiceAccount
