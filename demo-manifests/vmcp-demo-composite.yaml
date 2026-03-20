@@ -65,6 +65,10 @@ spec:
       tracingEnabled: true
       samplingRate: "1.0"
       enablePrometheusMetricsPath: true
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
     aggregation:
       conflictResolution: prefix
       conflictResolutionConfig:
