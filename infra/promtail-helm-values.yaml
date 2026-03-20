@@ -1,0 +1,37 @@
+config:
+  clients:
+    - url: http://loki.observability.svc:3100/loki/api/v1/push
+
+  snippets:
+    # Replace default scrape configs — only collect ToolHive structured logs.
+    # Targets the 'toolhive' container (MCP proxy) and 'vmcp' container (Virtual MCP)
+    # in the toolhive-system namespace. Both emit structured JSON covering audit events
+    # and application logs (session lifecycle, warnings, etc.).
+    scrapeConfigs: |
+      - job_name: toolhive
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          # Only toolhive-system namespace
+          - source_labels: [__meta_kubernetes_namespace]
+            action: keep
+            regex: toolhive-system
+          # Only proxy and vmcp containers — these emit structured JSON
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: keep
+            regex: toolhive|vmcp
+          # Map pod UID + container name to the actual log file path on the node
+          - source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
+            target_label: __path__
+            regex: (.+);(.+)
+            replacement: /var/log/pods/*$1/$2/*.log
+          # Promote useful k8s metadata to Loki stream labels
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+        pipeline_stages:
+          # Parse CRI log format (timestamp stream flags message)
+          - cri: {}
