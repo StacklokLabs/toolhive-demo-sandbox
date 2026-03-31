@@ -190,7 +190,10 @@ run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
-# run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
+echo " ✓"
+
+echo -n "Installing vMCP Google Drive auth demo..."
+run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP Google Drive auth demo"
 echo " ✓"
 
 echo -n "Installing MCP Optimizer..."
@@ -255,6 +258,19 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/mcp-optimizer/health"
     },
     {
+      "name": "vMCP Google Drive Auth Demo",
+      "url": "http://$MCP_HOSTNAME/vmcp-google-drive/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-google-drive/health"
+    },
+    {
+      "name": "vMCP Auth Server",
+      "url": "http://$AUTH_HOSTNAME/.well-known/oauth-authorization-server",
+      "type": "http",
+      "healthcheck_path": "/.well-known/oauth-authorization-server"
+    },
+    {
       "name": "Grafana",
       "url": "http://$GRAFANA_HOSTNAME",
       "type": "http",
@@ -273,4 +289,6 @@ echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
+echo " - vMCP Google Drive (auth demo) at http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
+echo "   (auth server at http://$AUTH_HOSTNAME)"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"
