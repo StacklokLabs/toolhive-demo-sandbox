@@ -192,9 +192,17 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
 echo " ✓"
 
-echo -n "Installing vMCP Google Drive auth demo..."
-run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP Google Drive auth demo"
-echo " ✓"
+if [ -n "$GOOGLE_OAUTH_CLIENT_ID" ] && [ -n "$GOOGLE_OAUTH_CLIENT_SECRET" ] && [ -n "$GHCR_PAT" ]; then
+    echo -n "Installing vMCP Google Drive auth demo..."
+    # Copy the traefik-me CA cert to toolhive-system so the vMCP pod can trust the self-signed TLS
+    run_quiet kubectl get secret traefik-me-tls -n traefik -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/traefik-me-ca.crt
+    run_quiet kubectl create configmap traefik-me-ca --from-file=ca.crt=/tmp/traefik-me-ca.crt -n toolhive-system --dry-run=client -o yaml | kubectl apply -f - || die "Failed to create traefik-me-ca ConfigMap"
+    rm -f /tmp/traefik-me-ca.crt
+    run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP Google Drive auth demo"
+    echo " ✓"
+else
+    echo "Skipping vMCP Google Drive auth demo (set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GHCR_PAT in .env to enable)"
+fi
 
 echo -n "Installing MCP Optimizer..."
 run_quiet helm upgrade --install mcp-optimizer oci://ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer \
@@ -210,6 +218,32 @@ echo " ✓"
 
 # Output endpoint information to JSON file for validation
 echo -n "Writing endpoint information to demo-endpoints.json..."
+
+# Build optional JSON snippet for Google Drive auth demo endpoints.
+# Uses a non-expanding heredoc with placeholder substitution to avoid
+# conflicts with the shell variable expansion in the main heredoc below.
+VMCP_AUTH_ENDPOINTS=""
+if [ -n "$GOOGLE_OAUTH_CLIENT_ID" ] && [ -n "$GOOGLE_OAUTH_CLIENT_SECRET" ] && [ -n "$GHCR_PAT" ]; then
+    read -r -d '' VMCP_AUTH_ENDPOINTS <<'AUTHBLOCK' || true
+    ,
+    {
+      "name": "vMCP Google Drive Auth Demo",
+      "url": "http://PLACEHOLDER_MCP_HOSTNAME/vmcp-google-drive/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-google-drive/health"
+    },
+    {
+      "name": "vMCP Auth Server",
+      "url": "https://PLACEHOLDER_AUTH_HTTPS_HOSTNAME/vmcp-google-drive/.well-known/oauth-authorization-server",
+      "type": "http",
+      "healthcheck_path": "/vmcp-google-drive/.well-known/oauth-authorization-server"
+    }
+AUTHBLOCK
+    VMCP_AUTH_ENDPOINTS="${VMCP_AUTH_ENDPOINTS//PLACEHOLDER_MCP_HOSTNAME/$MCP_HOSTNAME}"
+    VMCP_AUTH_ENDPOINTS="${VMCP_AUTH_ENDPOINTS//PLACEHOLDER_AUTH_HTTPS_HOSTNAME/$AUTH_HOSTNAME}"
+fi
+
 cat > demo-endpoints.json <<EOF
 {
   "traefik_ip": "$TRAEFIK_IP",
@@ -258,24 +292,11 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/mcp-optimizer/health"
     },
     {
-      "name": "vMCP Google Drive Auth Demo",
-      "url": "http://$MCP_HOSTNAME/vmcp-google-drive/mcp",
-      "type": "mcp",
-      "test_with_thv": true,
-      "healthcheck_path": "/vmcp-google-drive/health"
-    },
-    {
-      "name": "vMCP Auth Server",
-      "url": "http://$AUTH_HOSTNAME/.well-known/oauth-authorization-server",
-      "type": "http",
-      "healthcheck_path": "/.well-known/oauth-authorization-server"
-    },
-    {
       "name": "Grafana",
       "url": "http://$GRAFANA_HOSTNAME",
       "type": "http",
       "healthcheck_path": "/api/health"
-    }
+    }${VMCP_AUTH_ENDPOINTS}
   ]
 }
 EOF
@@ -289,6 +310,8 @@ echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
-echo " - vMCP Google Drive (auth demo) at http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
-echo "   (auth server at http://$AUTH_HOSTNAME)"
+if [ -n "$GOOGLE_OAUTH_CLIENT_ID" ] && [ -n "$GOOGLE_OAUTH_CLIENT_SECRET" ] && [ -n "$GHCR_PAT" ]; then
+    echo " - vMCP Google Drive (auth demo) at http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
+    echo "   (auth server at https://$AUTH_HOSTNAME/vmcp-google-drive)"
+fi
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

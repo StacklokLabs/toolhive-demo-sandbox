@@ -13,6 +13,7 @@ So far, it includes:
 - A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
 - A vMCP server with a composite tool chaining together multiple arXiv tools
 - The MKP MCP server for managing the cluster, exposed directly
+- A vMCP server with an embedded authorization server fronting a Google Drive MCP backend (OAuth demo)
 - An MCP Optimizer server for intelligent tool calling across multiple MCP servers
 - Traefik as the gateway for routing traffic into the cluster
 - An observability stack to capture traces and metrics from the MCP servers
@@ -41,6 +42,45 @@ So far, it includes:
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
+## vMCP + Embedded Auth Server Demo (Google Drive)
+
+The bootstrap optionally deploys a vMCP server with an embedded OAuth authorization server fronting a Google Drive MCP backend. This demo requires additional environment variables in `.env`:
+
+```sh
+# Google OAuth credentials (from Google Cloud Console)
+GOOGLE_OAUTH_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_OAUTH_CLIENT_SECRET=your-google-oauth-client-secret
+
+# GitHub PAT with read:packages scope (classic PAT required, not fine-grained)
+# Needed to pull the google-drive-mcp image from a private ghcr.io repo
+GHCR_PAT=your-github-classic-pat-with-read-packages
+```
+
+If these variables are not set, the bootstrap will skip this demo and print a message.
+
+### Google OAuth setup
+
+1. Create an OAuth 2.0 client in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Run bootstrap partway — it will pause after assigning the Traefik Gateway IP
+3. Add the redirect URI to your OAuth client's **Authorized redirect URIs**:
+   ```
+   https://auth-<TRAEFIK-IP-WITH-HYPHENS>.traefik.me/vmcp-google-drive/oauth/callback
+   ```
+4. Let bootstrap finish
+
+### Connecting with Claude Code
+
+The demo uses a self-signed TLS certificate for the auth server endpoint. To connect with Claude Code, you need to disable TLS verification:
+
+```sh
+NODE_TLS_REJECT_UNAUTHORIZED=0 claude
+```
+
+Then add the vMCP server URL (printed at the end of bootstrap) as an MCP server in Claude Code.
+
+> [!WARNING]
+> `NODE_TLS_REJECT_UNAUTHORIZED=0` disables TLS certificate verification for all connections in that Claude Code session. Only use this for local development and demos.
+
 ## Troubleshooting
 
 If the bootstrap fails, check the output for errors. You can also use `kubectl` or `k9s` to inspect the cluster state.
@@ -68,7 +108,7 @@ None at this time. Please open issues if you encounter any problems.
 - [x] Add MCP Optimizer demo server
 - [ ] Deploy registry server using the ToolHive Operator instead of manually
 - [ ] Add a Keycloak instance for authentication
-- [ ] Add an authenticated version of the vMCP server
+- [x] Add an authenticated version of the vMCP server
 - [ ] Persona-specific vMCP server demos
 
 ## Example
@@ -93,6 +133,7 @@ Installing Cloud UI... ✓
 Configuring Grafana HTTPRoute... ✓
 Installing MKP MCP server... ✓
 Installing vMCP demo servers... ✓
+Installing vMCP Google Drive auth demo... ✓
 Installing MCP Optimizer... ✓
 Waiting for all pods to be ready... ✓
 Writing endpoint information to demo-endpoints.json... ✓
@@ -104,6 +145,8 @@ Bootstrap complete! Access your demo services at the following URLs:
  - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
  - vMCP composite tool demo server at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
  - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
+ - vMCP Google Drive (auth demo) at http://mcp-172-19-0-3.traefik.me/vmcp-google-drive/mcp
+   (auth server at https://auth-172-19-0-3.traefik.me/vmcp-google-drive)
  - Grafana at http://grafana-172-19-0-3.traefik.me
 ```
 
