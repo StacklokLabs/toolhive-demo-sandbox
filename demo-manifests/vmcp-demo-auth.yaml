@@ -1,0 +1,251 @@
+# vMCP with embedded authorization server demo
+# Demonstrates OAuth-protected MCP access via vMCP with Google Drive as the backend.
+# Uses ephemeral signing keys and in-memory token storage (suitable for demos).
+#
+# Prerequisites:
+#   Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GHCR_PAT in .env
+---
+# Image pull secret for ghcr.io (google-drive-mcp is in an internal repo)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ghcr-pull-secret
+  namespace: toolhive-system
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: '{"auths":{"ghcr.io":{"username":"toolhive-demo","password":"${GHCR_PAT}"}}}'
+---
+# Google OAuth client secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: google-oauth-client-secret
+  namespace: toolhive-system
+type: Opaque
+stringData:
+  client-secret: "${GOOGLE_OAUTH_CLIENT_SECRET}"
+---
+# MCPGroup for the Google Drive backend
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: google-drive-tools
+  namespace: toolhive-system
+spec:
+  description: Group for Google Drive MCP backend
+---
+# MCPExternalAuthConfig for upstream token injection
+# Injects the upstream Google access token into requests to the google-drive backend
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPExternalAuthConfig
+metadata:
+  name: google-upstream-inject
+  namespace: toolhive-system
+spec:
+  type: upstreamInject
+  upstreamInject:
+    providerName: google
+---
+# Google Drive MCP server backend
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: google-drive
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-auth-backend: "true"
+spec:
+  image: ghcr.io/stackloklabs/google-drive-mcp:0.0.3
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8090
+  groupRef: google-drive-tools
+  podTemplateSpec:
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+  env:
+    - name: ALLOW_TOKEN_PASSTHROUGH
+      value: "true"
+  telemetry:
+    openTelemetry:
+      enabled: true
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: google-drive-server
+      metrics:
+        enabled: true
+  audit:
+    enabled: true
+---
+# VirtualMCPServer with embedded authorization server
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-google-drive
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
+    toolhive.stacklok.dev/registry-description: |
+      vMCP server with embedded authorization server fronting Google Drive MCP.
+spec:
+  podTemplateSpec:
+    spec:
+      volumes:
+        - name: traefik-me-ca
+          configMap:
+            name: traefik-me-ca
+      containers:
+        - name: vmcp
+          env:
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/custom/ca.crt
+          volumeMounts:
+            - name: traefik-me-ca
+              mountPath: /etc/ssl/custom
+              readOnly: true
+  config:
+    groupRef: google-drive-tools
+    telemetry:
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      serviceName: vmcp-google-drive-server
+      serviceVersion: "1.0.0"
+      metricsEnabled: true
+      tracingEnabled: true
+      samplingRate: "1.0"
+      enablePrometheusMetricsPath: true
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+      tools:
+        - workload: google-drive
+  # Embedded auth server — ephemeral keys, in-memory storage
+  authServerConfig:
+    issuer: "https://$AUTH_HOSTNAME/vmcp-google-drive"
+    authorizationEndpointBaseUrl: "https://$AUTH_HOSTNAME/vmcp-google-drive"
+    upstreamProviders:
+      - name: google
+        type: oauth2
+        oauth2Config:
+          authorizationEndpoint: "https://accounts.google.com/o/oauth2/auth"
+          tokenEndpoint: "https://accounts.google.com/o/oauth2/token"
+          clientId: "${GOOGLE_OAUTH_CLIENT_ID}"
+          redirectUri: "https://$AUTH_HOSTNAME/vmcp-google-drive/oauth/callback"
+          clientSecretRef:
+            name: google-oauth-client-secret
+            key: client-secret
+          scopes:
+            - openid
+            - email
+            - https://www.googleapis.com/auth/drive.readonly
+            - https://www.googleapis.com/auth/documents.readonly
+          userInfo:
+            endpointUrl: "https://www.googleapis.com/oauth2/v3/userinfo"
+  incomingAuth:
+    type: oidc
+    oidcConfig:
+      type: inline
+      resourceUrl: "http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
+      inline:
+        issuer: "https://$AUTH_HOSTNAME/vmcp-google-drive"
+        audience: "http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
+        insecureAllowHTTP: true
+        jwksAllowPrivateIP: true
+  outgoingAuth:
+    source: inline
+    backends:
+      google-drive:
+        type: external_auth_config_ref
+        externalAuthConfigRef:
+          name: google-upstream-inject
+  serviceType: ClusterIP
+---
+# HTTPRoute for the vMCP server
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-google-drive-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-google-drive
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-google-drive
+          port: 4483
+---
+# HTTPRoute for RFC 9728 protected resource metadata discovery.
+# RFC 9728 §3.1 requires the well-known URI at:
+#   /.well-known/oauth-protected-resource/vmcp-google-drive/mcp
+# The vMCP server serves it at /vmcp-google-drive/.well-known/oauth-protected-resource,
+# so we rewrite the RFC path to the vMCP's actual endpoint.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-google-drive-resource-discovery-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /.well-known/oauth-protected-resource/vmcp-google-drive/mcp
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /.well-known/oauth-protected-resource
+      backendRefs:
+        - name: vmcp-vmcp-google-drive
+          port: 4483
+---
+# HTTPRoute for auth endpoints (discovery, authorize, token, callback)
+# Routes AUTH_HOSTNAME/vmcp-google-drive/* traffic to the vMCP service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-google-drive-auth-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - "$AUTH_HOSTNAME"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-google-drive
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-google-drive
+          port: 4483
