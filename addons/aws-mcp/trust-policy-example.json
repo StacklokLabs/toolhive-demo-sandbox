@@ -1,0 +1,15 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::510252261186:oidc-provider/integrator-4896533.okta.com/oauth2/default"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "integrator-4896533.okta.com/oauth2/default:aud": "api://default"
+      }
+    }
+  }]
+}
