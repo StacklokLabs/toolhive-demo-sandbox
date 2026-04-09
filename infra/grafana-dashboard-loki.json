@@ -1,0 +1,346 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Observability",
+      "type": "link",
+      "url": "/d/toolhive-mcp-observability"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (type) (count_over_time({kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" [$__auto]))",
+          "legendFormat": "{{type}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Audit Event Volume by Type",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 101,
+      "title": "Breakdowns",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 10 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "values": false },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (type) (count_over_time({kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" [$__auto]))",
+          "legendFormat": "{{type}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "By Event Type",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 10 },
+      "id": 3,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "values": false },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed" },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "success" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "failure" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (outcome) (count_over_time({kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" [$__auto]))",
+          "legendFormat": "{{outcome}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "By Outcome",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 10 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "values": false },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (subjects_user) (count_over_time({kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" [$__auto]))",
+          "legendFormat": "{{subjects_user}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "By User",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 10 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "values": false },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "sum by (source_extra_user_agent) (count_over_time({kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" [$__auto]))",
+          "legendFormat": "{{source_extra_user_agent}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "By User Agent",
+      "type": "piechart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 102,
+      "title": "Audit Log",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 19 },
+      "id": 10,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "{kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" | line_format \"[{{.type}}] {{.target_method}} \u2192 {{.outcome}} | user={{.subjects_user}} agent={{.source_extra_user_agent}} | pod={{.kubernetes_pod_name}} duration={{.metadata_extra_duration_ms}}ms\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Audit Events",
+      "type": "logs"
+    }
+  ],
+  "schemaVersion": 42,
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "toolhive-system", "value": "toolhive-system" },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": { "label": "kubernetes_namespace_name", "refId": "LokiVariableQueryEditor-VariableQuery", "stream": "", "type": 1 },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query",
+        "allValue": ".+"
+      },
+      {
+        "current": { "selected": false, "text": "All", "value": "$__all" },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": { "label": "kubernetes_pod_name", "refId": "LokiVariableQueryEditor-VariableQuery", "stream": "{kubernetes_namespace_name=~\"$namespace\"}", "type": 1 },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query",
+        "allValue": ".+"
+      },
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "multi": true,
+        "name": "type",
+        "options": [
+          { "selected": false, "text": "http_request", "value": "http_request" },
+          { "selected": false, "text": "mcp_initialize", "value": "mcp_initialize" },
+          { "selected": false, "text": "mcp_ping", "value": "mcp_ping" },
+          { "selected": false, "text": "mcp_prompts_list", "value": "mcp_prompts_list" },
+          { "selected": false, "text": "mcp_request", "value": "mcp_request" },
+          { "selected": false, "text": "mcp_resources_list", "value": "mcp_resources_list" },
+          { "selected": false, "text": "mcp_tools_call", "value": "mcp_tools_call" },
+          { "selected": false, "text": "mcp_tools_list", "value": "mcp_tools_list" },
+          { "selected": false, "text": "sse_connection", "value": "sse_connection" }
+        ],
+        "query": "http_request,mcp_initialize,mcp_ping,mcp_prompts_list,mcp_request,mcp_resources_list,mcp_tools_call,mcp_tools_list,sse_connection",
+        "type": "custom",
+        "allValue": ".+"
+      },
+      {
+        "current": { "selected": false, "text": "", "value": "" },
+        "name": "user",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": { "selected": false, "text": "", "value": "" },
+        "name": "search",
+        "options": [],
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ToolHive Audit Log",
+  "uid": "toolhive-audit-log",
+  "version": 1
+}

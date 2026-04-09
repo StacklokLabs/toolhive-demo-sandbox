@@ -1,5 +1,11 @@
 adminPassword: "admin"
 
+grafana.ini:
+  org:
+    name: Stacklok
+  dashboards:
+    default_home_dashboard_path: /var/lib/grafana/dashboards/default/toolhive-mcp.json
+
 env:
   GF_AUTH_ANONYMOUS_ENABLED: true
   GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
