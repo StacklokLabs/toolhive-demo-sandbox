@@ -46,7 +46,9 @@ echo " ✓"
 
 # Load environment variables from .env if it exists
 if [ -f "$(dirname "$0")/.env" ]; then
+    set -a
     source "$(dirname "$0")/.env"
+    set +a
 fi
 
 echo -n "Creating Kind cluster..."
@@ -143,6 +145,13 @@ REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
 AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
+AWS_MCP_HOSTNAME="aws-mcp-${TRAEFIK_HOSTNAME_BASE}"
+
+# AWS MCP Remote Proxy is optional — requires Okta + AWS configuration
+ENABLE_AWS_MCP=false
+if [ -n "$OKTA_DOMAIN" ] && [ -n "$OKTA_CLIENT_ID" ] && [ -n "$OKTA_CLIENT_SECRET" ] && [ -n "$AWS_ACCOUNT_ID" ] && [ -n "$AWS_REGION" ]; then
+    ENABLE_AWS_MCP=true
+fi
 
 echo -n "Installing Keycloak..."
 if ! namespace_exists keycloak; then
@@ -194,6 +203,26 @@ run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpse
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
 echo " ✓"
+
+# AWS MCP Remote Proxy (optional — requires Okta + AWS configuration)
+if [ "$ENABLE_AWS_MCP" = true ]; then
+    echo -n "Installing AWS MCP Remote Proxy..."
+    # Create ConfigMap with Traefik's CA cert so the proxy can complete OIDC
+    # discovery against its own issuer (self-signed cert).
+    # TODO: Remove once ToolHive >=0.21 is deployed (PR #4774 makes OIDC
+    # discovery non-fatal when the in-process key provider is available).
+    run_quiet sh -c "kubectl get secret traefik-me-tls -n traefik -o jsonpath='{.data.ca\.crt}' | base64 -d | kubectl create configmap traefik-ca-bundle -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA bundle ConfigMap"
+    run_quiet sh -c "envsubst < demo-manifests/mcpremoteproxy-aws-mcp.yaml | kubectl apply -f -" || die "Failed to apply AWS MCP Remote Proxy"
+    # The operator writes caBundleRef path into the runconfig but does not
+    # auto-mount the volume for MCPRemoteProxy. Patch the deployment to add it.
+    run_quiet kubectl patch deployment aws-mcp-proxy -n toolhive-system --type=json -p '[
+      {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"traefik-ca","configMap":{"name":"traefik-ca-bundle"}}},
+      {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"traefik-ca","mountPath":"/config/certs/traefik-ca-bundle","readOnly":true}}
+    ]' || die "Failed to patch AWS MCP proxy deployment with CA bundle"
+    echo " ✓"
+else
+    echo "Skipping AWS MCP Remote Proxy (set OKTA_DOMAIN, OKTA_CLIENT_ID, OKTA_CLIENT_SECRET, AWS_ACCOUNT_ID, and AWS_REGION to enable)"
+fi
 
 echo -n "Installing MCP Optimizer..."
 run_quiet helm upgrade --install mcp-optimizer oci://ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer \
@@ -278,7 +307,17 @@ cat > demo-endpoints.json <<EOF
       "url": "http://$GRAFANA_HOSTNAME",
       "type": "http",
       "healthcheck_path": "/api/health"
+    }$(if [ "$ENABLE_AWS_MCP" = true ]; then cat <<AWSEOF
+,
+    {
+      "name": "AWS MCP Remote Proxy",
+      "url": "https://$AWS_MCP_HOSTNAME/mcp",
+      "type": "mcp",
+      "expect_cert_error": true,
+      "healthcheck_path": "/health"
     }
+AWSEOF
+fi)
   ]
 }
 EOF
@@ -300,4 +339,7 @@ echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
+if [ "$ENABLE_AWS_MCP" = true ]; then
+    echo " - AWS MCP Remote Proxy at https://$AWS_MCP_HOSTNAME/mcp"
+fi
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

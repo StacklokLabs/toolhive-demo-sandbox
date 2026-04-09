@@ -1,0 +1,280 @@
+# AWS MCP Remote Proxy with Embedded Auth Server + AWS STS Token Exchange
+#
+# This manifest demonstrates a full authentication chain:
+#
+#   MCP Client (Claude Desktop, etc.)
+#     → OAuth 2.0 auth code flow with embedded auth server
+#     → Embedded auth server redirects user to Okta for login
+#     → User authenticates via Okta SSO
+#     → Embedded auth server issues a ToolHive JWT (stores Okta token internally)
+#     → Client sends MCP request with ToolHive JWT
+#     → Proxy validates JWT (via oidcConfig → embedded auth server issuer)
+#     → Upstream Swap middleware exchanges ToolHive JWT for stored Okta token
+#     → AWS STS middleware calls AssumeRoleWithWebIdentity with Okta token
+#     → SigV4 signer signs request with temporary AWS credentials
+#     → Request forwarded to https://aws-mcp.us-east-1.api.aws/mcp
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ ENVIRONMENT VARIABLES                                              │
+# │                                                                    │
+# │ Substitute these before applying (e.g. with envsubst):             │
+# │                                                                    │
+# │   $AWS_MCP_HOSTNAME     Traefik ingress hostname for this proxy     │
+# │                         (e.g. aws-mcp.demo.example.com)            │
+# │   $OKTA_DOMAIN          Okta org domain                            │
+# │                         (e.g. dev-12345.okta.com)                  │
+# │   $OKTA_CLIENT_ID       Okta OIDC application client ID            │
+# │   $OKTA_CLIENT_SECRET   Okta OIDC application client secret        │
+# │   $AWS_ACCOUNT_ID       12-digit AWS account ID                    │
+# │   $AWS_REGION           AWS region (e.g. us-east-1)                │
+# │                                                                    │
+# └─────────────────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ OKTA SETUP                                                         │
+# │                                                                    │
+# │ 1. In your Okta admin console, create a new OIDC Web Application:  │
+# │    - Sign-in method: OIDC - OpenID Connect                         │
+# │    - Application type: Web Application                             │
+# │    - Grant types: Authorization Code                               │
+# │    - Sign-in redirect URI:                                         │
+# │        https://$AWS_MCP_HOSTNAME/oauth/callback                    │
+# │    - Scopes: openid, email, profile                                │
+# │                                                                    │
+# │ 2. Assign users/groups to the application.                         │
+# │    If using role mappings (see awsSts.roleMappings below),         │
+# │    configure the "groups" claim in Okta:                           │
+# │    - Go to Security > API > Authorization Servers > default        │
+# │    - Add a "groups" claim (type: Filter, matches regex: .*)        │
+# │                                                                    │
+# │ 3. Note the Client ID and Client Secret for the env vars above.    │
+# │    The Okta issuer URL will be:                                    │
+# │        https://$OKTA_DOMAIN/oauth2/default                         │
+# │                                                                    │
+# └─────────────────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ AWS SETUP                                                          │
+# │                                                                    │
+# │ 1. Register Okta as an IAM OIDC Identity Provider:                 │
+# │                                                                    │
+# │    aws iam create-open-id-connect-provider \                       │
+# │      --url https://$OKTA_DOMAIN/oauth2/default \                   │
+# │      --client-id-list api://default                                │
+# │                                                                    │
+# │    The client ID must match the "aud" claim in Okta access tokens. │
+# │    Okta's default authorization server sets aud to "api://default" │
+# │    (not the client ID) when issuing JWT access tokens.             │
+# │                                                                    │
+# │    NOTE: AWS IAM trusts Okta directly, not the embedded auth       │
+# │    server. The upstream swap middleware replaces the ToolHive JWT   │
+# │    with the original Okta access token before calling STS.         │
+# │                                                                    │
+# │ 2. Create the IAM trust policy (trust-policy.json):                │
+# │                                                                    │
+# │    {                                                               │
+# │      "Version": "2012-10-17",                                     │
+# │      "Statement": [{                                               │
+# │        "Effect": "Allow",                                          │
+# │        "Principal": {                                              │
+# │          "Federated": "arn:aws:iam::$AWS_ACCOUNT_ID:oidc-provider/ │
+# │            $OKTA_DOMAIN/oauth2/default"                            │
+# │        },                                                          │
+# │        "Action": "sts:AssumeRoleWithWebIdentity",                  │
+# │        "Condition": {                                              │
+# │          "StringEquals": {                                         │
+# │            "$OKTA_DOMAIN/oauth2/default:aud": "api://default"      │
+# │          }                                                         │
+# │        }                                                           │
+# │      }]                                                            │
+# │    }                                                               │
+# │                                                                    │
+# │    NOTE: The aud condition uses "api://default" (the Okta default  │
+# │    authorization server audience), NOT the Okta client ID. Trust   │
+# │    policy changes may take a few minutes to propagate.             │
+# │                                                                    │
+# │ 3. Create the IAM role with S3 list permissions:                   │
+# │                                                                    │
+# │    aws iam create-role \                                           │
+# │      --role-name ToolHiveDemoMCPRole \                             │
+# │      --assume-role-policy-document file://trust-policy.json        │
+# │                                                                    │
+# │    Then attach an inline policy (s3-list-policy.json):             │
+# │                                                                    │
+# │    {                                                               │
+# │      "Version": "2012-10-17",                                     │
+# │      "Statement": [                                                │
+# │        {                                                           │
+# │          "Sid": "AllowS3ListViaMCP",                               │
+# │          "Effect": "Allow",                                        │
+# │          "Action": ["s3:ListAllMyBuckets", "s3:ListBucket"],       │
+# │          "Resource": "*",                                          │
+# │          "Condition": {                                            │
+# │            "Bool": {                                               │
+# │              "aws:ViaAWSMCPService": "true"                        │
+# │            }                                                       │
+# │          }                                                         │
+# │        },                                                          │
+# │        {                                                           │
+# │          "Sid": "DenyDirectAPIAccess",                             │
+# │          "Effect": "Deny",                                         │
+# │          "Action": "*",                                            │
+# │          "Resource": "*",                                          │
+# │          "Condition": {                                            │
+# │            "BoolIfExists": {                                       │
+# │              "aws:ViaAWSMCPService": "false"                       │
+# │            }                                                       │
+# │          }                                                         │
+# │        }                                                           │
+# │      ]                                                             │
+# │    }                                                               │
+# │                                                                    │
+# │    aws iam put-role-policy \                                       │
+# │      --role-name ToolHiveDemoMCPRole \                             │
+# │      --policy-name S3ListPolicy \                                  │
+# │      --policy-document file://s3-list-policy.json                  │
+# │                                                                    │
+# └─────────────────────────────────────────────────────────────────────┘
+
+---
+# Secret: Okta client secret for the embedded auth server's upstream provider
+apiVersion: v1
+kind: Secret
+metadata:
+  name: okta-client-secret
+  namespace: toolhive-system
+  labels:
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+type: Opaque
+stringData:
+  client-secret: $OKTA_CLIENT_SECRET
+
+---
+# MCPExternalAuthConfig: Embedded auth server with Okta as the upstream IDP.
+# Handles the OAuth 2.0 flow for MCP clients — redirects to Okta, issues
+# ToolHive JWTs, and stores the upstream Okta tokens for later use by the
+# upstream swap middleware.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPExternalAuthConfig
+metadata:
+  name: aws-mcp-eas
+  namespace: toolhive-system
+spec:
+  type: embeddedAuthServer
+  embeddedAuthServer:
+    # Issuer must match the external URL where MCP clients reach the proxy's
+    # auth endpoints (/.well-known/openid-configuration, /oauth/*, etc.)
+    issuer: https://$AWS_MCP_HOSTNAME
+    upstreamProviders:
+      - name: okta
+        type: oidc
+        oidcConfig:
+          issuerUrl: https://$OKTA_DOMAIN/oauth2/default
+          clientId: $OKTA_CLIENT_ID
+          clientSecretRef:
+            name: okta-client-secret
+            key: client-secret
+          redirectUri: https://$AWS_MCP_HOSTNAME/oauth/callback
+          scopes:
+            - openid
+            - email
+            - profile
+
+---
+# MCPExternalAuthConfig: AWS STS token exchange.
+# After the upstream swap middleware replaces the ToolHive JWT with the Okta
+# token, this middleware calls AssumeRoleWithWebIdentity and signs the outgoing
+# request with SigV4.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPExternalAuthConfig
+metadata:
+  name: aws-mcp-sts
+  namespace: toolhive-system
+spec:
+  type: awsSts
+  awsSts:
+    region: $AWS_REGION
+    service: aws-mcp
+    fallbackRoleArn: arn:aws:iam::$AWS_ACCOUNT_ID:role/ToolHiveDemoMCPRole
+
+---
+# MCPRemoteProxy: Ties everything together.
+#   - authServerRef         → embedded auth server (incoming MCP client auth)
+#   - externalAuthConfigRef → AWS STS (outgoing request signing)
+#   - oidcConfig            → validates ToolHive JWTs between the two
+#
+# NOTE: Uses the deprecated inline oidcConfig (not oidcConfigRef) because it
+# supports resourceUrl — needed so the OAuth protected resource metadata (RFC 9728)
+# advertises the external URL that MCP clients connect to. The operator writes
+# the caBundleRef CA path into the runconfig but does not auto-mount the volume
+# for MCPRemoteProxy. bootstrap.sh patches the deployment to add the mount.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPRemoteProxy
+metadata:
+  name: aws-mcp-proxy
+  namespace: toolhive-system
+spec:
+  remoteUrl: https://aws-mcp.us-east-1.api.aws/mcp
+  transport: streamable-http
+  proxyPort: 8080
+
+  authServerRef:
+    kind: MCPExternalAuthConfig
+    name: aws-mcp-eas
+
+  externalAuthConfigRef:
+    name: aws-mcp-sts
+
+  oidcConfig:
+    resourceUrl: https://$AWS_MCP_HOSTNAME/mcp
+    type: inline
+    inline:
+      issuer: https://$AWS_MCP_HOSTNAME
+      audience: https://$AWS_MCP_HOSTNAME/mcp
+      jwksAllowPrivateIP: true
+      protectedResourceAllowPrivateIP: true
+      # Traefik uses a self-signed cert. The proxy needs the CA to complete OIDC
+      # discovery against its own issuer. bootstrap.sh creates the ConfigMap and
+      # patches the deployment to mount the volume (the operator doesn't auto-mount
+      # caBundleRef for MCPRemoteProxy).
+      # TODO: Remove caBundleRef once ToolHive >=0.21 is deployed (PR #4774 makes
+      # OIDC discovery non-fatal when the in-process key provider is available).
+      caBundleRef:
+        configMapRef:
+          name: traefik-ca-bundle
+          key: ca.crt
+
+  audit:
+    enabled: true
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+---
+# HTTPRoute: Expose the proxy via Traefik ingress with TLS.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: aws-mcp-proxy-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $AWS_MCP_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: mcp-aws-mcp-proxy-remote-proxy
+          port: 8080

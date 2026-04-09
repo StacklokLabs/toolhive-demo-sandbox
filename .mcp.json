@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aws-sts-mcp": {
+      "type": "http",
+      "url": "https://aws-mcp-172-19-0-5.traefik.me/mcp"
+    }
+  }
+}
