@@ -17,19 +17,9 @@ spec:
   args:
     - --read-write=true
   serviceAccount: mkp-sa
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: mkp-server
-      metrics:
-        enabled: true
-      tracing:
-        enabled: true
-        samplingRate: "1.0"
-    prometheus:
-      enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: mkp-server
   audit:
     enabled: true
 ---
