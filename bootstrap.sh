@@ -19,8 +19,8 @@ FLUENT_BIT_CHART_VERSION="0.57.2" # renovate: datasource=helm depName=fluent-bit
 PROMETHEUS_CHART_VERSION="28.16.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="11.3.7" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.28.0" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.15.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
-TOOLHIVE_OPERATOR_CHART_VERSION="0.15.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.16.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
+TOOLHIVE_OPERATOR_CHART_VERSION="0.16.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_SERVER_CHART_VERSION="0.6.6" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
 CLOUD_UI_VERSION="v0.4.4" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 MCP_OPTIMIZER_CHART_VERSION="0.3.0" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
