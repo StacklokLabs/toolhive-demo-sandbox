@@ -20,4 +20,4 @@ spec:
               replacePrefixMatch: /
       backendRefs:
         - name: mcp-mcp-optimizer-proxy
-          port: 8080
+          port: 9900
