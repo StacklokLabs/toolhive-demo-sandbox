@@ -157,6 +157,7 @@ REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
 AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
+AWS_MCP_HOSTNAME="aws-mcp-${TRAEFIK_HOSTNAME_BASE}"
 
 echo -n "Creating PostgreSQL server for ToolHive Registry Server..."
 run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
@@ -190,7 +191,7 @@ run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Running --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
-# run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
+# run_quiet sh -c "envsubst < demo-manifests/mcpremoteproxy-aws-mcp.yaml | kubectl apply -f -" || die "Failed to apply AWS MCP Remote Proxy"
 echo " ✓"
 
 echo -n "Installing MCP Optimizer..."
