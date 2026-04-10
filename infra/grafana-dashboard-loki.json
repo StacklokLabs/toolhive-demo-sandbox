@@ -258,7 +258,7 @@
         {
           "datasource": { "type": "loki", "uid": "loki" },
           "editorMode": "code",
-          "expr": "{kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$log_type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" | line_format \"[{{.type}}] {{.target_method}} \u2192 {{.outcome}} | user={{.subjects_user}} agent={{.source_extra_user_agent}} | pod={{.kubernetes_pod_name}} duration={{.metadata_extra_duration_ms}}ms\"",
+          "expr": "{kubernetes_namespace_name=~\"$namespace\", kubernetes_pod_name=~\"$pod\"} | json | msg=`audit_event` | type=~\"$type\" | subjects_user=~\".*${user}.*\" |~ \"$search\" | line_format \"[{{.type}}] {{.target_method}} \u2192 {{.outcome}} | user={{.subjects_user}} agent={{.source_extra_user_agent}} | pod={{.kubernetes_pod_name}} duration={{.metadata_extra_duration_ms}}ms\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -305,27 +305,6 @@
         "includeAll": true,
         "multi": true,
         "name": "type",
-        "options": [
-          { "selected": false, "text": "http_request", "value": "http_request" },
-          { "selected": false, "text": "mcp_initialize", "value": "mcp_initialize" },
-          { "selected": false, "text": "mcp_ping", "value": "mcp_ping" },
-          { "selected": false, "text": "mcp_prompts_list", "value": "mcp_prompts_list" },
-          { "selected": false, "text": "mcp_request", "value": "mcp_request" },
-          { "selected": false, "text": "mcp_resources_list", "value": "mcp_resources_list" },
-          { "selected": false, "text": "mcp_tool_call", "value": "mcp_tool_call" },
-          { "selected": false, "text": "mcp_tools_list", "value": "mcp_tools_list" },
-          { "selected": false, "text": "sse_connection", "value": "sse_connection" }
-        ],
-        "query": "http_request,mcp_initialize,mcp_ping,mcp_prompts_list,mcp_request,mcp_resources_list,mcp_tool_call,mcp_tools_list,sse_connection",
-        "type": "custom",
-        "allValue": ".+"
-      },
-      {
-        "current": { "selected": true, "text": "All", "value": "$__all" },
-        "includeAll": true,
-        "label": "Log Type",
-        "multi": true,
-        "name": "log_type",
         "options": [
           { "selected": false, "text": "http_request", "value": "http_request" },
           { "selected": false, "text": "mcp_initialize", "value": "mcp_initialize" },
