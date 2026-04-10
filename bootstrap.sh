@@ -180,6 +180,10 @@ echo -n "Configuring Grafana HTTPRoute..."
 run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" || die "Failed to apply Grafana HTTPRoute"
 echo " ✓"
 
+echo -n "Installing shared MCPTelemetryConfig resource..."
+run_quiet kubectl apply -f demo-manifests/mcp-telemetry-config.yaml || die "Failed to apply MCPTelemetryConfig resources"
+echo " ✓"
+
 echo -n "Installing MKP MCP server..."
 run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
 echo " ✓"

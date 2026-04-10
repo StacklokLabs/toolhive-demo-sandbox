@@ -1,0 +1,20 @@
+# Shared MCPTelemetryConfig for all MCPServer resources.
+# Referenced via telemetryConfigRef from MCPServer resources.
+# Note: VirtualMCPServer does not yet support telemetryConfigRef.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPTelemetryConfig
+metadata:
+  name: shared-otel
+  namespace: toolhive-system
+spec:
+  openTelemetry:
+    enabled: true
+    endpoint: mcp-collector.observability.svc.cluster.local:4318
+    insecure: true
+    metrics:
+      enabled: true
+    tracing:
+      enabled: true
+      samplingRate: "1.0"
+  prometheus:
+    enabled: true

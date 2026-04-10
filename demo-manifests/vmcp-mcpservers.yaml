@@ -19,14 +19,9 @@ spec:
   proxyPort: 8080
   mcpPort: 8080
   groupRef: demo-tools
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: fetch-server
-      metrics:
-        enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: fetch-server
   audit:
     enabled: true
 ---
@@ -43,14 +38,9 @@ spec:
   proxyPort: 8080
   mcpPort: 8080
   groupRef: demo-tools
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: osv-server
-      metrics:
-        enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: osv-server
   audit:
     enabled: true
 ---
@@ -67,14 +57,9 @@ spec:
   transport: streamable-http
   mcpPort: 8080
   proxyPort: 8080
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: oci-registry-server
-      metrics:
-        enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: oci-registry-server
   audit:
     enabled: true
 ---
@@ -91,14 +76,9 @@ spec:
   transport: stdio
   proxyPort: 8080
   proxyMode: streamable-http
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: context7-server
-      metrics:
-        enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: context7-server
   audit:
     enabled: true
 ---
@@ -121,14 +101,9 @@ spec:
   env:
     - name: GRAFANA_URL
       value: http://grafana.observability.svc.cluster.local
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: grafana-server
-      metrics:
-        enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: grafana-server
   audit:
     enabled: true
 ---
@@ -166,13 +141,8 @@ spec:
           volumeMounts:
             - name: arxiv-papers
               mountPath: /arxiv-papers
-  telemetry:
-    openTelemetry:
-      enabled: true
-      endpoint: mcp-collector.observability:4318
-      insecure: true
-      serviceName: arxiv-server
-      metrics:
-        enabled: true
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: arxiv-server
   audit:
     enabled: true

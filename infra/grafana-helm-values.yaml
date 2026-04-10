@@ -35,7 +35,7 @@ datasources:
         orgId: 1
         url: http://tempo:3200
         basicAuth: false
-        isDefault: true
+        isDefault: false
         version: 1
         editable: false
         apiVersion: 1
@@ -57,7 +57,7 @@ datasources:
         orgId: 1
         url: http://prometheus-server
         basicAuth: false
-        isDefault: false
+        isDefault: true
         version: 1
         editable: false
         apiVersion: 1
