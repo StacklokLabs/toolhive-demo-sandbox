@@ -312,11 +312,11 @@
           { "selected": false, "text": "mcp_prompts_list", "value": "mcp_prompts_list" },
           { "selected": false, "text": "mcp_request", "value": "mcp_request" },
           { "selected": false, "text": "mcp_resources_list", "value": "mcp_resources_list" },
-          { "selected": false, "text": "mcp_tools_call", "value": "mcp_tools_call" },
+          { "selected": false, "text": "mcp_tool_call", "value": "mcp_tool_call" },
           { "selected": false, "text": "mcp_tools_list", "value": "mcp_tools_list" },
           { "selected": false, "text": "sse_connection", "value": "sse_connection" }
         ],
-        "query": "http_request,mcp_initialize,mcp_ping,mcp_prompts_list,mcp_request,mcp_resources_list,mcp_tools_call,mcp_tools_list,sse_connection",
+        "query": "http_request,mcp_initialize,mcp_ping,mcp_prompts_list,mcp_request,mcp_resources_list,mcp_tool_call,mcp_tools_list,sse_connection",
         "type": "custom",
         "allValue": ".+"
       },
