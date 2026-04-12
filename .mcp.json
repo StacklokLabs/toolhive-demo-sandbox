@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "google-drive-mcp": {
+      "type": "http",
+      "url": "http://mcp-172-19-0-5.traefik.me/vmcp-google-drive/mcp"
+    }
+  }
+}

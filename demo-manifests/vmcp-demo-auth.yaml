@@ -55,7 +55,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-auth-backend: "true"
 spec:
-  image: ghcr.io/stackloklabs/google-drive-mcp:0.0.3
+  image: ghcr.io/stackloklabs/google-drive-mcp:0.1.0
   transport: streamable-http
   proxyPort: 8080
   mcpPort: 8090
@@ -158,6 +158,11 @@ spec:
         audience: "http://$MCP_HOSTNAME/vmcp-google-drive/mcp"
         insecureAllowHTTP: true
         jwksAllowPrivateIP: true
+        scopes:
+          - openid
+          - profile
+          - email
+          - offline_access
   outgoingAuth:
     source: inline
     backends:
