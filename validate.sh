@@ -179,10 +179,6 @@ for i in $(seq 0 $((ENDPOINT_COUNT - 1))); do
             ;;
 
         registry)
-            # Check health endpoint
-            HEALTH_URL=$(build_url "$URL" "$HEALTHCHECK_PATH")
-            check_health_endpoint "$HEALTH_URL" "$NAME" || true
-
             # Check if registry is populated
             if [[ -n "$REGISTRY_API_PATH" ]]; then
                 REGISTRY_URL=$(build_url "$URL" "$REGISTRY_API_PATH")

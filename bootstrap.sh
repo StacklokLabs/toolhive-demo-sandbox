@@ -227,8 +227,7 @@ cat > demo-endpoints.json <<EOF
       "name": "Registry Server",
       "url": "http://$REGISTRY_HOSTNAME",
       "type": "registry",
-      "healthcheck_path": "/health",
-      "registry_api_path": "/registry/v0.1/servers"
+      "registry_api_path": "/registry/demo-registry/v0.1/servers"
     },
     {
       "name": "MKP MCP Server",
@@ -271,8 +270,8 @@ echo " ✓"
 
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
-echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry"
-echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry --allow-private-ip' to configure ToolHive to use it)"
+echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-registry"
+echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/demo-registry --allow-private-ip' to configure ToolHive to use it)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"

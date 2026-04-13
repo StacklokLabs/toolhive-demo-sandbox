@@ -36,7 +36,7 @@ So far, it includes:
 1. Clone this repo
 2. Run `./bootstrap.sh` from the repo root
 3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway (you can also just keep this running all the time)
-4. Run `thv config set-registry http://registry-<TRAEFIK-IP-WITH-HYPHENS>.traefik.me/registry` (or set a custom registry in the UI settings) to point your ToolHive instance to the local registry server
+4. Run `thv config set-registry http://registry-<TRAEFIK-IP-WITH-HYPHENS>.traefik.me/registry/demo-registry` (or set a custom registry in the UI settings) to point your ToolHive instance to the local registry server
 5. Access the Cloud UI, MCP servers, and Grafana via the URLs printed at the end of the bootstrap process
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
@@ -98,8 +98,8 @@ Waiting for all pods to be ready... ✓
 Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (you'll have to accept the self-signed certificate)
- - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry
-   (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry --allow-private-ip' to configure ToolHive to use it)
+ - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry/demo-registry
+   (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry/demo-registry --allow-private-ip' to configure ToolHive to use it)
  - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
  - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
  - vMCP composite tool demo server at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
