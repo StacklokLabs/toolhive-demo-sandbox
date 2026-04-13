@@ -4,8 +4,6 @@
 extraEnv:
   - name: PGPASSFILE
     value: /home/appuser/.pgpass
-  - name: THV_REGISTRY_ENABLE_AGGREGATED_ENDPOINTS
-    value: "true"
 
 # Init container to prepare pgpass file with correct permissions
 initContainers:
@@ -48,8 +46,7 @@ extraVolumeMounts:
 
 # Registry server configuration with CNPG PostgreSQL
 config:
-  registryName: demo-registry
-  registries:
+  sources:
     # ToolHive registry
     - name: toolhive
       format: upstream
@@ -87,8 +84,14 @@ config:
 
     # Auto-discover MCP servers in the current Kubernetes cluster
     - name: k8s
-      format: toolhive
       kubernetes: {}
+
+  registries:
+    - name: demo-registry
+      sources:
+        - toolhive
+        - official
+        - k8s
 
   # CNPG PostgreSQL database configuration
   # Uses the CNPG read-write service (registry-db-rw)
