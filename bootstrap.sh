@@ -24,7 +24,7 @@ TOOLHIVE_OPERATOR_CHART_VERSION="0.18.0" # renovate: datasource=docker depName=g
 REGISTRY_SERVER_CHART_VERSION="1.1.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
 CLOUD_UI_VERSION="v0.5.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 MCP_OPTIMIZER_CHART_VERSION="0.3.0" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
-KEYCLOAK_VERSION="26.4.7" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
+KEYCLOAK_VERSION="26.5.7" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
@@ -144,20 +144,33 @@ UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
 AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
 
+echo -n "Installing Keycloak..."
+if ! namespace_exists keycloak; then
+    run_quiet kubectl create namespace keycloak || die "Failed to create keycloak namespace"
+fi
+# On re-runs, restart after apply so it re-imports the (possibly updated) realm from the ConfigMap.
+# KC_DB=dev-mem is in-memory only; existing pods keep the old realm after a ConfigMap update.
+KEYCLOAK_ALREADY_RUNNING=$(kubectl get deployment keycloak -n keycloak -o name 2>/dev/null | grep -q . && echo "true" || echo "false")
+run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
+if [ "$KEYCLOAK_ALREADY_RUNNING" = "true" ]; then
+    run_quiet kubectl rollout restart deployment/keycloak -n keycloak || die "Failed to restart Keycloak"
+fi
+run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
+echo " ✓"
+
 echo -n "Creating PostgreSQL server for ToolHive Registry Server..."
 run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
 run_quiet kubectl apply -f demo-manifests/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
 run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n toolhive-system --timeout=5m || die "PostgreSQL server for Registry Server failed to become ready"
 echo " ✓"
 
-echo -n "Installing Registry Server..."
-run_quiet helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version "$REGISTRY_SERVER_CHART_VERSION" --namespace toolhive-system --values demo-manifests/registry-server-helm-values.yaml --wait || die "Failed to install Registry Server"
-run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
+echo -n "Creating Traefik CA ConfigMap for registry server TLS verification..."
+run_quiet sh -c "kubectl get secret traefik-me-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
 echo " ✓"
 
-echo -n "Installing Keycloak..."
-run_quiet sh -c "envsubst < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
-run_quiet kubectl wait --for=condition=available --timeout=300s deployment/keycloak --namespace toolhive-system || die "Keycloak failed to become ready"
+echo -n "Installing Registry Server..."
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME' < demo-manifests/registry-server-helm-values.yaml | helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version $REGISTRY_SERVER_CHART_VERSION --namespace toolhive-system --values - --wait" || die "Failed to install Registry Server"
+run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
 echo " ✓"
 
 echo -n "Installing Cloud UI..."
@@ -183,7 +196,6 @@ run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
-run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-auth.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo with auth"
 echo " ✓"
 
 echo -n "Installing MCP Optimizer..."
@@ -197,6 +209,24 @@ echo " ✓"
 echo -n "Waiting for all pods to be ready..."
 run_quiet wait_for_pods_ready toolhive-system 300 || die "Pods failed to become ready"
 echo " ✓"
+
+# Validate registry by fetching a token and querying the server list
+echo -n "Validating registry server..."
+REGISTRY_TOKEN=$(curl -sk -X POST "https://${AUTH_HOSTNAME}/realms/toolhive-demo/protocol/openid-connect/token" \
+    -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
+    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+if [ -z "$REGISTRY_TOKEN" ]; then
+    echo " ⚠ (could not obtain token from Keycloak — registry validation skipped)"
+else
+    SERVER_COUNT=$(curl -s "http://${REGISTRY_HOSTNAME}/registry/demo-registry/v0.1/servers?limit=100" \
+        -H "Authorization: Bearer ${REGISTRY_TOKEN}" 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(set(s.get('server',{}).get('name','') for s in d.get('servers',[]))))" 2>/dev/null)
+    if [ -n "$SERVER_COUNT" ] && [ "$SERVER_COUNT" -gt 0 ] 2>/dev/null; then
+        echo " ✓ ($SERVER_COUNT unique servers detected)"
+    else
+        echo " ⚠ (registry returned no servers — sources may still be syncing)"
+    fi
+fi
 
 # Output endpoint information to JSON file for validation
 echo -n "Writing endpoint information to demo-endpoints.json..."
@@ -259,13 +289,20 @@ echo " ✓"
 
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - Keycloak Admin Console at https://$AUTH_HOSTNAME/admin (admin/admin)"
-echo "   Demo Users: demo/demo (developers) or test/test (developers+admins)"
-echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (you'll have to accept the self-signed certificate)"
+echo "   Demo Users:"
+echo "     demo       / demo        — Shared persona (sees all tools)"
+echo "     alice      / alice       — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)"
+echo "     bob        / bob         — Finance persona (sees finance tools: Stripe)"
+echo "     admin-user / admin-user  — Admin persona (registry superAdmin — sees all tools)"
+echo "     Both alice and bob see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers."
+echo " - ToolHive Cloud UI at https://$UI_HOSTNAME
+   NOTE: You must accept the self-signed certificate for BOTH of these domains before logging in:
+     1. https://$UI_HOSTNAME  (open and accept)
+     2. https://$AUTH_HOSTNAME  (open and accept — required for the login redirect)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-registry"
-echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/demo-registry --allow-private-ip' to configure ToolHive to use it)"
+echo "   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
-echo " - vMCP authenticated demo server at http://$MCP_HOSTNAME/vmcp-authenticated/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

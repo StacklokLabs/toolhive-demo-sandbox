@@ -30,25 +30,32 @@ initContainers:
       - name: pgpass
         mountPath: /pgpass
 
-# Volumes for pgpass file
+# Volumes for pgpass file and Traefik CA cert
 extraVolumes:
   - name: pgpass-secret
     secret:
       secretName: cnpg-pgpass
   - name: pgpass
     emptyDir: {}
+  - name: traefik-ca
+    configMap:
+      name: traefik-ca
 
 extraVolumeMounts:
   - name: pgpass
     mountPath: /home/appuser/.pgpass
     subPath: .pgpass
     readOnly: true
+  - name: traefik-ca
+    mountPath: /etc/ssl/certs/traefik-ca.crt
+    subPath: ca.crt
+    readOnly: true
 
 # Registry server configuration with CNPG PostgreSQL
 config:
   sources:
-    # ToolHive registry
-    - name: toolhive
+    # Shared tools — visible to all authenticated users
+    - name: toolhive-shared
       format: upstream
       git:
         repository: https://github.com/stacklok/toolhive-catalog.git
@@ -60,15 +67,47 @@ config:
         names:
           include:
             - io.github.stacklok/notion-remote
-            - io.github.stacklok/stripe-remote
+            - io.github.stacklok/time
+            - io.github.stacklok/toolhive-doc-mcp-remote
+      claims:
+        groups: everyone
+
+    # Engineering tools — restricted to the engineering group
+    - name: toolhive-engineering
+      format: upstream
+      git:
+        repository: https://github.com/stacklok/toolhive-catalog.git
+        branch: main
+        path: pkg/catalog/toolhive/data/registry-upstream.json
+      syncPolicy:
+        interval: "15m"
+      filter:
+        names:
+          include:
             - io.github.stacklok/aws-documentation
             - io.github.stacklok/filesystem
             - io.github.stacklok/playwright
-            - io.github.stacklok/time
-            - io.github.stacklok/toolhive-doc-mcp-remote
+      claims:
+        groups: engineering
 
-    # Official MCP registry
-    - name: official
+    # Finance tools — restricted to the finance group
+    - name: toolhive-finance
+      format: upstream
+      git:
+        repository: https://github.com/stacklok/toolhive-catalog.git
+        branch: main
+        path: pkg/catalog/toolhive/data/registry-upstream.json
+      syncPolicy:
+        interval: "15m"
+      filter:
+        names:
+          include:
+            - io.github.stacklok/stripe-remote
+      claims:
+        groups: finance
+
+    # Official registry — engineering tools
+    - name: official-engineering
       format: upstream
       api:
         endpoint: https://registry.modelcontextprotocol.io
@@ -79,18 +118,23 @@ config:
           include:
             - com.figma.mcp/mcp
             - com.gitlab/mcp
-            - com.paypal.mcp/mcp
             - com.postman/postman-mcp-server
+      claims:
+        groups: engineering
 
-    # Auto-discover MCP servers in the current Kubernetes cluster
+    # Auto-discover MCP servers in the current Kubernetes cluster (visible to all)
     - name: k8s
       kubernetes: {}
+      claims:
+        groups: everyone
 
   registries:
     - name: demo-registry
       sources:
-        - toolhive
-        - official
+        - toolhive-shared
+        - toolhive-engineering
+        - toolhive-finance
+        - official-engineering
         - k8s
 
   # CNPG PostgreSQL database configuration
@@ -107,7 +151,21 @@ config:
     connMaxLifetime: "30m"
 
   auth:
-    mode: anonymous
+    mode: oauth
+    oauth:
+      resourceUrl: https://$REGISTRY_HOSTNAME
+      providers:
+        - name: keycloak
+          issuerUrl: https://$AUTH_HOSTNAME/realms/toolhive-demo
+          audience: toolhive-registry-server
+          allowPrivateIP: true
+          caCertPath: /etc/ssl/certs/traefik-ca.crt
+    authz:
+      roles:
+        # At least one role entry is required for Viper to recognize the authz
+        # block as non-nil, which enables per-entry claims-based filtering.
+        superAdmin:
+          - groups: admins
 
   telemetry:
     enabled: true
