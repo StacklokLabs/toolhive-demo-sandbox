@@ -61,18 +61,6 @@ The demo uses Keycloak for OpenID Connect authentication:
 
   All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
 
-All credentials are for demo purposes only and should be changed in production environments.
-
-## Architecture
-
-The demo deploys across three namespaces:
-
-- **`keycloak`** — Keycloak identity provider (in-memory dev mode with realm import)
-- **`toolhive-system`** — Registry server, Cloud UI, MCP servers, ToolHive operator
-- **`traefik`** — Traefik gateway with TLS termination (self-signed wildcard cert via cert-manager)
-
-Traefik terminates TLS at the gateway. Keycloak is configured with `KC_HOSTNAME` set to the external HTTPS URL, ensuring consistent OIDC issuer URLs regardless of whether it's accessed internally or externally. The registry server discovers Keycloak's JWKS via standard OIDC discovery through Traefik.
-
 ## Troubleshooting
 
 If the bootstrap fails, check the output for errors. You can also use `kubectl` or `k9s` to inspect the cluster state.
@@ -110,6 +98,7 @@ None at this time. Please open issues if you encounter any problems.
 - [ ] Deploy registry server using the ToolHive Operator instead of manually
 - [x] Add a Keycloak instance for authentication
 - [x] Claims-based authorization with group-scoped registry sources
+- [ ] Add an authenticated version of the vMCP server
 - [ ] Persona-specific vMCP server demos
 
 ## Example
