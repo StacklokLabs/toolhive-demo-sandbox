@@ -148,13 +148,10 @@ echo -n "Installing Keycloak..."
 if ! namespace_exists keycloak; then
     run_quiet kubectl create namespace keycloak || die "Failed to create keycloak namespace"
 fi
-# On re-runs, restart after apply so it re-imports the (possibly updated) realm from the ConfigMap.
-# KC_DB=dev-mem is in-memory only; existing pods keep the old realm after a ConfigMap update.
-KEYCLOAK_ALREADY_RUNNING=$(kubectl get deployment keycloak -n keycloak -o name 2>/dev/null | grep -q . && echo "true" || echo "false")
+# Keycloak uses dev-file (H2 on disk) with a PVC, so signing keys and realm
+# data persist across restarts. The --import-realm flag is a no-op when the
+# realm already exists, so re-runs are safe.
 run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
-if [ "$KEYCLOAK_ALREADY_RUNNING" = "true" ]; then
-    run_quiet kubectl rollout restart deployment/keycloak -n keycloak || die "Failed to restart Keycloak"
-fi
 run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
 echo " ✓"
 
@@ -289,20 +286,16 @@ echo " ✓"
 
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - Keycloak Admin Console at https://$AUTH_HOSTNAME/admin (admin/admin)"
+echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (NOTE: self-signed cert, expect a browser warning)"
 echo "   Demo Users:"
-echo "     demo       / demo        — Shared persona (sees all tools)"
-echo "     alice      / alice       — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)"
-echo "     bob        / bob         — Finance persona (sees finance tools: Stripe)"
-echo "     admin-user / admin-user  — Admin persona (registry superAdmin — sees all tools)"
-echo "     Both alice and bob see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers."
-echo " - ToolHive Cloud UI at https://$UI_HOSTNAME
-   NOTE: You must accept the self-signed certificate for BOTH of these domains before logging in:
-     1. https://$UI_HOSTNAME  (open and accept)
-     2. https://$AUTH_HOSTNAME  (open and accept — required for the login redirect)"
+echo "     demo  / demo   — Admin persona (registry superAdmin, sees all tools)"
+echo "     alice / alice  — Engineering persona"
+echo "     bob   / bob    — Finance persona"
+echo "     All users see shared tools and in-cluster MCP servers."
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-registry"
 echo "   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)"
-echo " - Public Registry (no auth, K8s servers only) at http://$REGISTRY_HOSTNAME/registry/public"
-echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip' to use with ToolHive CLI)"
+echo " - Public Registry (no auth) at http://$REGISTRY_HOSTNAME/registry/public for the ToolHive CLI or UI"
+echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip' or addin the UI settings)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
