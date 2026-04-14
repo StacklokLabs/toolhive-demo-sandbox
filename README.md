@@ -56,11 +56,11 @@ The demo uses Keycloak for OpenID Connect authentication:
 
 - **Demo Users** (realm: `toolhive-demo`, client: `toolhive-cloud-ui`):
 
-  | User | Password | Groups | Sees |
-  |------|----------|--------|------|
-  | `demo` | `demo` | everyone, engineering, finance | All tools (registry superAdmin) |
-  | `alice` | `alice` | everyone, engineering | Shared + engineering tools (AWS docs, Playwright, GitLab, Figma, Postman) |
-  | `bob` | `bob` | everyone, finance | Shared + finance tools (Stripe) |
+  | User    | Password | Groups                         | Sees                                                                      |
+  | ------- | -------- | ------------------------------ | ------------------------------------------------------------------------- |
+  | `demo`  | `demo`   | everyone, engineering, finance | All tools (registry superAdmin)                                           |
+  | `alice` | `alice`  | everyone, engineering          | Shared + engineering tools (AWS docs, Playwright, GitLab, Figma, Postman) |
+  | `bob`   | `bob`    | everyone, finance              | Shared + finance tools (Stripe)                                           |
 
   All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
 
@@ -79,7 +79,6 @@ To validate all services are working:
 ```sh
 ./validate.sh
 ```
-
 
 ## Cleanup
 
@@ -130,7 +129,7 @@ Installing MKP MCP server... ✓
 Installing vMCP demo servers... ✓
 Installing MCP Optimizer... ✓
 Waiting for all pods to be ready... ✓
-Validating registry server... ⚠ (registry returned no servers — sources may still be syncing)
+Validating registry server... ✓ (18 unique servers detected)
 Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - Keycloak Admin Console at https://auth-172-19-0-3.traefik.me/admin (admin/admin)
