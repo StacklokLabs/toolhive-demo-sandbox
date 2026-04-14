@@ -122,11 +122,15 @@ config:
       claims:
         groups: engineering
 
-    # Auto-discover MCP servers in the current Kubernetes cluster (visible to all)
+    # Auto-discover MCP servers in the current Kubernetes cluster (visible to all authenticated users)
     - name: k8s
       kubernetes: {}
       claims:
         groups: everyone
+
+    # Same K8s discovery but without claims — used by the public registry
+    - name: k8s-public
+      kubernetes: {}
 
   registries:
     - name: demo-registry
@@ -136,6 +140,11 @@ config:
         - toolhive-finance
         - official-engineering
         - k8s
+
+    # Unauthenticated registry for CLI access (thv, curl, etc.)
+    - name: public
+      sources:
+        - k8s-public
 
   # CNPG PostgreSQL database configuration
   # Uses the CNPG read-write service (registry-db-rw)
@@ -152,6 +161,8 @@ config:
 
   auth:
     mode: oauth
+    publicPaths:
+      - /registry/public
     oauth:
       resourceUrl: https://$REGISTRY_HOSTNAME
       providers:

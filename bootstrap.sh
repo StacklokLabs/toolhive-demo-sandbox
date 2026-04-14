@@ -301,6 +301,8 @@ echo " - ToolHive Cloud UI at https://$UI_HOSTNAME
      2. https://$AUTH_HOSTNAME  (open and accept — required for the login redirect)"
 echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-registry"
 echo "   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)"
+echo " - Public Registry (no auth, K8s servers only) at http://$REGISTRY_HOSTNAME/registry/public"
+echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip' to use with ToolHive CLI)"
 echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
 echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
 echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
