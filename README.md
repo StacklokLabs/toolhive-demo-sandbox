@@ -8,8 +8,9 @@ The goal is a fully functional ToolHive platform running locally to exercise all
 
 So far, it includes:
 
-- A ToolHive Registry Server with a few servers filtered from the official and ToolHive registries plus K8s discovery
-- The ToolHive Cloud UI connected to the registry server with a mock OIDC provider for authentication
+- A ToolHive Registry Server with group-based access control (engineering, finance, shared tools) plus K8s auto-discovery
+- Keycloak for OpenID Connect authentication with demo users and claims-based authorization
+- The ToolHive Cloud UI connected to the registry server with Keycloak authentication
 - A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
 - A vMCP server with a composite tool chaining together multiple arXiv tools
 - The MKP MCP server for managing the cluster, exposed directly
@@ -36,10 +37,29 @@ So far, it includes:
 1. Clone this repo
 2. Run `./bootstrap.sh` from the repo root
 3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway (you can also just keep this running all the time)
-4. Run `thv config set-registry http://registry-<TRAEFIK-IP-WITH-HYPHENS>.traefik.me/registry/demo-registry` (or set a custom registry in the UI settings) to point your ToolHive instance to the local registry server
+4. Accept the self-signed certificate for **both** `https://ui-<IP>.traefik.me` and `https://auth-<IP>.traefik.me` in your browser before logging in
 5. Access the Cloud UI, MCP servers, and Grafana via the URLs printed at the end of the bootstrap process
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
+
+## Authentication
+
+The demo uses Keycloak for OpenID Connect authentication:
+
+- **Admin Console**: `https://auth-<IP>.traefik.me/admin`
+  - Username: `admin`
+  - Password: `admin`
+
+- **Demo Users** (realm: `toolhive-demo`, client: `toolhive-cloud-ui`):
+
+  | User | Password | Groups | Sees |
+  |------|----------|--------|------|
+  | `demo` | `demo` | everyone, engineering, finance | All tools |
+  | `alice` | `alice` | everyone, engineering | Shared + engineering tools (AWS docs, Playwright, GitLab, Figma, Postman) |
+  | `bob` | `bob` | everyone, finance | Shared + finance tools (Stripe) |
+  | `admin-user` | `admin-user` | everyone, admins | All tools (registry superAdmin) |
+
+  All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
 
 ## Troubleshooting
 
@@ -51,9 +71,18 @@ To re-run the bootstrap with more verbosity, you can set the `DEBUG` environment
 DEBUG=1 ./bootstrap.sh
 ```
 
+To validate all services are working:
+
+```sh
+./validate.sh
+```
+
+> [!NOTE]
+> If you restart Keycloak independently (outside of `bootstrap.sh`), you must also restart the registry server — Keycloak uses in-memory storage (`KC_DB=dev-mem`) so signing keys regenerate on every restart, invalidating the registry server's JWKS cache.
+
 ## Cleanup
 
-Run the `./cleanup.sh` script to delete the mocked OIDC provider Docker image and the cluster.
+Run the `./cleanup.sh` script to delete the cluster.
 
 ## Known issues
 
@@ -67,7 +96,8 @@ None at this time. Please open issues if you encounter any problems.
 - [x] Add toolhive-cloud-ui deployment
 - [x] Add MCP Optimizer demo server
 - [ ] Deploy registry server using the ToolHive Operator instead of manually
-- [ ] Add a Keycloak instance for authentication
+- [x] Add a Keycloak instance for authentication
+- [x] Claims-based authorization with group-scoped registry sources
 - [ ] Add an authenticated version of the vMCP server
 - [ ] Persona-specific vMCP server demos
 
@@ -87,24 +117,39 @@ Installing cert-manager... ✓
 Installing Traefik... ✓
 Installing observability stack... ✓
 Installing ToolHive Operator... ✓
-Checking for Traefik Gateway IP... ✓ (172.19.0.3)
+Checking for Traefik Gateway IP... ✓ (172.19.0.2)
+Installing Keycloak... ✓
+Creating PostgreSQL server for ToolHive Registry Server... ✓
+Creating Traefik CA ConfigMap for registry server TLS verification... ✓
 Installing Registry Server... ✓
 Installing Cloud UI... ✓
 Configuring Grafana HTTPRoute... ✓
+Installing shared MCPTelemetryConfig resource... ✓
 Installing MKP MCP server... ✓
 Installing vMCP demo servers... ✓
 Installing MCP Optimizer... ✓
 Waiting for all pods to be ready... ✓
+Validating registry server... ✓ (18 unique servers detected)
 Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
- - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (you'll have to accept the self-signed certificate)
- - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry/demo-registry
-   (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry/demo-registry --allow-private-ip' to configure ToolHive to use it)
- - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
- - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
- - vMCP composite tool demo server at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
- - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
- - Grafana at http://grafana-172-19-0-3.traefik.me
+ - Keycloak Admin Console at https://auth-172-19-0-2.traefik.me/admin (admin/admin)
+   Demo Users:
+     demo       / demo        — Shared persona (sees all tools)
+     alice      / alice       — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)
+     bob        / bob         — Finance persona (sees finance tools: Stripe)
+     admin-user / admin-user  — Admin persona (registry superAdmin — sees all tools)
+     Both alice and bob see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
+ - ToolHive Cloud UI at https://ui-172-19-0-2.traefik.me
+   NOTE: You must accept the self-signed certificate for BOTH of these domains before logging in:
+     1. https://ui-172-19-0-2.traefik.me  (open and accept)
+     2. https://auth-172-19-0-2.traefik.me  (open and accept — required for the login redirect)
+ - ToolHive Registry Server at http://registry-172-19-0-2.traefik.me/registry/demo-registry
+   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)
+ - MKP MCP server at http://mcp-172-19-0-2.traefik.me/mkp/mcp
+ - vMCP demo server at http://mcp-172-19-0-2.traefik.me/vmcp-demo/mcp
+ - vMCP composite tool demo server at http://mcp-172-19-0-2.traefik.me/vmcp-research/mcp
+ - MCP Optimizer at http://mcp-172-19-0-2.traefik.me/mcp-optimizer/mcp
+ - Grafana at http://grafana-172-19-0-2.traefik.me
 ```
 
 ## Windows notes

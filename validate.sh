@@ -152,10 +152,15 @@ echo ""
 ENDPOINT_COUNT=$(jq -r '.endpoints | length' "$ENDPOINTS_FILE")
 
 for i in $(seq 0 $((ENDPOINT_COUNT - 1))); do
-    # Extract all fields in a single jq call using tab-separated values
-    IFS=$'\t' read -r NAME URL TYPE EXPECT_CERT_ERROR HEALTHCHECK_PATH TEST_WITH_THV REGISTRY_API_PATH < <(
-        jq -r ".endpoints[$i] | [.name, .url, .type, (.expect_cert_error // false), (.healthcheck_path // \"\"), (.test_with_thv // false), (.registry_api_path // \"\")] | @tsv" "$ENDPOINTS_FILE"
-    )
+    eval "$(jq -r ".endpoints[$i] | @sh \"
+        NAME=\(.name)
+        URL=\(.url)
+        TYPE=\(.type)
+        EXPECT_CERT_ERROR=\(.expect_cert_error // false)
+        HEALTHCHECK_PATH=\(.healthcheck_path // \"\")
+        TEST_WITH_THV=\(.test_with_thv // false)
+        REGISTRY_API_PATH=\(.registry_api_path // \"\")
+    \"" "$ENDPOINTS_FILE")"
 
     echo "[$((i+1))/$ENDPOINT_COUNT] Testing $NAME"
     log_info "URL: $URL"
@@ -179,15 +184,30 @@ for i in $(seq 0 $((ENDPOINT_COUNT - 1))); do
             ;;
 
         registry)
-            # Check if registry is populated
+            # Check if registry is populated (requires auth token)
             if [[ -n "$REGISTRY_API_PATH" ]]; then
                 REGISTRY_URL=$(build_url "$URL" "$REGISTRY_API_PATH")
-                SERVER_COUNT=$(curl -s --max-time 10 "$REGISTRY_URL" 2>/dev/null | jq -r '.metadata.count // 0' 2>/dev/null || echo "0")
 
-                if [[ -n "$SERVER_COUNT" ]] && [[ "$SERVER_COUNT" -gt 0 ]] 2>/dev/null; then
-                    log_pass "$NAME is populated ($SERVER_COUNT servers)"
+                # Obtain a token from Keycloak for the demo user
+                BASE_HOSTNAME=$(jq -r '.base_hostname' "$ENDPOINTS_FILE")
+                AUTH_HOSTNAME="auth-${BASE_HOSTNAME}"
+                REGISTRY_TOKEN=$(curl -sk --max-time 10 -X POST \
+                    "https://${AUTH_HOSTNAME}/realms/toolhive-demo/protocol/openid-connect/token" \
+                    -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
+                    2>/dev/null | jq -r '.access_token // empty' 2>/dev/null || echo "")
+
+                if [[ -z "$REGISTRY_TOKEN" ]]; then
+                    log_warn "$NAME validation skipped (could not obtain auth token from Keycloak)"
                 else
-                    log_warn "$NAME appears empty (server count: $SERVER_COUNT)"
+                    SERVER_COUNT=$(curl -s --max-time 10 "${REGISTRY_URL}?limit=100" \
+                        -H "Authorization: Bearer ${REGISTRY_TOKEN}" 2>/dev/null \
+                        | jq '[.servers[].server.name] | unique | length' 2>/dev/null || echo "0")
+
+                    if [[ -n "$SERVER_COUNT" ]] && [[ "$SERVER_COUNT" -gt 0 ]] 2>/dev/null; then
+                        log_pass "$NAME is populated ($SERVER_COUNT unique servers)"
+                    else
+                        log_warn "$NAME appears empty (sources may still be syncing)"
+                    fi
                 fi
             fi
             ;;
