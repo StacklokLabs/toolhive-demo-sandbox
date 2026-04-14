@@ -269,6 +269,22 @@ spec:
   selector:
     app: keycloak
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-h2-data
+  namespace: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -298,7 +314,7 @@ spec:
             - --import-realm
           env:
             - name: KC_DB
-              value: "dev-mem"
+              value: "dev-file"
             - name: KC_HEALTH_ENABLED
               value: "true"
             - name: KC_METRICS_ENABLED
@@ -321,6 +337,8 @@ spec:
             - name: realm-import
               mountPath: /opt/keycloak/data/import
               readOnly: true
+            - name: h2-data
+              mountPath: /opt/keycloak/data/h2
           startupProbe:
             httpGet:
               path: /health/ready
@@ -348,6 +366,9 @@ spec:
         - name: realm-import
           configMap:
             name: keycloak-realm-import
+        - name: h2-data
+          persistentVolumeClaim:
+            claimName: keycloak-h2-data
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -400,7 +421,7 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /realms/toolhive-demo
+            value: /realms/
       backendRefs:
         - name: keycloak
           port: 8080
