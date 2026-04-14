@@ -38,7 +38,11 @@ So far, it includes:
 2. Run `./bootstrap.sh` from the repo root
 3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway (you can also just keep this running all the time)
 4. Accept the self-signed certificate for **both** `https://ui-<IP>.traefik.me` and `https://auth-<IP>.traefik.me` in your browser before logging in
-5. Access the Cloud UI, MCP servers, and Grafana via the URLs printed at the end of the bootstrap process
+5. Point the ToolHive CLI at the public registry:
+   ```sh
+   thv config set-registry http://registry-<IP>.traefik.me/registry/public --allow-private-ip
+   ```
+6. Access the Cloud UI, MCP servers, and Grafana via the URLs printed at the end of the bootstrap process
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
@@ -54,10 +58,9 @@ The demo uses Keycloak for OpenID Connect authentication:
 
   | User | Password | Groups | Sees |
   |------|----------|--------|------|
-  | `demo` | `demo` | everyone, engineering, finance | All tools |
+  | `demo` | `demo` | everyone, engineering, finance | All tools (registry superAdmin) |
   | `alice` | `alice` | everyone, engineering | Shared + engineering tools (AWS docs, Playwright, GitLab, Figma, Postman) |
   | `bob` | `bob` | everyone, finance | Shared + finance tools (Stripe) |
-  | `admin-user` | `admin-user` | everyone, admins | All tools (registry superAdmin) |
 
   All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
 
@@ -134,17 +137,18 @@ Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
  - Keycloak Admin Console at https://auth-172-19-0-2.traefik.me/admin (admin/admin)
    Demo Users:
-     demo       / demo        — Shared persona (sees all tools)
-     alice      / alice       — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)
-     bob        / bob         — Finance persona (sees finance tools: Stripe)
-     admin-user / admin-user  — Admin persona (registry superAdmin — sees all tools)
-     Both alice and bob see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
+     demo  / demo   — Admin persona (registry superAdmin, sees all tools)
+     alice / alice  — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)
+     bob   / bob    — Finance persona (sees finance tools: Stripe)
+     All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
  - ToolHive Cloud UI at https://ui-172-19-0-2.traefik.me
    NOTE: You must accept the self-signed certificate for BOTH of these domains before logging in:
      1. https://ui-172-19-0-2.traefik.me  (open and accept)
      2. https://auth-172-19-0-2.traefik.me  (open and accept — required for the login redirect)
  - ToolHive Registry Server at http://registry-172-19-0-2.traefik.me/registry/demo-registry
    (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)
+ - Public Registry (no auth) at http://registry-172-19-0-2.traefik.me/registry/public
+   (run 'thv config set-registry http://registry-172-19-0-2.traefik.me/registry/public --allow-private-ip' to use with ToolHive CLI)
  - MKP MCP server at http://mcp-172-19-0-2.traefik.me/mkp/mcp
  - vMCP demo server at http://mcp-172-19-0-2.traefik.me/vmcp-demo/mcp
  - vMCP composite tool demo server at http://mcp-172-19-0-2.traefik.me/vmcp-research/mcp

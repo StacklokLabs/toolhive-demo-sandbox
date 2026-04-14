@@ -132,6 +132,26 @@ config:
     - name: k8s-public
       kubernetes: {}
 
+    # ToolHive catalog without claims — used by the public registry
+    - name: toolhive-public
+      format: upstream
+      git:
+        repository: https://github.com/stacklok/toolhive-catalog.git
+        branch: main
+        path: pkg/catalog/toolhive/data/registry-upstream.json
+      syncPolicy:
+        interval: "15m"
+      filter:
+        names:
+          include:
+            - io.github.stacklok/notion-remote
+            - io.github.stacklok/time
+            - io.github.stacklok/toolhive-doc-mcp-remote
+            - io.github.stacklok/aws-documentation
+            - io.github.stacklok/filesystem
+            - io.github.stacklok/playwright
+            - io.github.stacklok/stripe-remote
+
   registries:
     - name: demo-registry
       sources:
@@ -144,6 +164,7 @@ config:
     # Unauthenticated registry for CLI access (thv, curl, etc.)
     - name: public
       sources:
+        - toolhive-public
         - k8s-public
 
   # CNPG PostgreSQL database configuration
@@ -176,7 +197,7 @@ config:
         # At least one role entry is required for Viper to recognize the authz
         # block as non-nil, which enables per-entry claims-based filtering.
         superAdmin:
-          - groups: admins
+          - preferred_username: demo
 
   telemetry:
     enabled: true

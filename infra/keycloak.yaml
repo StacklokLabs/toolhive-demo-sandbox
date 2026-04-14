@@ -241,26 +241,12 @@ data:
           ],
           "realmRoles": ["default-roles-toolhive-demo"],
           "groups": ["/everyone", "/finance"]
-        },
-        {
-          "username": "admin-user",
-          "enabled": true,
-          "emailVerified": true,
-          "email": "admin@example.com",
-          "firstName": "Admin",
-          "lastName": "User",
-          "credentials": [
-            { "type": "password", "value": "admin-user", "temporary": false }
-          ],
-          "realmRoles": ["default-roles-toolhive-demo"],
-          "groups": ["/everyone", "/admins"]
         }
       ],
       "groups": [
         { "name": "everyone",    "path": "/everyone"    },
         { "name": "engineering", "path": "/engineering" },
-        { "name": "finance",     "path": "/finance"     },
-        { "name": "admins",      "path": "/admins"      }
+        { "name": "finance",     "path": "/finance"     }
       ]
     }
 ---

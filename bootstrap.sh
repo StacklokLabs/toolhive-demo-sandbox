@@ -290,11 +290,10 @@ echo " ✓"
 echo "Bootstrap complete! Access your demo services at the following URLs:"
 echo " - Keycloak Admin Console at https://$AUTH_HOSTNAME/admin (admin/admin)"
 echo "   Demo Users:"
-echo "     demo       / demo        — Shared persona (sees all tools)"
-echo "     alice      / alice       — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)"
-echo "     bob        / bob         — Finance persona (sees finance tools: Stripe)"
-echo "     admin-user / admin-user  — Admin persona (registry superAdmin — sees all tools)"
-echo "     Both alice and bob see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers."
+echo "     demo  / demo   — Admin persona (registry superAdmin, sees all tools)"
+echo "     alice / alice  — Engineering persona (sees dev tools: AWS docs, Playwright, GitLab, Figma, Postman)"
+echo "     bob   / bob    — Finance persona (sees finance tools: Stripe)"
+echo "     All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers."
 echo " - ToolHive Cloud UI at https://$UI_HOSTNAME
    NOTE: You must accept the self-signed certificate for BOTH of these domains before logging in:
      1. https://$UI_HOSTNAME  (open and accept)
