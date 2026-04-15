@@ -122,11 +122,10 @@ config:
       claims:
         groups: engineering
 
-    # Auto-discover MCP servers in the current Kubernetes cluster (visible to all authenticated users)
+    # Auto-discover MCP servers in the current Kubernetes cluster.
+    # Per-server visibility is controlled by authz-claims annotations on each MCPServer.
     - name: k8s
       kubernetes: {}
-      claims:
-        groups: everyone
 
     # Same K8s discovery but without claims — used by the public registry
     - name: k8s-public

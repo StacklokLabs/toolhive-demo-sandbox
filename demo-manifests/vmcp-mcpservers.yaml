@@ -18,7 +18,8 @@ spec:
   transport: streamable-http
   proxyPort: 8080
   mcpPort: 8080
-  groupRef: demo-tools
+  groupRef:
+    name: demo-tools
   telemetryConfigRef:
     name: shared-otel
     serviceName: fetch-server
@@ -37,7 +38,8 @@ spec:
   transport: streamable-http
   proxyPort: 8080
   mcpPort: 8080
-  groupRef: demo-tools
+  groupRef:
+    name: demo-tools
   telemetryConfigRef:
     name: shared-otel
     serviceName: osv-server
@@ -53,7 +55,8 @@ metadata:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stackloklabs/ocireg-mcp/server:0.3.0
-  groupRef: demo-tools
+  groupRef:
+    name: demo-tools
   transport: streamable-http
   mcpPort: 8080
   proxyPort: 8080
@@ -72,7 +75,8 @@ metadata:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stacklok/dockyard/npx/context7:2.1.4
-  groupRef: demo-tools
+  groupRef:
+    name: demo-tools
   transport: stdio
   proxyPort: 8080
   proxyMode: streamable-http
@@ -91,7 +95,8 @@ metadata:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: docker.io/grafana/mcp-grafana:0.11.6
-  groupRef: demo-tools
+  groupRef:
+    name: demo-tools
   transport: streamable-http
   mcpPort: 8000
   proxyPort: 8080
@@ -124,7 +129,8 @@ metadata:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
   image: ghcr.io/stacklok/dockyard/uvx/arxiv-mcp-server:0.3.2
-  groupRef: research-tools
+  groupRef:
+    name: research-tools
   transport: stdio
   proxyPort: 8080
   proxyMode: streamable-http

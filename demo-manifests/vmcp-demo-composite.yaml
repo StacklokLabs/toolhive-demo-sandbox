@@ -51,10 +51,13 @@ metadata:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-research/mcp"
     toolhive.stacklok.dev/registry-title: "vMCP Research Server"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "everyone"}'
     toolhive.stacklok.dev/registry-description: |
       A vMCP server demonstrating a research workflow with a composite tool.
     toolhive.stacklok.dev/tool-definitions: '[{"name":"arxiv_list_papers","description":"List all existing papers available as resources"},{"name":"research_topic","description":"Search arXiv for papers and read the top result"}]'
 spec:
+  groupRef:
+    name: research-tools
   config:
     groupRef: research-tools
     telemetry:
