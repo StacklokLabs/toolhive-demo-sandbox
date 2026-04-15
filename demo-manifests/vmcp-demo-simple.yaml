@@ -15,6 +15,7 @@ spec:
   groupRef:
     name: demo-tools
   config:
+    groupRef: demo-tools
     telemetry:
       endpoint: mcp-collector.observability.svc.cluster.local:4318
       insecure: true

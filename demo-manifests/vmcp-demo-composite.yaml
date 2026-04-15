@@ -59,6 +59,7 @@ spec:
   groupRef:
     name: research-tools
   config:
+    groupRef: research-tools
     telemetry:
       endpoint: mcp-collector.observability.svc.cluster.local:4318
       insecure: true
