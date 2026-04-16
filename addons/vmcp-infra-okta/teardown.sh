@@ -7,6 +7,7 @@ echo " done"
 
 echo -n "Removing VirtualMCPServer..."
 kubectl delete virtualmcpserver vmcp-infra-okta -n toolhive-system --ignore-not-found > /dev/null 2>&1 || true
+kubectl delete mcpoidcconfig vmcp-infra-okta-oidc -n toolhive-system --ignore-not-found > /dev/null 2>&1 || true
 echo " done"
 
 echo -n "Removing secrets..."

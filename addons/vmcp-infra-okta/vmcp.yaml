@@ -3,6 +3,16 @@
 # Okta for upstream identity. Exposed externally via a Cloudflare tunnel
 # (see cloudflared.yaml) — no Traefik HTTPRoute.
 apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPOIDCConfig
+metadata:
+  name: vmcp-infra-okta-oidc
+  namespace: toolhive-system
+spec:
+  type: inline
+  inline:
+    issuer: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: VirtualMCPServer
 metadata:
   name: vmcp-infra-okta
@@ -55,12 +65,10 @@ spec:
   # Validate tokens issued by the embedded auth server
   incomingAuth:
     type: oidc
-    oidcConfig:
-      type: inline
+    oidcConfigRef:
+      name: vmcp-infra-okta-oidc
+      audience: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
       resourceUrl: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
-      inline:
-        issuer: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}
-        audience: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
 
   outgoingAuth:
     source: inline
@@ -68,7 +76,6 @@ spec:
   groupRef:
     name: infra-tools
   config:
-    groupRef: infra-tools
     telemetry:
       endpoint: mcp-collector.observability.svc.cluster.local:4318
       insecure: true
