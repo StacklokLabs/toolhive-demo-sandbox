@@ -23,7 +23,15 @@ Add-ons deploy into their own Kubernetes namespace and are independent of each o
 
 ## Creating a new add-on
 
-Use an existing add-on as a template. The expected structure:
+Copy the [_template](_template/) directory and rename it:
+
+```bash
+cp -r _template my-addon
+cd my-addon
+# Edit the files, replace TODO placeholders with your logic
+```
+
+The expected structure:
 
 ```
 addons/<name>/
