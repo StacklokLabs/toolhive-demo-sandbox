@@ -4,5 +4,7 @@ demo-endpoints.json
 local-demos/*
 !local-demos/.gitkeep
 
+addons/**/.env
+
 .vscode/*
 .DS_Store

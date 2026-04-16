@@ -1,0 +1,50 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: github-local
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/github-local/mcp"
+    toolhive.stacklok.dev/registry-title: "GitHub MCP Server (Local)"
+    toolhive.stacklok.dev/registry-description: "Read-only access to GitHub repositories, issues, and pull requests via PAT."
+spec:
+  image: ghcr.io/github/github-mcp-server:v0.30.2
+  transport: stdio
+  proxyPort: 8080
+  secrets:
+    - name: github-local-token
+      key: token
+      targetEnvName: GITHUB_PERSONAL_ACCESS_TOKEN
+  env:
+    - name: GITHUB_READ_ONLY
+      value: "1"
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: github-local-server
+  audit:
+    enabled: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: github-local-mcp-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /github-local
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: mcp-github-local-proxy
+          port: 8080
