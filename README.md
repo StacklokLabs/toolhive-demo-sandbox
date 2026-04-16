@@ -13,11 +13,12 @@ So far, it includes:
 - The ToolHive Cloud UI connected to the registry server with Keycloak authentication
 - Persona-specific vMCP gateways:
   - **vMCP Infra** (engineering) — Prometheus, Grafana, OSV, OCI registry, and MKP (Kubernetes)
-  - **vMCP Docs** (shared) — Context7 and internal docs fetch
+  - **vMCP Infra (Optimized)** — same backends, but optimizer-enabled: exposes only `find_tool` and `call_tool` via semantic tool search
+  - **vMCP Docs** (shared) — Context7, internal docs fetch, and a remote-proxy to hosted ToolHive docs
   - **vMCP Finance** (finance) — stubbed, awaiting real finance backends
   - **vMCP Research** (shared) — arXiv with a composite research-topic tool
 - The MKP MCP server for managing the cluster, also exposed directly
-- An MCP Optimizer server for intelligent tool calling across multiple MCP servers
+- A shared text-embeddings server (HuggingFace TEI) backing the optimizer-enabled vMCPs
 - Traefik as the gateway for routing traffic into the cluster
 - An observability stack to capture traces and metrics from the MCP servers
 - Grafana dashboard to view MCP server metrics
@@ -126,8 +127,8 @@ Creating PostgreSQL server for ToolHive Registry Server... ✓
 Creating Traefik CA ConfigMap for registry server TLS verification... ✓
 Installing shared MCPTelemetryConfig resource... ✓
 Installing persona MCPGroups and backends... ✓
+Installing embedding server for optimizer-enabled vMCPs... ✓
 Installing persona vMCP gateways... ✓
-Installing MCP Optimizer... ✓
 Installing Registry Server... ✓
 Installing Cloud UI... ✓
 Configuring Grafana HTTPRoute... ✓
@@ -148,10 +149,10 @@ Bootstrap complete! Access your demo services at the following URLs:
    (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry/public --allow-private-ip' or addin the UI settings)
  - MKP MCP server (standalone, engineering) at http://mcp-172-19-0-3.traefik.me/mkp/mcp
  - vMCP Infra gateway (alice/engineering) at http://mcp-172-19-0-3.traefik.me/vmcp-infra/mcp
+ - vMCP Infra gateway (optimizer-enabled) at http://mcp-172-19-0-3.traefik.me/vmcp-infra-optimized/mcp
  - vMCP Docs gateway (shared) at http://mcp-172-19-0-3.traefik.me/vmcp-docs/mcp
  - vMCP Finance gateway (bob/finance, stub) at http://mcp-172-19-0-3.traefik.me/vmcp-finance/mcp
  - vMCP Research gateway (shared) at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
- - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
  - Grafana at http://grafana-172-19-0-3.traefik.me
 ```
 
