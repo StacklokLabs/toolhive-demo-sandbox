@@ -68,15 +68,6 @@ Each dir under `addons/` is a self-contained opt-in feature. Use `addons/_templa
 
 Each addon ships `deploy.sh`, `teardown.sh`, `README.md`, and a `.env.example` listing required vars. Don't invent parallel patterns; extend `_lib.sh` if something's missing.
 
-## Operator v0.21.0 breaking changes to watch for
-
-- MCPServer / MCPRemoteProxy: inline `spec.telemetry` is gone. Use `telemetryConfigRef` pointing at an MCPTelemetryConfig (shared one is `shared-otel` in `demo-manifests/mcp-telemetry-config.yaml`). Note: vMCP still allows inline `config.telemetry`.
-- MCPServer / MCPRemoteProxy: inline `spec.oidcConfig` is gone. Use `oidcConfigRef` → MCPOIDCConfig.
-- VirtualMCPServer: inline `spec.incomingAuth.oidcConfig` is gone. Use `spec.incomingAuth.oidcConfigRef.name` + `audience` + `resourceUrl` at the ref level; provider settings go in a sibling MCPOIDCConfig (see `addons/vmcp-infra-okta/vmcp.yaml` for a working example).
-- VirtualMCPServer: `spec.config.groupRef` fallback is gone. Only `spec.groupRef` is honoured.
-
-When a new operator version lands, check `gh release view vX.Y.Z --repo stacklok/toolhive` for migration guides before bumping in `bootstrap.sh`.
-
 ## Optimizer + embeddings
 
 `vmcp-infra-optimized` demonstrates the vMCP-integrated optimizer. It references a shared `EmbeddingServer` (`demo-manifests/embedding-server.yaml`) whose image tag is selected per host arch in `bootstrap.sh` (`cpu-arm64-latest` on Apple Silicon, `cpu-latest` elsewhere). Adding `spec.embeddingServerRef.name` to any vMCP makes it expose only `find_tool` and `call_tool`. The legacy standalone `mcp-optimizer` Helm chart is gone — don't bring it back.
@@ -117,10 +108,9 @@ When touching `demo-manifests/`, think about:
 4. For vMCPs that aggregate: do the workload names in `aggregation.tools` match actual MCPServer/MCPRemoteProxy names in the group?
 5. Any manifest with `$VARS` must be rendered via `envsubst` (see patterns in `bootstrap.sh` and `addon_apply`).
 
-## Conventions & preferences (from memory — re-read as needed)
+Before committing, run the `/validate-manifests` skill (or `.claude/skills/validate-manifests/scripts/validate.sh`) to server-side dry-run every changed YAML against the live CRDs.
 
-- Prefer Context7 MCP (`mcp__context7__query-docs`) over WebFetch for library docs.
-- Prefer `mcp__toolhive-doc-mcp__query_docs` for ToolHive-specific docs; fall back to WebFetch only for pages not yet indexed.
-- Prefer `skopeo list-tags` over `docker manifest inspect` for inspecting images.
-- Disable Bitnami subcharts; pull upstream images instead (they're often unreliable in the Bitnami variant).
+## Conventions & preferences
+
+- Do not use Bitnami charts or images; they no longer publish version-tagged releases.
 - User prefers small, surgical commits; don't pile unrelated changes together.

@@ -8,3 +8,5 @@ addons/**/.env
 
 .vscode/*
 .DS_Store
+
+.claude/settings.local.json
