@@ -2,6 +2,10 @@
 
 Optional components that extend the demo sandbox with external services, alternative UIs, or integrations requiring API keys.
 
+## Prerequisites
+
+Run `bootstrap.sh` first to stand up the demo cluster. Add-ons build on top of the base environment and expect its services (Traefik gateway, ToolHive operator, observability stack, etc.) to be running.
+
 ## Usage
 
 Each add-on is a self-contained directory with its own deploy/teardown scripts:
