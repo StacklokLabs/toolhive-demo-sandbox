@@ -1,0 +1,30 @@
+# MCPServerEntry resources — zero-infra catalog entries that publish remote
+# MCP servers into the registry via K8s auto-discovery, without standing up a
+# proxy pod. Useful for remote servers whose auth (OAuth, token exchange)
+# can't be fronted by a vMCP with the credentials we have in the demo.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: remote-catalog
+  namespace: toolhive-system
+spec:
+  description: Catalog-only remote MCP servers (no vMCP backing)
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServerEntry
+metadata:
+  name: notion-remote
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "https://mcp.notion.com/mcp"
+    toolhive.stacklok.dev/registry-title: "Notion (Remote)"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "everyone"}'
+    toolhive.stacklok.dev/registry-description: |
+      Notion's official remote MCP server for workspaces, pages, databases, and comments. OAuth handled directly against Notion.
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"notion-search","description":"Search pages and databases across the Notion workspace."},{"name":"notion-fetch","description":"Fetch the content of a Notion page or database."},{"name":"notion-create-pages","description":"Create one or more Notion pages."},{"name":"notion-update-page","description":"Update an existing Notion page."},{"name":"notion-move-pages","description":"Move pages within the Notion workspace."},{"name":"notion-duplicate-page","description":"Duplicate a Notion page."},{"name":"notion-create-database","description":"Create a new Notion database."},{"name":"notion-update-database","description":"Update an existing Notion database."},{"name":"notion-create-comment","description":"Add a comment to a Notion page or block."},{"name":"notion-get-comments","description":"Retrieve comments on a Notion page or block."},{"name":"notion-get-teams","description":"List teams in the Notion workspace."},{"name":"notion-get-users","description":"List users in the Notion workspace."},{"name":"notion-get-user","description":"Retrieve details for a specific Notion user."},{"name":"notion-get-self","description":"Retrieve details about the current authenticated Notion user."}]'
+spec:
+  groupRef:
+    name: remote-catalog
+  remoteUrl: https://mcp.notion.com/mcp
+  transport: streamable-http

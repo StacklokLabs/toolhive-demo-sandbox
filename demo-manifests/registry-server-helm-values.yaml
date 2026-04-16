@@ -66,7 +66,8 @@ config:
       filter:
         names:
           include:
-            - io.github.stacklok/notion-remote
+            # notion-remote is now published via the MCPServerEntry in
+            # demo-manifests/mcp-server-entries.yaml instead of this git source.
             - io.github.stacklok/time
             - io.github.stacklok/toolhive-doc-mcp-remote
       claims:
@@ -143,7 +144,7 @@ config:
       filter:
         names:
           include:
-            - io.github.stacklok/notion-remote
+            # notion-remote is published via MCPServerEntry (K8s source).
             - io.github.stacklok/time
             - io.github.stacklok/toolhive-doc-mcp-remote
             - io.github.stacklok/aws-documentation
