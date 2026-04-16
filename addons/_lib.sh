@@ -78,10 +78,21 @@ addon_apply() {
     fi
 }
 
-# Wait for all pods with a given label to be ready
+# Wait for all pods with a given label to be ready.
+# Polls until at least one matching pod exists, then waits for readiness.
 addon_wait_ready() {
     local label="$1"
     local ns="${2:-$ADDON_NAME}"
-    local timeout="${3:-180s}"
-    kubectl wait --for=condition=ready pod -l "$label" -n "$ns" --timeout="$timeout"
+    local timeout="${3:-120}"
+    local deadline=$((SECONDS + timeout))
+
+    # Wait for at least one pod to appear
+    while [ $SECONDS -lt $deadline ]; do
+        if kubectl get pods -l "$label" -n "$ns" --no-headers 2>/dev/null | grep -q .; then
+            break
+        fi
+        sleep 2
+    done
+
+    kubectl wait --for=condition=ready pod -l "$label" -n "$ns" --timeout="${timeout}s"
 }
