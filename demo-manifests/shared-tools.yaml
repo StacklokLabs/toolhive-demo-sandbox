@@ -1,0 +1,49 @@
+# Shared tools — docs/fetch helpers available to every authenticated user.
+# Aggregated by the vmcp-docs VirtualMCPServer.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: shared-tools
+  namespace: toolhive-system
+spec:
+  description: Docs/fetch helpers available to all personas
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: fetch
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/stackloklabs/gofetch/server:1.0.3
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8080
+  groupRef:
+    name: shared-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: fetch-server
+  audit:
+    enabled: true
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: context7
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/stacklok/dockyard/npx/context7:2.1.4
+  groupRef:
+    name: shared-tools
+  transport: stdio
+  proxyPort: 8080
+  proxyMode: streamable-http
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: context7-server
+  audit:
+    enabled: true

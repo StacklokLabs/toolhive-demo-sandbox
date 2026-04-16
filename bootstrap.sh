@@ -183,16 +183,21 @@ echo -n "Installing shared MCPTelemetryConfig resource..."
 run_quiet kubectl apply -f demo-manifests/mcp-telemetry-config.yaml || die "Failed to apply MCPTelemetryConfig resources"
 echo " ✓"
 
-echo -n "Installing MKP MCP server..."
+echo -n "Installing persona MCPGroups and backends..."
+run_quiet kubectl apply -f demo-manifests/infra-tools.yaml || die "Failed to apply infra-tools group"
+run_quiet kubectl apply -f demo-manifests/shared-tools.yaml || die "Failed to apply shared-tools group"
+run_quiet kubectl apply -f demo-manifests/finance-tools.yaml || die "Failed to apply finance-tools group"
+run_quiet kubectl apply -f demo-manifests/research-tools.yaml || die "Failed to apply research-tools group"
 run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
+# Wait for backend MCPServer resources (including MKP) to reach Ready phase
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
 echo " ✓"
 
-echo -n "Installing vMCP demo servers..."
-run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to apply vMCP MCP servers"
-# Wait for vMCP backend MCPServer resources to reach Ready phase
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
-run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
-run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
+echo -n "Installing persona vMCP gateways..."
+run_quiet sh -c "envsubst < demo-manifests/vmcp-infra.yaml | kubectl apply -f -" || die "Failed to apply vmcp-infra"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-docs.yaml | kubectl apply -f -" || die "Failed to apply vmcp-docs"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f -" || die "Failed to apply vmcp-finance"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-research.yaml | kubectl apply -f -" || die "Failed to apply vmcp-research"
 echo " ✓"
 
 echo -n "Installing MCP Optimizer..."
@@ -253,14 +258,28 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/mkp/health"
     },
     {
-      "name": "vMCP Demo Server",
-      "url": "http://$MCP_HOSTNAME/vmcp-demo/mcp",
+      "name": "vMCP Infra Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-infra/mcp",
       "type": "mcp",
       "test_with_thv": true,
-      "healthcheck_path": "/vmcp-demo/health"
+      "healthcheck_path": "/vmcp-infra/health"
     },
     {
-      "name": "vMCP Composite Tool Demo Server",
+      "name": "vMCP Docs Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-docs/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-docs/health"
+    },
+    {
+      "name": "vMCP Finance Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-finance/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-finance/health"
+    },
+    {
+      "name": "vMCP Research Gateway",
       "url": "http://$MCP_HOSTNAME/vmcp-research/mcp",
       "type": "mcp",
       "test_with_thv": true,
@@ -296,8 +315,10 @@ echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-reg
 echo "   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)"
 echo " - Public Registry (no auth) at http://$REGISTRY_HOSTNAME/registry/public for the ToolHive CLI or UI"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip' or addin the UI settings)"
-echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
-echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
-echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
+echo " - MKP MCP server (standalone, engineering) at http://$MCP_HOSTNAME/mkp/mcp"
+echo " - vMCP Infra gateway (alice/engineering) at http://$MCP_HOSTNAME/vmcp-infra/mcp"
+echo " - vMCP Docs gateway (shared) at http://$MCP_HOSTNAME/vmcp-docs/mcp"
+echo " - vMCP Finance gateway (bob/finance, stub) at http://$MCP_HOSTNAME/vmcp-finance/mcp"
+echo " - vMCP Research gateway (shared) at http://$MCP_HOSTNAME/vmcp-research/mcp"
 echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

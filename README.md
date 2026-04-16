@@ -11,9 +11,12 @@ So far, it includes:
 - A ToolHive Registry Server with group-based access control (engineering, finance, shared tools) plus K8s auto-discovery
 - Keycloak for OpenID Connect authentication with demo users and claims-based authorization
 - The ToolHive Cloud UI connected to the registry server with Keycloak authentication
-- A Virtual MCP Server running a few basic MCP servers: fetch, osv, oci-registry, and context7
-- A vMCP server with a composite tool chaining together multiple arXiv tools
-- The MKP MCP server for managing the cluster, exposed directly
+- Persona-specific vMCP gateways:
+  - **vMCP Infra** (engineering) — Prometheus, Grafana, OSV, OCI registry, and MKP (Kubernetes)
+  - **vMCP Docs** (shared) — Context7 and internal docs fetch
+  - **vMCP Finance** (finance) — stubbed, awaiting real finance backends
+  - **vMCP Research** (shared) — arXiv with a composite research-topic tool
+- The MKP MCP server for managing the cluster, also exposed directly
 - An MCP Optimizer server for intelligent tool calling across multiple MCP servers
 - Traefik as the gateway for routing traffic into the cluster
 - An observability stack to capture traces and metrics from the MCP servers
@@ -56,13 +59,13 @@ The demo uses Keycloak for OpenID Connect authentication:
 
 - **Demo Users** (realm: `toolhive-demo`, client: `toolhive-cloud-ui`):
 
-  | User    | Password | Groups                         | Sees                                                                      |
-  | ------- | -------- | ------------------------------ | ------------------------------------------------------------------------- |
-  | `demo`  | `demo`   | everyone, engineering, finance | All tools (registry superAdmin)                                           |
-  | `alice` | `alice`  | everyone, engineering          | Shared + engineering tools (AWS docs, Playwright, GitLab, Figma, Postman) |
-  | `bob`   | `bob`    | everyone, finance              | Shared + finance tools (Stripe)                                           |
+  | User    | Password | Groups                         | Gateways they can reach                                                        |
+  | ------- | -------- | ------------------------------ | ------------------------------------------------------------------------------ |
+  | `demo`  | `demo`   | everyone, engineering, finance | All gateways + registry superAdmin                                             |
+  | `alice` | `alice`  | everyone, engineering          | **vMCP Infra** (Prometheus/Grafana/OSV/OCI/MKP), vMCP Docs, vMCP Research, MKP |
+  | `bob`   | `bob`    | everyone, finance              | **vMCP Finance** (stub), vMCP Docs, vMCP Research                              |
 
-  All users see shared tools (Notion, Time, ToolHive docs) and in-cluster MCP servers.
+  All users also see shared catalog entries (Notion, Time, ToolHive docs). Alice additionally sees engineering-only catalog entries (AWS docs, Playwright, GitLab, Figma, Postman). Bob sees finance-only catalog entries (Stripe remote).
 
 ## Troubleshooting
 
@@ -125,8 +128,8 @@ Installing Registry Server... ✓
 Installing Cloud UI... ✓
 Configuring Grafana HTTPRoute... ✓
 Installing shared MCPTelemetryConfig resource... ✓
-Installing MKP MCP server... ✓
-Installing vMCP demo servers... ✓
+Installing persona MCPGroups and backends... ✓
+Installing persona vMCP gateways... ✓
 Installing MCP Optimizer... ✓
 Waiting for all pods to be ready... ✓
 Validating registry server... ✓ (18 unique servers detected)
@@ -143,9 +146,11 @@ Bootstrap complete! Access your demo services at the following URLs:
    (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)
  - Public Registry (no auth) at http://registry-172-19-0-3.traefik.me/registry/public for the ToolHive CLI or UI
    (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry/public --allow-private-ip' or addin the UI settings)
- - MKP MCP server at http://mcp-172-19-0-3.traefik.me/mkp/mcp
- - vMCP demo server at http://mcp-172-19-0-3.traefik.me/vmcp-demo/mcp
- - vMCP composite tool demo server at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
+ - MKP MCP server (standalone, engineering) at http://mcp-172-19-0-3.traefik.me/mkp/mcp
+ - vMCP Infra gateway (alice/engineering) at http://mcp-172-19-0-3.traefik.me/vmcp-infra/mcp
+ - vMCP Docs gateway (shared) at http://mcp-172-19-0-3.traefik.me/vmcp-docs/mcp
+ - vMCP Finance gateway (bob/finance, stub) at http://mcp-172-19-0-3.traefik.me/vmcp-finance/mcp
+ - vMCP Research gateway (shared) at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
  - MCP Optimizer at http://mcp-172-19-0-3.traefik.me/mcp-optimizer/mcp
  - Grafana at http://grafana-172-19-0-3.traefik.me
 ```

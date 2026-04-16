@@ -1,6 +1,9 @@
 groupFiltering:
   allowedGroups:
-    - "demo-tools"
+    - "infra-tools"
+    - "shared-tools"
+    - "finance-tools"
+    - "research-tools"
 
 mcpserver:
   annotations:

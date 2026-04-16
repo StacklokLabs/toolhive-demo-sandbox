@@ -32,12 +32,16 @@ librechat:
 
     mcpSettings:
       allowedDomains:
-        - "vmcp-vmcp-demo.toolhive-system.svc.cluster.local"
+        - "vmcp-vmcp-infra.toolhive-system.svc.cluster.local"
+        - "vmcp-vmcp-docs.toolhive-system.svc.cluster.local"
 
     mcpServers:
-      toolhive-vmcp:
+      toolhive-infra:
         type: streamable-http
-        url: http://vmcp-vmcp-demo.toolhive-system.svc.cluster.local:4483/mcp
+        url: http://vmcp-vmcp-infra.toolhive-system.svc.cluster.local:4483/mcp
+      toolhive-docs:
+        type: streamable-http
+        url: http://vmcp-vmcp-docs.toolhive-system.svc.cluster.local:4483/mcp
 
   imageVolume:
     enabled: false

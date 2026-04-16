@@ -1,0 +1,30 @@
+# Finance tools — backends for Bob (finance persona).
+# Stub for now: a single fetch backend badged for financial-docs use.
+# Aggregated by the vmcp-finance VirtualMCPServer.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: finance-tools
+  namespace: toolhive-system
+spec:
+  description: Finance tools for the finance persona (stubbed pending real backends)
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: finance-fetch
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/stackloklabs/gofetch/server:1.0.3
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8080
+  groupRef:
+    name: finance-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: finance-fetch-server
+  audit:
+    enabled: true
