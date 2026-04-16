@@ -16,7 +16,6 @@ spec:
   groupRef:
     name: infra-tools
   config:
-    groupRef: infra-tools
     telemetry:
       endpoint: mcp-collector.observability.svc.cluster.local:4318
       insecure: true

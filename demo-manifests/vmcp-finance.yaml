@@ -19,7 +19,6 @@ spec:
   groupRef:
     name: finance-tools
   config:
-    groupRef: finance-tools
     telemetry:
       endpoint: mcp-collector.observability.svc.cluster.local:4318
       insecure: true
