@@ -33,10 +33,13 @@ run_quiet addon_wait_ready app=librechat-mongodb librechat 120s
 echo " done"
 
 echo -n "Installing LibreChat (Helm)..."
+LIBRECHAT_URL="https://$LIBRECHAT_HOSTNAME"
 run_quiet helm upgrade --install librechat \
     oci://ghcr.io/danny-avila/librechat-chart/librechat \
     --namespace librechat \
     --values "$ADDON_DIR/values.yaml" \
+    --set "librechat.configEnv.DOMAIN_CLIENT=$LIBRECHAT_URL" \
+    --set "librechat.configEnv.DOMAIN_SERVER=$LIBRECHAT_URL" \
     --wait --timeout 5m
 echo " done"
 
@@ -71,6 +74,6 @@ echo " done"
 
 echo ""
 echo "LibreChat is ready!"
-echo "  URL: http://$LIBRECHAT_HOSTNAME"
+echo "  URL: https://$LIBRECHAT_HOSTNAME (self-signed cert, expect a browser warning)"
 echo "  Login: $DEMO_EMAIL / $DEMO_PASS"
 echo "  vMCP gateway: vmcp-demo (in-cluster)"

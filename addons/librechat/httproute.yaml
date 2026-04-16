@@ -7,6 +7,7 @@ spec:
   parentRefs:
     - name: traefik-gateway
       namespace: traefik
+      sectionName: websecure
   hostnames:
     - $LIBRECHAT_HOSTNAME
   rules:
@@ -17,3 +18,22 @@ spec:
       backendRefs:
         - name: librechat
           port: 3080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: librechat-http-redirect
+  namespace: librechat
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: web
+  hostnames:
+    - $LIBRECHAT_HOSTNAME
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
