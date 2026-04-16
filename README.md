@@ -124,13 +124,13 @@ Checking for Traefik Gateway IP... ✓ (172.19.0.3)
 Installing Keycloak... ✓
 Creating PostgreSQL server for ToolHive Registry Server... ✓
 Creating Traefik CA ConfigMap for registry server TLS verification... ✓
-Installing Registry Server... ✓
-Installing Cloud UI... ✓
-Configuring Grafana HTTPRoute... ✓
 Installing shared MCPTelemetryConfig resource... ✓
 Installing persona MCPGroups and backends... ✓
 Installing persona vMCP gateways... ✓
 Installing MCP Optimizer... ✓
+Installing Registry Server... ✓
+Installing Cloud UI... ✓
+Configuring Grafana HTTPRoute... ✓
 Waiting for all pods to be ready... ✓
 Validating registry server... ✓ (18 unique servers detected)
 Writing endpoint information to demo-endpoints.json... ✓

@@ -157,7 +157,7 @@ echo " ✓"
 
 echo -n "Creating PostgreSQL server for ToolHive Registry Server..."
 run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
-run_quiet kubectl apply -f demo-manifests/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
+run_quiet kubectl apply -f infra/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
 run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n toolhive-system --timeout=5m || die "PostgreSQL server for Registry Server failed to become ready"
 echo " ✓"
 
@@ -165,19 +165,11 @@ echo -n "Creating Traefik CA ConfigMap for registry server TLS verification..."
 run_quiet sh -c "kubectl get secret traefik-me-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
 echo " ✓"
 
-echo -n "Installing Registry Server..."
-run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME' < demo-manifests/registry-server-helm-values.yaml | helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version $REGISTRY_SERVER_CHART_VERSION --namespace toolhive-system --values - --wait" || die "Failed to install Registry Server"
-run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
-echo " ✓"
-
-echo -n "Installing Cloud UI..."
-run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
-echo " ✓"
-
-# Expose Grafana via Traefik, using its own hostname for simplicity
-echo -n "Configuring Grafana HTTPRoute..."
-run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" || die "Failed to apply Grafana HTTPRoute"
-echo " ✓"
+# Install all MCP resources before the Registry Server so its K8s reconciler
+# and git-source syncs run against a steady state — otherwise the burst of
+# reconcile events during initial MCPServer/VirtualMCPServer readiness races
+# with git-source commits on the same serializable transactions and trips
+# SQLSTATE 40001 conflicts, sometimes starving sources out entirely.
 
 echo -n "Installing shared MCPTelemetryConfig resource..."
 run_quiet kubectl apply -f demo-manifests/mcp-telemetry-config.yaml || die "Failed to apply MCPTelemetryConfig resources"
@@ -206,6 +198,20 @@ run_quiet helm upgrade --install mcp-optimizer oci://ghcr.io/stackloklabs/mcp-op
   --values demo-manifests/mcp-optimizer-helm-values.yaml --set "mcpserver.annotations.toolhive\.stacklok\.dev/registry-url=http://${MCP_HOSTNAME}/mcp-optimizer/mcp" \
   --namespace toolhive-system --wait || die "Failed to install MCP Optimizer"
 run_quiet sh -c "envsubst < demo-manifests/mcp-optimizer-httproute.yaml | kubectl apply -f -" || die "Failed to apply MCP Optimizer HTTPRoute"
+echo " ✓"
+
+echo -n "Installing Registry Server..."
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME' < demo-manifests/registry-server-helm-values.yaml | helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version $REGISTRY_SERVER_CHART_VERSION --namespace toolhive-system --values - --wait" || die "Failed to install Registry Server"
+run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
+echo " ✓"
+
+echo -n "Installing Cloud UI..."
+run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
+echo " ✓"
+
+# Expose Grafana via Traefik, using its own hostname for simplicity
+echo -n "Configuring Grafana HTTPRoute..."
+run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" || die "Failed to apply Grafana HTTPRoute"
 echo " ✓"
 
 echo -n "Waiting for all pods to be ready..."
