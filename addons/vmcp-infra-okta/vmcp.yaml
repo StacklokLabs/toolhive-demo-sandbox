@@ -1,0 +1,118 @@
+# Authenticated mirror of vmcp-infra. Same infra-tools backends, but
+# fronted by ToolHive's embedded OAuth authorization server delegating to
+# Okta for upstream identity. Exposed externally via a Cloudflare tunnel
+# (see cloudflared.yaml) — no Traefik HTTPRoute.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-infra-okta
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp"
+    toolhive.stacklok.dev/registry-title: "Infra vMCP Gateway (Okta auth)"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "engineering"}'
+    toolhive.stacklok.dev/registry-description: |
+      Okta-authenticated companion to vmcp-infra. Same platform/infra backends (Prometheus, Grafana, OSV, OCI registry, MKP) behind an embedded OAuth authorization server that delegates to Okta.
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"prometheus_execute_query","description":"Execute a PromQL instant query against Prometheus"},{"name":"prometheus_execute_range_query","description":"Execute a PromQL range query with start time, end time, and step interval"},{"name":"prometheus_list_metrics","description":"List all available metrics in Prometheus with optional pagination support"},{"name":"prometheus_get_metric_metadata","description":"Get metadata for a specific metric"},{"name":"prometheus_get_targets","description":"Get information about all scrape targets"},{"name":"grafana_search_dashboards","description":"Search for Grafana dashboards by a query string."},{"name":"grafana_get_dashboard_by_uid","description":"Retrieves the complete dashboard for a specific dashboard identified by its UID."},{"name":"grafana_get_dashboard_panel_queries","description":"Retrieve panel queries from a Grafana dashboard."},{"name":"grafana_get_dashboard_property","description":"Get specific parts of a dashboard using JSONPath expressions."},{"name":"grafana_get_dashboard_summary","description":"Get a compact summary of a dashboard."},{"name":"grafana_list_datasources","description":"List all configured datasources in Grafana."},{"name":"grafana_get_datasource","description":"Retrieves detailed information about a specific datasource."},{"name":"grafana_query_prometheus","description":"Query a PromQL-compatible datasource using a PromQL expression."},{"name":"grafana_list_prometheus_metric_names","description":"Lists metric names in a PromQL-compatible datasource."},{"name":"grafana_list_prometheus_label_names","description":"List label names in a PromQL-compatible datasource."},{"name":"grafana_list_prometheus_label_values","description":"Get the values for a specific label name in a PromQL-compatible datasource."},{"name":"grafana_query_loki_stats","description":"Retrieves statistics about log streams matching a given LogQL selector."},{"name":"grafana_query_loki_logs","description":"Executes a LogQL query against a Loki datasource."},{"name":"grafana_list_loki_label_names","description":"Lists all available label names found in logs within a Loki datasource."},{"name":"grafana_list_loki_label_values","description":"Retrieves all unique values associated with a specific labelName within a Loki datasource."},{"name":"osv_get_vulnerability","description":"Get details for a specific vulnerability by ID"},{"name":"osv_query_vulnerability","description":"Query for vulnerabilities affecting a specific package version or commit"},{"name":"oci-registry_get_image_config","description":"Get the config for an OCI image"},{"name":"oci-registry_get_image_info","description":"Get information about an OCI image"},{"name":"oci-registry_get_image_manifest","description":"Get the manifest for an OCI image"},{"name":"oci-registry_get_referrer_content","description":"Fetch the content of a specific referrer artifact."},{"name":"oci-registry_list_referrers","description":"List OCI artifacts (SBOMs, signatures, provenance, VEX) attached to an image."},{"name":"oci-registry_list_tags","description":"List tags for a repository with pagination support"},{"name":"mkp_apply_resource","description":"Apply (create or update) a Kubernetes resource"},{"name":"mkp_delete_resource","description":"Delete a Kubernetes resource"},{"name":"mkp_get_resource","description":"Get a Kubernetes resource or its subresource"},{"name":"mkp_list_resources","description":"List Kubernetes resources"},{"name":"mkp_post_resource","description":"Post to a Kubernetes resource or its subresource"}]'
+spec:
+  # Embedded authorization server — issues its own JWTs, delegates
+  # authentication to Okta via OIDC.
+  authServerConfig:
+    issuer: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}
+    tokenLifespans:
+      accessTokenLifespan: 1h
+      refreshTokenLifespan: 168h
+      authCodeLifespan: 10m
+    upstreamProviders:
+      - name: okta
+        type: oauth2
+        oauth2Config:
+          authorizationEndpoint: ${OKTA_ISSUER_URL}/v1/authorize
+          tokenEndpoint: ${OKTA_ISSUER_URL}/v1/token
+          redirectUri: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/oauth/callback
+          clientId: ${VMCP_OKTA_CLIENT_ID}
+          clientSecretRef:
+            name: vmcp-infra-okta-client-secret
+            key: client-secret
+          scopes:
+            - openid
+            - email
+            - profile
+            - offline_access
+          userInfo:
+            endpointUrl: ${OKTA_ISSUER_URL}/v1/userinfo
+            httpMethod: GET
+            fieldMapping:
+              subjectFields:
+                - sub
+              nameFields:
+                - name
+                - preferred_username
+              emailFields:
+                - email
+
+  # Validate tokens issued by the embedded auth server
+  incomingAuth:
+    type: oidc
+    oidcConfig:
+      type: inline
+      resourceUrl: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
+      inline:
+        issuer: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}
+        audience: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
+
+  outgoingAuth:
+    source: inline
+
+  groupRef:
+    name: infra-tools
+  config:
+    groupRef: infra-tools
+    telemetry:
+      endpoint: mcp-collector.observability.svc.cluster.local:4318
+      insecure: true
+      serviceName: vmcp-infra-okta-server
+      serviceVersion: "1.0.0"
+      metricsEnabled: true
+      tracingEnabled: true
+      samplingRate: "1.0"
+      enablePrometheusMetricsPath: true
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+      tools:
+        - workload: prometheus
+          filter:
+            - "execute_query"
+            - "execute_range_query"
+            - "list_metrics"
+            - "get_metric_metadata"
+            - "get_targets"
+        - workload: grafana
+          filter:
+            - "search_dashboards"
+            - "get_dashboard_by_uid"
+            - "get_dashboard_panel_queries"
+            - "get_dashboard_property"
+            - "get_dashboard_summary"
+            - "list_datasources"
+            - "get_datasource"
+            - "query_prometheus"
+            - "list_prometheus_metric_names"
+            - "list_prometheus_label_names"
+            - "list_prometheus_label_values"
+            - "query_loki_stats"
+            - "query_loki_logs"
+            - "list_loki_label_names"
+            - "list_loki_label_values"
+        - workload: osv
+          filter:
+            - "get_vulnerability"
+            - "query_vulnerability"
+  serviceType: ClusterIP
