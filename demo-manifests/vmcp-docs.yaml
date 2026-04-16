@@ -1,0 +1,70 @@
+# Shared docs/fetch vMCP gateway — available to every authenticated persona.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-docs
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-docs/mcp"
+    toolhive.stacklok.dev/registry-title: "Docs vMCP Gateway"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "everyone"}'
+    toolhive.stacklok.dev/registry-description: |
+      Shared documentation gateway for every persona: Context7 for library docs and an internal-docs fetch tool.
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"context7_query-docs","description":"Retrieves and queries up-to-date documentation and code examples from Context7 for any programming library or framework."},{"name":"context7_resolve-library-id","description":"Resolves a package/product name to a Context7-compatible library ID and returns matching libraries."},{"name":"fetch_fetch_internal_docs","description":"Fetch internal documentation URLs from https://docs.stacklok.com."},{"name":"toolhive-docs_query_docs","description":"Search Stacklok/ToolHive documentation and return relevant snippets with relevance scores."},{"name":"toolhive-docs_get_chunk","description":"Retrieve full details of a specific documentation chunk by its ID."}]'
+spec:
+  groupRef:
+    name: shared-tools
+  config:
+    telemetry:
+      endpoint: mcp-collector.observability.svc.cluster.local:4318
+      insecure: true
+      serviceName: vmcp-docs-server
+      serviceVersion: "1.0.0"
+      metricsEnabled: true
+      tracingEnabled: true
+      samplingRate: "1.0"
+      enablePrometheusMetricsPath: true
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+      tools:
+        - workload: fetch
+          overrides:
+            fetch:
+              name: fetch_internal_docs
+              description: "Fetch internal documentation URLs from https://docs.stacklok.com."
+  incomingAuth:
+    type: anonymous
+  outgoingAuth:
+    source: inline
+  serviceType: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-docs-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-docs
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-docs
+          port: 4483

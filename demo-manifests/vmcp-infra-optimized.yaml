@@ -1,0 +1,97 @@
+# Optimizer-enabled mirror of the infra vMCP. Aggregates the same infra-tools
+# backends as vmcp-infra but exposes only find_tool and call_tool primitives
+# to clients, using the EmbeddingServer for semantic tool discovery.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-infra-optimized
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-infra-optimized/mcp"
+    toolhive.stacklok.dev/registry-title: "Infra vMCP Gateway (Optimized)"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "engineering"}'
+    toolhive.stacklok.dev/registry-description: |
+      Optimizer-enabled companion to vmcp-infra. Same backends (Prometheus, Grafana, OSV, OCI registry, MKP) but exposes only find_tool and call_tool to keep token usage low on large toolsets.
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"find_tool","description":"Find and return tools from backend MCP servers that can help accomplish the user''s request. Uses semantic search over the aggregated tool catalog."},{"name":"call_tool","description":"Execute a specific tool with the provided parameters, after identifying it with find_tool."}]'
+spec:
+  groupRef:
+    name: infra-tools
+  embeddingServerRef:
+    name: optimizer-embedding
+  config:
+    telemetry:
+      endpoint: mcp-collector.observability.svc.cluster.local:4318
+      insecure: true
+      serviceName: vmcp-infra-optimized-server
+      serviceVersion: "1.0.0"
+      metricsEnabled: true
+      tracingEnabled: true
+      samplingRate: "1.0"
+      enablePrometheusMetricsPath: true
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+      tools:
+        - workload: prometheus
+          filter:
+            - "execute_query"
+            - "execute_range_query"
+            - "list_metrics"
+            - "get_metric_metadata"
+            - "get_targets"
+        - workload: grafana
+          filter:
+            - "search_dashboards"
+            - "get_dashboard_by_uid"
+            - "get_dashboard_panel_queries"
+            - "get_dashboard_property"
+            - "get_dashboard_summary"
+            - "list_datasources"
+            - "get_datasource"
+            - "query_prometheus"
+            - "list_prometheus_metric_names"
+            - "list_prometheus_label_names"
+            - "list_prometheus_label_values"
+            - "query_loki_stats"
+            - "query_loki_logs"
+            - "list_loki_label_names"
+            - "list_loki_label_values"
+        - workload: osv
+          filter:
+            - "get_vulnerability"
+            - "query_vulnerability"
+  incomingAuth:
+    type: anonymous
+  outgoingAuth:
+    source: inline
+  serviceType: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-infra-optimized-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-infra-optimized
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-infra-optimized
+          port: 4483

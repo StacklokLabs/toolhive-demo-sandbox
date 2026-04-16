@@ -19,12 +19,18 @@ FLUENT_BIT_CHART_VERSION="0.57.2" # renovate: datasource=helm depName=fluent-bit
 PROMETHEUS_CHART_VERSION="29.2.1" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="11.6.0" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.28.0" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.20.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
-TOOLHIVE_OPERATOR_CHART_VERSION="0.20.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.21.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
+TOOLHIVE_OPERATOR_CHART_VERSION="0.21.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_SERVER_CHART_VERSION="1.1.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
 CLOUD_UI_VERSION="v0.5.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
-MCP_OPTIMIZER_CHART_VERSION="0.3.0" # renovate: datasource=docker depName=ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer
 KEYCLOAK_VERSION="26.5.7" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
+
+# Select the text-embeddings-inference image variant that matches the host arch.
+# Used by the optimizer-enabled vMCP gateways.
+case "$(uname -m)" in
+    arm64|aarch64) EMBEDDING_IMAGE="ghcr.io/huggingface/text-embeddings-inference:cpu-arm64-latest" ;;
+    *)             EMBEDDING_IMAGE="ghcr.io/huggingface/text-embeddings-inference:cpu-latest" ;;
+esac
 
 # Source common helper functions
 . "$(dirname "$0")/helpers.sh"
@@ -157,12 +163,46 @@ echo " ✓"
 
 echo -n "Creating PostgreSQL server for ToolHive Registry Server..."
 run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
-run_quiet kubectl apply -f demo-manifests/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
+run_quiet kubectl apply -f infra/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
 run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n toolhive-system --timeout=5m || die "PostgreSQL server for Registry Server failed to become ready"
 echo " ✓"
 
 echo -n "Creating Traefik CA ConfigMap for registry server TLS verification..."
 run_quiet sh -c "kubectl get secret traefik-me-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
+echo " ✓"
+
+# Install all MCP resources before the Registry Server so its K8s reconciler
+# and git-source syncs run against a steady state — otherwise the burst of
+# reconcile events during initial MCPServer/VirtualMCPServer readiness races
+# with git-source commits on the same serializable transactions and trips
+# SQLSTATE 40001 conflicts, sometimes starving sources out entirely.
+
+echo -n "Installing shared MCPTelemetryConfig resource..."
+run_quiet kubectl apply -f demo-manifests/mcp-telemetry-config.yaml || die "Failed to apply MCPTelemetryConfig resources"
+echo " ✓"
+
+echo -n "Installing persona MCPGroups and backends..."
+run_quiet kubectl apply -f demo-manifests/infra-tools.yaml || die "Failed to apply infra-tools group"
+run_quiet kubectl apply -f demo-manifests/shared-tools.yaml || die "Failed to apply shared-tools group"
+run_quiet kubectl apply -f demo-manifests/finance-tools.yaml || die "Failed to apply finance-tools group"
+run_quiet kubectl apply -f demo-manifests/research-tools.yaml || die "Failed to apply research-tools group"
+run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
+# Wait for backend MCPServer and MCPRemoteProxy resources to reach Ready phase
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpremoteproxy -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPRemoteProxy resources failed to become ready"
+echo " ✓"
+
+echo -n "Installing embedding server for optimizer-enabled vMCPs..."
+run_quiet sh -c "envsubst < demo-manifests/embedding-server.yaml | kubectl apply -f -" || die "Failed to apply embedding server"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=10m embeddingserver/optimizer-embedding -n toolhive-system || die "EmbeddingServer failed to become ready"
+echo " ✓"
+
+echo -n "Installing persona vMCP gateways..."
+run_quiet sh -c "envsubst < demo-manifests/vmcp-infra.yaml | kubectl apply -f -" || die "Failed to apply vmcp-infra"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-infra-optimized.yaml | kubectl apply -f -" || die "Failed to apply vmcp-infra-optimized"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-docs.yaml | kubectl apply -f -" || die "Failed to apply vmcp-docs"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f -" || die "Failed to apply vmcp-finance"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-research.yaml | kubectl apply -f -" || die "Failed to apply vmcp-research"
 echo " ✓"
 
 echo -n "Installing Registry Server..."
@@ -177,30 +217,6 @@ echo " ✓"
 # Expose Grafana via Traefik, using its own hostname for simplicity
 echo -n "Configuring Grafana HTTPRoute..."
 run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" || die "Failed to apply Grafana HTTPRoute"
-echo " ✓"
-
-echo -n "Installing shared MCPTelemetryConfig resource..."
-run_quiet kubectl apply -f demo-manifests/mcp-telemetry-config.yaml || die "Failed to apply MCPTelemetryConfig resources"
-echo " ✓"
-
-echo -n "Installing MKP MCP server..."
-run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
-echo " ✓"
-
-echo -n "Installing vMCP demo servers..."
-run_quiet kubectl apply -f demo-manifests/vmcp-mcpservers.yaml || die "Failed to apply vMCP MCP servers"
-# Wait for vMCP backend MCPServer resources to reach Ready phase
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
-run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-simple.yaml | kubectl apply -f -" || die "Failed to apply vMCP demo"
-run_quiet sh -c "envsubst < demo-manifests/vmcp-demo-composite.yaml | kubectl apply -f -" || die "Failed to apply vMCP composite tools demo"
-echo " ✓"
-
-echo -n "Installing MCP Optimizer..."
-run_quiet helm upgrade --install mcp-optimizer oci://ghcr.io/stackloklabs/mcp-optimizer/mcp-optimizer \
-  --version "$MCP_OPTIMIZER_CHART_VERSION" \
-  --values demo-manifests/mcp-optimizer-helm-values.yaml --set "mcpserver.annotations.toolhive\.stacklok\.dev/registry-url=http://${MCP_HOSTNAME}/mcp-optimizer/mcp" \
-  --namespace toolhive-system --wait || die "Failed to install MCP Optimizer"
-run_quiet sh -c "envsubst < demo-manifests/mcp-optimizer-httproute.yaml | kubectl apply -f -" || die "Failed to apply MCP Optimizer HTTPRoute"
 echo " ✓"
 
 echo -n "Waiting for all pods to be ready..."
@@ -253,25 +269,39 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/mkp/health"
     },
     {
-      "name": "vMCP Demo Server",
-      "url": "http://$MCP_HOSTNAME/vmcp-demo/mcp",
+      "name": "vMCP Infra Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-infra/mcp",
       "type": "mcp",
       "test_with_thv": true,
-      "healthcheck_path": "/vmcp-demo/health"
+      "healthcheck_path": "/vmcp-infra/health"
     },
     {
-      "name": "vMCP Composite Tool Demo Server",
+      "name": "vMCP Infra Gateway (Optimized)",
+      "url": "http://$MCP_HOSTNAME/vmcp-infra-optimized/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-infra-optimized/health"
+    },
+    {
+      "name": "vMCP Docs Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-docs/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-docs/health"
+    },
+    {
+      "name": "vMCP Finance Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-finance/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-finance/health"
+    },
+    {
+      "name": "vMCP Research Gateway",
       "url": "http://$MCP_HOSTNAME/vmcp-research/mcp",
       "type": "mcp",
       "test_with_thv": true,
       "healthcheck_path": "/vmcp-research/health"
-    },
-    {
-      "name": "MCP Optimizer",
-      "url": "http://$MCP_HOSTNAME/mcp-optimizer/mcp",
-      "type": "mcp",
-      "test_with_thv": true,
-      "healthcheck_path": "/mcp-optimizer/health"
     },
     {
       "name": "Grafana",
@@ -296,8 +326,10 @@ echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-reg
 echo "   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)"
 echo " - Public Registry (no auth) at http://$REGISTRY_HOSTNAME/registry/public for the ToolHive CLI or UI"
 echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip' or addin the UI settings)"
-echo " - MKP MCP server at http://$MCP_HOSTNAME/mkp/mcp"
-echo " - vMCP demo server at http://$MCP_HOSTNAME/vmcp-demo/mcp"
-echo " - vMCP composite tool demo server at http://$MCP_HOSTNAME/vmcp-research/mcp"
-echo " - MCP Optimizer at http://$MCP_HOSTNAME/mcp-optimizer/mcp"
+echo " - MKP MCP server (standalone, engineering) at http://$MCP_HOSTNAME/mkp/mcp"
+echo " - vMCP Infra gateway (alice/engineering) at http://$MCP_HOSTNAME/vmcp-infra/mcp"
+echo " - vMCP Infra gateway (optimizer-enabled) at http://$MCP_HOSTNAME/vmcp-infra-optimized/mcp"
+echo " - vMCP Docs gateway (shared) at http://$MCP_HOSTNAME/vmcp-docs/mcp"
+echo " - vMCP Finance gateway (bob/finance, stub) at http://$MCP_HOSTNAME/vmcp-finance/mcp"
+echo " - vMCP Research gateway (shared) at http://$MCP_HOSTNAME/vmcp-research/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

@@ -5,7 +5,7 @@ Deploys [LibreChat](https://www.librechat.ai/) as a chat UI connected to the dem
 ## What it does
 
 - Installs LibreChat via the official Helm chart (includes MongoDB)
-- Connects to the `vmcp-demo` VirtualMCPServer for tool access
+- Connects to the `vmcp-infra` and `vmcp-docs` VirtualMCPServers for tool access
 - Routes through OpenRouter for LLM inference (multi-model)
 - Seeds a demo user for immediate login
 

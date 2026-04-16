@@ -1,0 +1,104 @@
+# Infra tools — backends for Alice (engineering/platform persona).
+# Aggregated by the vmcp-infra VirtualMCPServer.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPGroup
+metadata:
+  name: infra-tools
+  namespace: toolhive-system
+spec:
+  description: Platform/infra tools for the engineering persona
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: prometheus
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/pab1it0/prometheus-mcp-server:1.5.3
+  groupRef:
+    name: infra-tools
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8080
+  env:
+    - name: PROMETHEUS_URL
+      value: http://prometheus-server.observability
+    - name: PROMETHEUS_MCP_SERVER_TRANSPORT
+      value: http
+    - name: PROMETHEUS_MCP_BIND_HOST
+      value: 0.0.0.0
+    - name: PROMETHEUS_MCP_BIND_PORT
+      value: "8080"
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: prometheus-server
+  audit:
+    enabled: true
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: grafana
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: docker.io/grafana/mcp-grafana:0.11.6
+  groupRef:
+    name: infra-tools
+  transport: streamable-http
+  mcpPort: 8000
+  proxyPort: 8080
+  args:
+    - --transport
+    - streamable-http
+  env:
+    - name: GRAFANA_URL
+      value: http://grafana.observability.svc.cluster.local
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: grafana-server
+  audit:
+    enabled: true
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: osv
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/stackloklabs/osv-mcp/server:0.1.3
+  transport: streamable-http
+  proxyPort: 8080
+  mcpPort: 8080
+  groupRef:
+    name: infra-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: osv-server
+  audit:
+    enabled: true
+---
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: oci-registry
+  namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
+spec:
+  image: ghcr.io/stackloklabs/ocireg-mcp/server:0.3.0
+  groupRef:
+    name: infra-tools
+  transport: streamable-http
+  mcpPort: 8080
+  proxyPort: 8080
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: oci-registry-server
+  audit:
+    enabled: true

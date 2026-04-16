@@ -25,6 +25,7 @@ Add-ons deploy into their own Kubernetes namespace and are independent of each o
 |--------|-------------|
 | [librechat](librechat/) | Chat UI connected to a vMCP gateway via streamable-http |
 | [github-mcp-local](github-mcp-local/) | GitHub MCP server (PAT, read-only) on the shared MCP gateway |
+| [cloud-ui-openrouter](cloud-ui-openrouter/) | Patch Cloud UI with an OpenRouter API key |
 
 ## Creating a new add-on
 

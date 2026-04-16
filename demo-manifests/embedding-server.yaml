@@ -1,0 +1,11 @@
+# Text embeddings server used by optimizer-enabled vMCP gateways for
+# semantic tool search. Shared by any vMCP that sets embeddingServerRef.
+# Image tag is selected per host architecture by bootstrap.sh (cpu-latest
+# for x86_64, cpu-arm64-latest for arm64/aarch64).
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: EmbeddingServer
+metadata:
+  name: optimizer-embedding
+  namespace: toolhive-system
+spec:
+  image: $EMBEDDING_IMAGE

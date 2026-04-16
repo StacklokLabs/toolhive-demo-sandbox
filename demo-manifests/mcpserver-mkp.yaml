@@ -3,6 +3,8 @@ kind: MCPServer
 metadata:
   name: mkp
   namespace: toolhive-system
+  labels:
+    demo.toolhive.stacklok.dev/vmcp-backend: "true"
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: http://$MCP_HOSTNAME/mkp/mcp
@@ -18,6 +20,8 @@ spec:
   args:
     - --read-write=true
   serviceAccount: mkp-sa
+  groupRef:
+    name: infra-tools
   telemetryConfigRef:
     name: shared-otel
     serviceName: mkp-server
