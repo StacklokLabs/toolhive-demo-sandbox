@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: librechat
+  namespace: librechat
+  labels:
+    app: librechat
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 3080
+      protocol: TCP
+      name: http
+  selector:
+    app: librechat
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: librechat
+  namespace: librechat
+  labels:
+    app: librechat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: librechat
+  template:
+    metadata:
+      labels:
+        app: librechat
+    spec:
+      containers:
+        - name: librechat
+          image: ghcr.io/danny-avila/librechat:v0.8.4
+          ports:
+            - name: http
+              containerPort: 3080
+              protocol: TCP
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "3080"
+            - name: MONGO_URI
+              value: "mongodb://librechat-mongodb.librechat.svc.cluster.local:27017/librechat"
+            - name: ALLOW_REGISTRATION
+              value: "true"
+            - name: ALLOW_SOCIAL_LOGIN
+              value: "false"
+            - name: CREDS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: librechat-api-keys
+                  key: creds-key
+            - name: CREDS_IV
+              valueFrom:
+                secretKeyRef:
+                  name: librechat-api-keys
+                  key: creds-iv
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: librechat-api-keys
+                  key: openrouter-api-key
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: librechat-api-keys
+                  key: jwt-secret
+            - name: JWT_REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: librechat-api-keys
+                  key: jwt-refresh-secret
+            - name: CONFIG_PATH
+              value: "/app/librechat.yaml"
+          volumeMounts:
+            - name: config
+              mountPath: /app/librechat.yaml
+              subPath: librechat.yaml
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+      volumes:
+        - name: config
+          configMap:
+            name: librechat-config
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: librechat-route
+  namespace: librechat
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  hostnames:
+    - $LIBRECHAT_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: librechat
+          port: 80
