@@ -68,8 +68,9 @@ config:
           include:
             # notion-remote is now published via the MCPServerEntry in
             # demo-manifests/mcp-server-entries.yaml instead of this git source.
+            # toolhive-doc-mcp-remote is fronted by an MCPRemoteProxy in
+            # demo-manifests/shared-tools.yaml.
             - io.github.stacklok/time
-            - io.github.stacklok/toolhive-doc-mcp-remote
       claims:
         groups: everyone
 
@@ -145,8 +146,8 @@ config:
         names:
           include:
             # notion-remote is published via MCPServerEntry (K8s source).
+            # toolhive-doc-mcp-remote is published via MCPRemoteProxy (K8s source).
             - io.github.stacklok/time
-            - io.github.stacklok/toolhive-doc-mcp-remote
             - io.github.stacklok/aws-documentation
             - io.github.stacklok/filesystem
             - io.github.stacklok/playwright

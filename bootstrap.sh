@@ -182,8 +182,9 @@ run_quiet kubectl apply -f demo-manifests/finance-tools.yaml || die "Failed to a
 run_quiet kubectl apply -f demo-manifests/research-tools.yaml || die "Failed to apply research-tools group"
 run_quiet kubectl apply -f demo-manifests/mcp-server-entries.yaml || die "Failed to apply MCPServerEntry catalog entries"
 run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
-# Wait for backend MCPServer resources (including MKP) to reach Ready phase
+# Wait for backend MCPServer and MCPRemoteProxy resources to reach Ready phase
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpremoteproxy -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPRemoteProxy resources failed to become ready"
 echo " ✓"
 
 echo -n "Installing persona vMCP gateways..."
