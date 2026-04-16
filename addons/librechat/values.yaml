@@ -1,14 +1,14 @@
-# LibreChat configuration
-# Mounted as /app/librechat.yaml inside the container
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: librechat-config
-  namespace: librechat
-  labels:
-    app: librechat
-data:
-  librechat.yaml: |
+global:
+  librechat:
+    existingSecretName: "librechat-credentials"
+    existingSecretApiKey: OPENROUTER_API_KEY
+
+librechat:
+  configEnv:
+    MONGO_URI: "mongodb://librechat-mongodb.librechat.svc.cluster.local:27017/LibreChat"
+  existingSecretName: "librechat-credentials"
+
+  configYamlContent: |
     version: 1.3.5
     cache: true
 
@@ -38,3 +38,36 @@ data:
       toolhive-vmcp:
         type: streamable-http
         url: http://vmcp-vmcp-demo.toolhive-system.svc.cluster.local:4483/mcp
+
+  imageVolume:
+    enabled: false
+
+fullnameOverride: "librechat"
+
+image:
+  repository: danny-avila/librechat
+  registry: ghcr.io
+  tag: "v0.8.4"
+
+ingress:
+  enabled: false
+
+mongodb:
+  enabled: false
+
+meilisearch:
+  enabled: false
+
+redis:
+  enabled: false
+
+librechat-rag-api:
+  enabled: false
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 512Mi

@@ -4,7 +4,7 @@ Deploys [LibreChat](https://www.librechat.ai/) as a chat UI connected to the dem
 
 ## What it does
 
-- Deploys LibreChat (v0.8.4) and MongoDB into a `librechat` namespace
+- Installs LibreChat via the official Helm chart (includes MongoDB)
 - Connects to the `vmcp-demo` VirtualMCPServer for tool access
 - Routes through OpenRouter for LLM inference (multi-model)
 - Seeds a demo user for immediate login
@@ -29,12 +29,11 @@ The script prints the URL and login credentials when done.
 ./teardown.sh
 ```
 
-Removes all resources including the namespace and persistent volumes.
+Removes all resources including the Helm release, namespace, and persistent volumes.
 
 ## Configuration
 
-- [librechat.yaml](librechat.yaml) — LibreChat config (models, MCP endpoints, allowed domains)
-- [librechat-app.yaml](librechat-app.yaml) — Deployment, Service, HTTPRoute
-- [mongodb.yaml](mongodb.yaml) — MongoDB StatefulSet
+- [values.yaml](values.yaml) — Helm values (LibreChat config, models, MCP endpoints, allowed domains)
+- [httproute.yaml](httproute.yaml) — Gateway API route (the chart uses Ingress which we replace with HTTPRoute)
 
-To connect to a different vMCP gateway, edit the `mcpServers` and `mcpSettings.allowedDomains` entries in `librechat.yaml`.
+To connect to a different vMCP gateway, edit the `mcpServers` and `mcpSettings.allowedDomains` entries in `values.yaml` under `configYamlContent`.
