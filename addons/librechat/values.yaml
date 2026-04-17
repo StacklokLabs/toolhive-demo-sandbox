@@ -30,6 +30,14 @@ librechat:
     ALLOW_REGISTRATION: "false"
     ALLOW_SOCIAL_LOGIN: "true"
     ALLOW_SOCIAL_REGISTRATION: "true"
+    # Demo usage pattern: presenters sign in and out repeatedly as demo /
+    # alice / bob, which blows through LibreChat's conservative defaults
+    # (LOGIN_MAX=7, REGISTER_MAX=5). Raise the ceilings so the "Too many
+    # login attempts" lockout doesn't derail live walkthroughs.
+    LOGIN_MAX: "100"
+    LOGIN_WINDOW: "5"
+    REGISTER_MAX: "100"
+    REGISTER_WINDOW: "60"
   existingSecretName: "librechat-credentials"
 
   configYamlContent: |
