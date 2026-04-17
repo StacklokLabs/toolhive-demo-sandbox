@@ -1,6 +1,11 @@
 #!/bin/bash
 . "$(dirname "$0")/../_lib.sh"
 
+echo -n "Removing vmcp-chat VirtualMCPServer..."
+kubectl delete -n toolhive-system vmcp/vmcp-chat mcpoidcconfig/vmcp-chat-oidc \
+    --ignore-not-found > /dev/null 2>&1 || true
+echo " done"
+
 echo -n "Removing HTTPRoute..."
 kubectl delete -f "$ADDON_DIR/httproute.yaml" --ignore-not-found > /dev/null 2>&1 || true
 echo " done"

@@ -6,7 +6,8 @@ addon_require_env OPENROUTER_API_KEY
 addon_resolve_traefik
 
 export LIBRECHAT_HOSTNAME="chat-${TRAEFIK_HOSTNAME_BASE}"
-AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
+# Exported for envsubst when applying vmcp-chat.yaml.
+export AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 # Must match the secret configured for the "librechat" client in
 # infra/keycloak.yaml. Keep them in sync.
 KEYCLOAK_CLIENT_SECRET="librechat-secret-change-in-production"
@@ -67,6 +68,15 @@ echo -n "Applying HTTPRoute..."
 run_quiet addon_apply "$ADDON_DIR/httproute.yaml"
 echo " done"
 
+# Authenticated in-cluster vMCP for LibreChat. Accepts Keycloak user tokens
+# bearing the toolhive-vmcp-chat audience; LibreChat forwards them via the
+# {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholder configured in values.yaml.
+echo -n "Applying vmcp-chat VirtualMCPServer..."
+run_quiet addon_apply "$ADDON_DIR/vmcp-chat.yaml"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m \
+    vmcp/vmcp-chat -n toolhive-system
+echo " done"
+
 echo ""
 echo "LibreChat is ready!"
 echo "  URL:    https://$LIBRECHAT_HOSTNAME (self-signed cert, expect a browser warning)"
@@ -74,4 +84,4 @@ echo "  Login:  via Keycloak (https://$AUTH_HOSTNAME) — any realm user works"
 echo "          demo / demo    (all groups)"
 echo "          alice / alice  (engineering)"
 echo "          bob / bob      (finance)"
-echo "  vMCP gateways: vmcp-infra + vmcp-docs (in-cluster)"
+echo "  vMCP gateways: vmcp-chat (authenticated, in-cluster) + vmcp-docs"
