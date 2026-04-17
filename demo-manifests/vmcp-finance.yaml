@@ -18,16 +18,10 @@ metadata:
 spec:
   groupRef:
     name: finance-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: vmcp-finance-server
   config:
-    telemetry:
-      endpoint: mcp-collector.observability.svc.cluster.local:4318
-      insecure: true
-      serviceName: vmcp-finance-server
-      serviceVersion: "1.0.0"
-      metricsEnabled: true
-      tracingEnabled: true
-      samplingRate: "1.0"
-      enablePrometheusMetricsPath: true
     audit:
       enabled: true
       includeRequestData: true
