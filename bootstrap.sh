@@ -149,6 +149,9 @@ REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
 AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
+# Pre-declared so the Keycloak realm import can register a redirect URI for the
+# optional LibreChat addon without requiring a realm-edit on addon deploy.
+CHAT_HOSTNAME="chat-${TRAEFIK_HOSTNAME_BASE}"
 
 echo -n "Installing Keycloak..."
 if ! namespace_exists keycloak; then
@@ -171,7 +174,7 @@ if [ -n "$PREVIOUS_BASE" ] && [ "$PREVIOUS_BASE" != "$TRAEFIK_HOSTNAME_BASE" ]; 
     run_quiet kubectl delete pvc keycloak-h2-data -n keycloak --ignore-not-found
     echo -n " Reinstalling Keycloak..."
 fi
-run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
+run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME \$CHAT_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
 # Stamp the bootstrap state so the next re-bootstrap can detect IP drift.
 run_quiet sh -c "kubectl create configmap keycloak-bootstrap-state -n keycloak \

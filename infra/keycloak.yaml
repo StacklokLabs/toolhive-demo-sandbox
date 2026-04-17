@@ -57,6 +57,26 @@ data:
           "optionalClientScopes": ["offline_access", "mcp-access"]
         },
         {
+          "clientId": "librechat",
+          "name": "LibreChat",
+          "description": "LibreChat chat UI (OIDC login)",
+          "enabled": true,
+          "secret": "librechat-secret-change-in-production",
+          "redirectUris": [
+            "https://$CHAT_HOSTNAME/oauth/openid/callback"
+          ],
+          "webOrigins": ["+"],
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "publicClient": false,
+          "attributes": {
+            "post.logout.redirect.uris": "https://$CHAT_HOSTNAME/login",
+            "backchannel.logout.session.required": "true"
+          },
+          "defaultClientScopes": ["openid", "email", "profile", "roles", "groups", "web-origins"],
+          "optionalClientScopes": ["offline_access", "mcp-access"]
+        },
+        {
           "clientId": "mcp-vmcp-authenticated",
           "name": "vMCP Authenticated Server",
           "description": "MCP server with OIDC authentication",

@@ -6,6 +6,24 @@ global:
 librechat:
   configEnv:
     MONGO_URI: "mongodb://librechat-mongodb.librechat.svc.cluster.local:27017/LibreChat"
+    # Keycloak OIDC — Keycloak serves HTTPS via Traefik using a self-signed CA
+    # (traefik.me). NODE_EXTRA_CA_CERTS below makes the openid-client trust it.
+    # OPENID_ISSUER is injected per-cluster via `--set` in deploy.sh.
+    OPENID_CLIENT_ID: "librechat"
+    OPENID_CALLBACK_URL: "/oauth/openid/callback"
+    OPENID_SCOPE: "openid profile email groups offline_access"
+    OPENID_USERNAME_CLAIM: "preferred_username"
+    OPENID_NAME_CLAIM: "name"
+    OPENID_EMAIL_CLAIM: "email"
+    OPENID_BUTTON_LABEL: "Sign in with Keycloak"
+    OPENID_AUTO_REDIRECT: "true"
+    OPENID_USE_END_SESSION_ENDPOINT: "true"
+    NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/traefik-ca.crt"
+    # Keycloak-only auth — disable built-in email/password paths.
+    ALLOW_EMAIL_LOGIN: "false"
+    ALLOW_REGISTRATION: "false"
+    ALLOW_SOCIAL_LOGIN: "true"
+    ALLOW_SOCIAL_REGISTRATION: "true"
   existingSecretName: "librechat-credentials"
 
   configYamlContent: |
@@ -45,6 +63,17 @@ librechat:
 
   imageVolume:
     enabled: false
+
+# Mount the Traefik CA so LibreChat's Node runtime trusts the Keycloak issuer.
+volumes:
+  - name: traefik-ca
+    configMap:
+      name: traefik-ca
+volumeMounts:
+  - name: traefik-ca
+    mountPath: /etc/ssl/certs/traefik-ca.crt
+    subPath: ca.crt
+    readOnly: true
 
 fullnameOverride: "librechat"
 
