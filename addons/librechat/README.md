@@ -48,6 +48,7 @@ Removes all resources including the Helm release, namespace, and persistent volu
 
 - [values.yaml](values.yaml) — Helm values (LibreChat config, models, MCP endpoints, allowed domains, OIDC env)
 - [vmcp-chat.yaml](vmcp-chat.yaml) — authenticated VirtualMCPServer over `infra-tools`
+- [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) — Cedar policies gating `tools/list` + `tools/call` by the user's Keycloak `groups` claim
 - [httproute.yaml](httproute.yaml) — Gateway API route (the chart uses Ingress which we replace with HTTPRoute)
 
 The deploy script injects the per-cluster `OPENID_ISSUER`, mirrors the Traefik
@@ -66,19 +67,32 @@ that matches the `librechat` client declared in `infra/keycloak.yaml`.
    user's session; `{{LIBRECHAT_OPENID_ACCESS_TOKEN}}` in `mcpServers[*].headers`
    resolves to that access token on every outbound MCP request.
 4. `vmcp-chat` validates the token against the Keycloak issuer and checks
-   the audience before aggregating `infra-tools` backends. Cedar authz
-   policies (future work) filter tools by the `groups` claim.
+   the audience before aggregating `infra-tools` backends. Cedar policies
+   in [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) filter the `tools/list`
+   and `tools/call` responses by the `groups` claim, so each persona sees
+   a different set of tools in LibreChat:
+   - `alice` / `demo` (engineering): every aggregated tool
+   - `bob` (finance): a narrow read-only slice (dashboard search, datasource
+     listing, metric listing, vulnerability queries)
+   - anything else: default-deny
 
-### Known issue — blocked on operator fix
+### Known issues — blocked on operator fixes
 
-Step 4 currently fails on ToolHive operator **v0.21.0** because the operator
-mounts `MCPOIDCConfig.caBundleRef` into the vMCP pod but never tells the vmcp
-binary where the CA is — so OIDC discovery against the self-signed `traefik.me`
-cert errors with `x509: certificate signed by unknown authority`. Tracked in
-[stacklok/toolhive#4918](https://github.com/stacklok/toolhive/issues/4918).
+Step 4 currently fails on ToolHive operator **v0.21.0** due to two sibling
+converter gaps in the VirtualMCPServer rendering path:
 
-Once that ships in the operator chart, no changes should be needed here — the
-manifest in [vmcp-chat.yaml](vmcp-chat.yaml) already configures `caBundleRef`
+1. [stacklok/toolhive#4918](https://github.com/stacklok/toolhive/issues/4918)
+   — `MCPOIDCConfig.caBundleRef` is auto-mounted into the vMCP pod but
+   never passed through to the vMCP binary, so OIDC discovery against the
+   self-signed `traefik.me` cert errors with `x509: certificate signed by
+   unknown authority`.
+2. [stacklok/toolhive#4919](https://github.com/stacklok/toolhive/issues/4919)
+   — `authzConfig.type: configMap` is passed through the operator without
+   resolving the referenced ConfigMap, so the vMCP binary rejects the
+   config at startup (`incomingAuth.authz: type must be one of: cedar, none`).
+
+Once both ship in the operator chart, no changes should be needed here — the
+manifests already configure `caBundleRef` and `authzConfig: configMap`
 correctly.
 
 To connect to a different vMCP gateway, edit the `mcpServers` and

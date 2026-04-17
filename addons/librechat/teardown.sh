@@ -3,7 +3,7 @@
 
 echo -n "Removing vmcp-chat VirtualMCPServer..."
 kubectl delete -n toolhive-system vmcp/vmcp-chat mcpoidcconfig/vmcp-chat-oidc \
-    --ignore-not-found > /dev/null 2>&1 || true
+    configmap/vmcp-chat-authz --ignore-not-found > /dev/null 2>&1 || true
 echo " done"
 
 echo -n "Removing HTTPRoute..."

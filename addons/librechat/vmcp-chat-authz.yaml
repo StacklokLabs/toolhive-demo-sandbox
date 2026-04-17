@@ -1,0 +1,34 @@
+# Cedar authorization policies for vmcp-chat.
+#
+# Requests arrive with a Keycloak access token carrying a `groups` claim.
+# ToolHive's Cedar authorizer builds THVGroup entities from those group names
+# so policies can write `principal in THVGroup::"<name>"`. `tools/list`
+# responses are filtered per-caller against the `call_tool` policies here —
+# so each persona sees a different tool list in LibreChat:
+#
+# - engineering (alice, demo): every aggregated tool
+# - finance (bob):              a narrow read-only slice
+# - unknown groups:             nothing (default-deny)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vmcp-chat-authz
+  namespace: toolhive-system
+data:
+  authz-config.json: |
+    {
+      "version": "1.0",
+      "type": "cedarv1",
+      "cedar": {
+        "policies": [
+          "permit(principal in THVGroup::\"engineering\", action == Action::\"call_tool\", resource);",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"grafana_search_dashboards\");",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"grafana_get_dashboard_summary\");",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"grafana_list_datasources\");",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"prometheus_list_metrics\");",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"osv_query_vulnerability\");",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"osv_get_vulnerability\");"
+        ],
+        "entities_json": "[]"
+      }
+    }
