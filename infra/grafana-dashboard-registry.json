@@ -22,7 +22,7 @@
   "links": [
     {
       "asDropdown": false,
-      "icon": "doc",
+      "icon": "dashboard",
       "includeVars": false,
       "keepTime": true,
       "tags": [],
@@ -30,6 +30,17 @@
       "title": "ToolHive Observability",
       "type": "link",
       "url": "/d/toolhive-mcp-observability"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Audit Log",
+      "type": "link",
+      "url": "/d/toolhive-audit-log"
     }
   ],
   "panels": [
