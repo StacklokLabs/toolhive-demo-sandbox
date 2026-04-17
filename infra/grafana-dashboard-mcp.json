@@ -30,6 +30,17 @@
       "title": "Audit Log",
       "type": "link",
       "url": "/d/toolhive-audit-log"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Registry Server",
+      "type": "link",
+      "url": "/d/toolhive-registry-server"
     }
   ],
   "panels": [

@@ -19,16 +19,10 @@ spec:
     name: infra-tools
   embeddingServerRef:
     name: optimizer-embedding
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: vmcp-infra-optimized-server
   config:
-    telemetry:
-      endpoint: mcp-collector.observability.svc.cluster.local:4318
-      insecure: true
-      serviceName: vmcp-infra-optimized-server
-      serviceVersion: "1.0.0"
-      metricsEnabled: true
-      tracingEnabled: true
-      samplingRate: "1.0"
-      enablePrometheusMetricsPath: true
     audit:
       enabled: true
       includeRequestData: true

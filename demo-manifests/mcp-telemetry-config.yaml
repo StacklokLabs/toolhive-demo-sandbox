@@ -1,6 +1,5 @@
-# Shared MCPTelemetryConfig for all MCPServer resources.
-# Referenced via telemetryConfigRef from MCPServer resources.
-# Note: VirtualMCPServer does not yet support telemetryConfigRef.
+# Shared MCPTelemetryConfig for MCPServer and VirtualMCPServer resources.
+# Referenced via telemetryConfigRef.
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPTelemetryConfig
 metadata:

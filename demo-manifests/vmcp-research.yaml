@@ -58,16 +58,10 @@ metadata:
 spec:
   groupRef:
     name: research-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: vmcp-research-server
   config:
-    telemetry:
-      endpoint: mcp-collector.observability.svc.cluster.local:4318
-      insecure: true
-      serviceName: vmcp-research-server
-      serviceVersion: "1.0.0"
-      metricsEnabled: true
-      tracingEnabled: true
-      samplingRate: "1.0"
-      enablePrometheusMetricsPath: true
     audit:
       enabled: true
       includeRequestData: true

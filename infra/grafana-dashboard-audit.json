@@ -24,9 +24,20 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Observability",
+      "title": "ToolHive Observability",
       "type": "link",
       "url": "/d/toolhive-mcp-observability"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Registry Server",
+      "type": "link",
+      "url": "/d/toolhive-registry-server"
     }
   ],
   "panels": [
