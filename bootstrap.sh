@@ -149,6 +149,9 @@ REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
 AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 GRAFANA_HOSTNAME="grafana-${TRAEFIK_HOSTNAME_BASE}"
+# Pre-declared so the Keycloak realm import can register a redirect URI for the
+# optional LibreChat addon without requiring a realm-edit on addon deploy.
+CHAT_HOSTNAME="chat-${TRAEFIK_HOSTNAME_BASE}"
 
 echo -n "Installing Keycloak..."
 if ! namespace_exists keycloak; then
@@ -157,7 +160,7 @@ fi
 # Keycloak uses dev-file (H2 on disk) with a PVC, so signing keys and realm
 # data persist across restarts. The --import-realm flag is a no-op when the
 # realm already exists, so re-runs are safe.
-run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
+run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME \$CHAT_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
 echo " ✓"
 
