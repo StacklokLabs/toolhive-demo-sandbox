@@ -18,6 +18,12 @@ librechat:
     OPENID_BUTTON_LABEL: "Sign in with Keycloak"
     OPENID_AUTO_REDIRECT: "true"
     OPENID_USE_END_SESSION_ENDPOINT: "true"
+    # Required for MCP token forwarding: when true, LibreChat keeps the
+    # Keycloak access/id tokens on the user object (user.federatedTokens)
+    # so {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholders in mcpServers[*].headers
+    # resolve on outbound MCP calls. Without this flag LibreChat issues its
+    # own JWT and the placeholder silently resolves to an empty string.
+    OPENID_REUSE_TOKENS: "true"
     NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/traefik-ca.crt"
     # Keycloak-only auth — disable built-in email/password paths.
     ALLOW_EMAIL_LOGIN: "false"
