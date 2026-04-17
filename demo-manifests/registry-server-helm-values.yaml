@@ -128,10 +128,6 @@ config:
     - name: k8s
       kubernetes: {}
 
-    # Same K8s discovery but without claims — used by the public registry
-    - name: k8s-public
-      kubernetes: {}
-
     # ToolHive catalog without claims — used by the public registry
     - name: toolhive-public
       format: upstream
@@ -165,7 +161,7 @@ config:
     - name: public
       sources:
         - toolhive-public
-        - k8s-public
+        - k8s
 
   # CNPG PostgreSQL database configuration
   # Uses the CNPG read-write service (registry-db-rw)
