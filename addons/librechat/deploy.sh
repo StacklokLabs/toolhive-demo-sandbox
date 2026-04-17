@@ -6,22 +6,27 @@ addon_require_env OPENROUTER_API_KEY
 addon_resolve_traefik
 
 export LIBRECHAT_HOSTNAME="chat-${TRAEFIK_HOSTNAME_BASE}"
-AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
+# Exported for envsubst when applying vmcp-chat.yaml.
+export AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
 # Must match the secret configured for the "librechat" client in
 # infra/keycloak.yaml. Keep them in sync.
 KEYCLOAK_CLIENT_SECRET="librechat-secret-change-in-production"
 
 addon_create_namespace
 
-# Copy the Traefik CA from the traefik namespace so the LibreChat pod's Node
-# runtime can validate the Keycloak issuer's TLS cert.
-echo -n "Mirroring Traefik CA into librechat namespace..."
-kubectl get secret sslip-io-tls -n traefik -o jsonpath='{.data.ca\.crt}' \
-    | base64 -d \
-    | kubectl create configmap traefik-ca -n librechat \
-        --from-file=ca.crt=/dev/stdin \
-        --dry-run=client -o yaml \
-    | kubectl apply -f - > /dev/null
+# Copy the Traefik CA out of the traefik namespace. LibreChat's Node runtime
+# needs it to validate the Keycloak issuer's TLS cert, and vmcp-chat's
+# MCPOIDCConfig caBundleRef needs it in mcp-workloads to fetch OIDC discovery
+# (bootstrap.sh only creates this ConfigMap in the platform namespace).
+echo -n "Mirroring Traefik CA..."
+CA_CRT=$(kubectl get secret sslip-io-tls -n traefik -o jsonpath='{.data.ca\.crt}' | base64 -d)
+for ns in librechat mcp-workloads; do
+    printf '%s' "$CA_CRT" \
+        | kubectl create configmap traefik-ca -n "$ns" \
+            --from-file=ca.crt=/dev/stdin \
+            --dry-run=client -o yaml \
+        | kubectl apply -f - > /dev/null
+done
 echo " done"
 
 # Generate secrets
@@ -67,6 +72,15 @@ echo -n "Applying HTTPRoute..."
 run_quiet addon_apply "$ADDON_DIR/httproute.yaml"
 echo " done"
 
+# Authenticated in-cluster vMCP for LibreChat. Accepts Keycloak user tokens
+# bearing the toolhive-vmcp-chat audience; LibreChat forwards them via the
+# {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholder configured in values.yaml.
+echo -n "Applying vmcp-chat VirtualMCPServer..."
+run_quiet addon_apply "$ADDON_DIR/vmcp-chat.yaml"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m \
+    vmcp/vmcp-chat -n mcp-workloads
+echo " done"
+
 echo ""
 echo "LibreChat is ready!"
 echo "  URL:    https://$LIBRECHAT_HOSTNAME (self-signed cert, expect a browser warning)"
@@ -74,4 +88,4 @@ echo "  Login:  via Keycloak (https://$AUTH_HOSTNAME) — any realm user works"
 echo "          demo / demo    (all groups)"
 echo "          alice / alice  (engineering)"
 echo "          bob / bob      (finance)"
-echo "  vMCP gateways: vmcp-infra + vmcp-docs (in-cluster)"
+echo "  vMCP gateways: vmcp-chat (authenticated, in-cluster) + vmcp-docs"
