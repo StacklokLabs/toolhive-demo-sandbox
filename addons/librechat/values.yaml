@@ -75,8 +75,8 @@ librechat:
       # user's Keycloak access token as a Bearer. The vmcp-chat
       # VirtualMCPServer (addons/librechat/vmcp-chat.yaml) validates the
       # token and its toolhive-vmcp-chat audience before aggregating
-      # infra-tools backends. Future Cedar policies on the vMCP will
-      # filter tools by the user's groups claim.
+      # infra-tools backends. Cedar policies on the vMCP filter the
+      # visible tools by the user's groups claim.
       toolhive-chat:
         type: streamable-http
         url: http://vmcp-vmcp-chat.mcp-workloads.svc.cluster.local:4483/mcp

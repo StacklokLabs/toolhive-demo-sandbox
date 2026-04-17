@@ -79,6 +79,13 @@ spec:
     oidcConfigRef:
       name: vmcp-chat-oidc
       audience: toolhive-vmcp-chat
+    # Per-persona tool filtering via Cedar. See vmcp-chat-authz.yaml for
+    # the policy set.
+    authzConfig:
+      type: configMap
+      configMap:
+        name: vmcp-chat-authz
+        key: authz-config.json
   outgoingAuth:
     source: inline
   serviceType: ClusterIP
