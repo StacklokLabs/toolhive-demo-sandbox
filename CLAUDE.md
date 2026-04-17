@@ -107,6 +107,7 @@ When touching `demo-manifests/`, think about:
 3. Is `authz-claims` consistent with the persona access story in `README.md`?
 4. For vMCPs that aggregate: do the workload names in `aggregation.tools` match actual MCPServer/MCPRemoteProxy names in the group?
 5. Any manifest with `$VARS` must be rendered via `envsubst` (see patterns in `bootstrap.sh` and `addon_apply`).
+6. VirtualMCPServer telemetry goes in `spec.telemetryConfigRef` (top-level, same shape as MCPServer) pointing at an MCPTelemetryConfig. Inline `config.telemetry` still *validates* against the v0.21 CRD schema but is silently ignored by the operator — server-side dry-run won't catch this one.
 
 Before committing, run the `/validate-manifests` skill (or `.claude/skills/validate-manifests/scripts/validate.sh`) to server-side dry-run every changed YAML against the live CRDs.
 
