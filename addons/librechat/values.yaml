@@ -64,13 +64,21 @@ librechat:
 
     mcpSettings:
       allowedDomains:
-        - "vmcp-vmcp-infra.toolhive-system.svc.cluster.local"
+        - "vmcp-vmcp-chat.toolhive-system.svc.cluster.local"
         - "vmcp-vmcp-docs.toolhive-system.svc.cluster.local"
 
     mcpServers:
-      toolhive-infra:
+      # Authenticated infra gateway — LibreChat forwards the logged-in
+      # user's Keycloak access token as a Bearer. The vmcp-chat
+      # VirtualMCPServer (addons/librechat/vmcp-chat.yaml) validates the
+      # token and its toolhive-vmcp-chat audience before aggregating
+      # infra-tools backends. Future Cedar policies on the vMCP will
+      # filter tools by the user's groups claim.
+      toolhive-chat:
         type: streamable-http
-        url: http://vmcp-vmcp-infra.toolhive-system.svc.cluster.local:4483/mcp
+        url: http://vmcp-vmcp-chat.toolhive-system.svc.cluster.local:4483/mcp
+        headers:
+          Authorization: "Bearer {{LIBRECHAT_OPENID_ACCESS_TOKEN}}"
       toolhive-docs:
         type: streamable-http
         url: http://vmcp-vmcp-docs.toolhive-system.svc.cluster.local:4483/mcp

@@ -73,7 +73,7 @@ data:
             "post.logout.redirect.uris": "https://$CHAT_HOSTNAME/login",
             "backchannel.logout.session.required": "true"
           },
-          "defaultClientScopes": ["openid", "email", "profile", "roles", "groups", "web-origins"],
+          "defaultClientScopes": ["openid", "email", "profile", "roles", "groups", "web-origins", "mcp-chat"],
           "optionalClientScopes": ["offline_access", "mcp-access"]
         },
         {
@@ -196,6 +196,28 @@ data:
             "display.on.consent.screen": "true",
             "consent.screen.text": "Access MCP servers"
           }
+        },
+        {
+          "name": "mcp-chat",
+          "description": "Access to the LibreChat-facing vMCP gateway",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "false",
+            "display.on.consent.screen": "false"
+          },
+          "protocolMappers": [
+            {
+              "name": "vmcp-chat-audience",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.custom.audience": "toolhive-vmcp-chat",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            }
+          ]
         },
         {
           "name": "groups",
