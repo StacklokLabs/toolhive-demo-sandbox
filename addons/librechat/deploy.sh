@@ -71,6 +71,11 @@ echo " done"
 # Authenticated in-cluster vMCP for LibreChat. Accepts Keycloak user tokens
 # bearing the toolhive-vmcp-chat audience; LibreChat forwards them via the
 # {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholder configured in values.yaml.
+# Cedar authz ConfigMap must exist before the VirtualMCPServer references it.
+echo -n "Applying vmcp-chat authz policies..."
+run_quiet addon_apply "$ADDON_DIR/vmcp-chat-authz.yaml"
+echo " done"
+
 echo -n "Applying vmcp-chat VirtualMCPServer..."
 run_quiet addon_apply "$ADDON_DIR/vmcp-chat.yaml"
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m \
