@@ -79,13 +79,32 @@ spec:
     oidcConfigRef:
       name: vmcp-chat-oidc
       audience: toolhive-vmcp-chat
-    # Per-persona tool filtering via Cedar. See vmcp-chat-authz.yaml for
-    # the policy set.
+    # Per-persona tool filtering via Cedar.
+    #
+    # The intended shape is the ConfigMap reference below (policies live in
+    # vmcp-chat-authz.yaml, which is easier to edit than escaped JSON) but
+    # the operator doesn't yet resolve authzConfig.configMap for a vMCP
+    # (stacklok/toolhive#4919) — the vMCP binary rejects the passed-through
+    # `type: configMap` at startup and crashloops. Until that ships, we
+    # inline the same policy set below and leave the ConfigMap resource
+    # in place as a preview of the final state.
+    #
+    # authzConfig:
+    #   type: configMap
+    #   configMap:
+    #     name: vmcp-chat-authz
+    #     key: authz-config.json
     authzConfig:
-      type: configMap
-      configMap:
-        name: vmcp-chat-authz
-        key: authz-config.json
+      type: inline
+      inline:
+        policies:
+          - 'permit(principal in THVGroup::"engineering", action == Action::"call_tool", resource);'
+          - 'permit(principal in THVGroup::"finance", action == Action::"call_tool", resource == Tool::"grafana_search_dashboards");'
+          - 'permit(principal in THVGroup::"finance", action == Action::"call_tool", resource == Tool::"grafana_get_dashboard_summary");'
+          - 'permit(principal in THVGroup::"finance", action == Action::"call_tool", resource == Tool::"grafana_list_datasources");'
+          - 'permit(principal in THVGroup::"finance", action == Action::"call_tool", resource == Tool::"prometheus_list_metrics");'
+          - 'permit(principal in THVGroup::"finance", action == Action::"call_tool", resource == Tool::"osv_query_vulnerability");'
+          - 'permit(principal in THVGroup::"finance", action == Action::"call_tool", resource == Tool::"osv_get_vulnerability");'
   outgoingAuth:
     source: inline
   serviceType: ClusterIP
