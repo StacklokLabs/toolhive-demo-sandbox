@@ -90,10 +90,15 @@ converter gaps in the VirtualMCPServer rendering path:
    — `authzConfig.type: configMap` is passed through the operator without
    resolving the referenced ConfigMap, so the vMCP binary rejects the
    config at startup (`incomingAuth.authz: type must be one of: cedar, none`).
+   Worked around by inlining the same policy set under
+   `authzConfig.type: inline` in [vmcp-chat.yaml](vmcp-chat.yaml); the
+   ConfigMap in [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) is still
+   applied and shows the intended final shape — switch the commented
+   `authzConfig` block when the fix ships.
 
-Once both ship in the operator chart, no changes should be needed here — the
-manifests already configure `caBundleRef` and `authzConfig: configMap`
-correctly.
+Once #4918 ships in the operator chart, no manifest changes are needed for
+authn to work. For authz, swap the inline block for the commented-out
+ConfigMap reference.
 
 To connect to a different vMCP gateway, edit the `mcpServers` and
 `mcpSettings.allowedDomains` entries in `values.yaml` under `configYamlContent`.
