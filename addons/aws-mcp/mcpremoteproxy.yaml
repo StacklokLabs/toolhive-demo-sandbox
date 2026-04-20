@@ -223,10 +223,17 @@ spec:
 apiVersion: toolhive.stacklok.dev/v1alpha1
 kind: MCPRemoteProxy
 metadata:
+  metadata:
   name: aws-mcp-proxy
   namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "https://$AWS_MCP_HOSTNAME/mcp"
+    toolhive.stacklok.dev/registry-title: "AWS MCP Server (Okta SSO)"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "engineering"}'
+    toolhive.stacklok.dev/registry-description: "AWS API access via Okta SSO and STS token exchange. Scoped to S3 list operations in the demo IAM role."
 spec:
-  remoteUrl: https://aws-mcp.us-east-1.api.aws/mcp
+  remoteUrl: https://aws-mcp.$AWS_REGION.api.aws/mcp
   transport: streamable-http
   proxyPort: 8080
 
