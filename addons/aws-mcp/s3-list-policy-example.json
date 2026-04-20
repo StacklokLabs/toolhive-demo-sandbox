@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowS3ListViaMCP",
+      "Effect": "Allow",
+      "Action": ["s3:ListAllMyBuckets", "s3:ListBucket"],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "aws:ViaAWSMCPService": "true"
+        }
+      }
+    },
+    {
+      "Sid": "DenyDirectAPIAccess",
+      "Effect": "Deny",
+      "Action": "*",
+      "Resource": "*",
+      "Condition": {
+        "BoolIfExists": {
+          "aws:ViaAWSMCPService": "false"
+        }
+      }
+    }
+  ]
+}
