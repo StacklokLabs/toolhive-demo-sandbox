@@ -155,10 +155,28 @@ if ! namespace_exists keycloak; then
     run_quiet kubectl create namespace keycloak || die "Failed to create keycloak namespace"
 fi
 # Keycloak uses dev-file (H2 on disk) with a PVC, so signing keys and realm
-# data persist across restarts. The --import-realm flag is a no-op when the
-# realm already exists, so re-runs are safe.
+# data persist across restarts. The --import-realm flag is a no-op once the
+# realm exists, so re-runs are normally safe. Exception: client redirect URIs
+# are hostname-based and baked in at import time. If the Traefik LB IP
+# changes between bootstraps (e.g. cloud-provider-kind hands out a different
+# address after a docker restart), the persisted URIs go stale and every
+# OIDC callback fails with "Invalid redirect URI". Detect that drift against
+# a stamped ConfigMap and wipe the PVC so the fresh pod re-imports.
+PREVIOUS_BASE=$(kubectl get configmap keycloak-bootstrap-state -n keycloak \
+    -o jsonpath='{.data.traefikHostnameBase}' 2>/dev/null || true)
+if [ -n "$PREVIOUS_BASE" ] && [ "$PREVIOUS_BASE" != "$TRAEFIK_HOSTNAME_BASE" ]; then
+    echo ""
+    echo " Traefik LB IP changed ($PREVIOUS_BASE → $TRAEFIK_HOSTNAME_BASE); resetting Keycloak realm data..."
+    run_quiet kubectl delete deployment keycloak -n keycloak --ignore-not-found
+    run_quiet kubectl delete pvc keycloak-h2-data -n keycloak --ignore-not-found
+    echo -n " Reinstalling Keycloak..."
+fi
 run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
+# Stamp the bootstrap state so the next re-bootstrap can detect IP drift.
+run_quiet sh -c "kubectl create configmap keycloak-bootstrap-state -n keycloak \
+    --from-literal=traefikHostnameBase='$TRAEFIK_HOSTNAME_BASE' \
+    --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to stamp Keycloak bootstrap state"
 echo " ✓"
 
 echo -n "Creating PostgreSQL server for ToolHive Registry Server..."

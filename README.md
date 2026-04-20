@@ -84,6 +84,11 @@ To validate all services are working:
 ./validate.sh
 ```
 
+For symptom-specific recipes (Keycloak redirect-URI drift, vMCP crashloops,
+rate-limit lockouts, useful one-liners for minting tokens / inspecting
+rendered vMCP configs / listing registry entries per persona), see
+[TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ## Cleanup
 
 Run the `./cleanup.sh` script to delete the cluster.
