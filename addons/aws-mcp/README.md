@@ -110,6 +110,14 @@ cp .env.example .env   # fill in Okta + AWS values
 ./deploy.sh
 ```
 
+## Connecting with Claude Code
+
+The proxy is served over HTTPS via Traefik's traefik.me wildcard certificate. Node.js does not trust this CA by default, so launch Claude with TLS verification disabled:
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0 claude
+```
+
 ## Teardown
 
 ```bash

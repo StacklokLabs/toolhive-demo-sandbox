@@ -1,0 +1,195 @@
+# Atlassian Rovo MCP Remote Proxy with Embedded Auth Server
+#
+# This manifest proxies the Atlassian remote MCP server through ToolHive,
+# handling OAuth 2.0 authentication via an embedded auth server that delegates
+# to Atlassian's OAuth 2.0 (3LO) as the upstream identity provider.
+#
+# Auth flow:
+#
+#   MCP Client (Claude Desktop, etc.)
+#     → OAuth 2.0 auth code flow with embedded auth server
+#     → Embedded auth server redirects user to Atlassian OAuth
+#     → User authenticates via Atlassian SSO
+#     → Embedded auth server issues a ToolHive JWT (stores Atlassian token internally)
+#     → Client sends MCP request with ToolHive JWT
+#     → Proxy validates JWT (via oidcConfig → embedded auth server issuer)
+#     → Upstream swap middleware replaces ToolHive JWT with stored Atlassian token
+#     → Request forwarded to https://mcp.atlassian.com/v1/mcp
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ ENVIRONMENT VARIABLES                                               │
+# │                                                                     │
+# │ Substitute these before applying (e.g. with envsubst):              │
+# │                                                                     │
+# │   $ROVO_MCP_HOSTNAME        Traefik ingress hostname for this proxy  │
+# │                             (e.g. rovo-mcp.demo.example.com)        │
+# │   $ATLASSIAN_CLIENT_ID      Atlassian OAuth app client ID           │
+# │   $ATLASSIAN_CLIENT_SECRET  Atlassian OAuth app client secret       │
+# │                                                                     │
+# └─────────────────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ ATLASSIAN OAUTH APP SETUP                                           │
+# │                                                                     │
+# │ 1. Go to https://developer.atlassian.com/console/myapps/ and        │
+# │    create a new OAuth 2.0 (3LO) app.                                │
+# │                                                                     │
+# │ 2. Under "Authorization", add the callback URL:                     │
+# │        https://$ROVO_MCP_HOSTNAME/oauth/callback                    │
+# │                                                                     │
+# │ 3. Under "Permissions", add the APIs and scopes your app needs.     │
+# │    Typical scopes for Rovo MCP access:                              │
+# │        offline_access                                               │
+# │        read:jira-work                                               │
+# │        write:jira-work                                              │
+# │        read:jira-user                                               │
+# │        read:confluence-content.all                                  │
+# │        write:confluence-content                                     │
+# │                                                                     │
+# │    The scopes in this manifest's oidcConfig must be a subset of     │
+# │    what you configure in the developer console.                     │
+# │                                                                     │
+# │ 4. Under "Settings", copy the Client ID and Client Secret.          │
+# │                                                                     │
+# └─────────────────────────────────────────────────────────────────────┘
+
+---
+# Secret: Atlassian OAuth app client secret for the embedded auth server
+apiVersion: v1
+kind: Secret
+metadata:
+  name: atlassian-client-secret
+  namespace: toolhive-system
+  labels:
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+type: Opaque
+stringData:
+  client-secret: $ATLASSIAN_CLIENT_SECRET
+
+---
+# MCPExternalAuthConfig: Embedded auth server with Atlassian OAuth as the upstream IDP.
+# Handles the OAuth 2.0 flow for MCP clients — redirects to Atlassian, issues
+# ToolHive JWTs, and stores the upstream Atlassian tokens for later use by the
+# upstream swap middleware.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPExternalAuthConfig
+metadata:
+  name: rovo-mcp-eas
+  namespace: toolhive-system
+spec:
+  type: embeddedAuthServer
+  embeddedAuthServer:
+    # Issuer must match the external URL where MCP clients reach the proxy's
+    # auth endpoints (/.well-known/openid-configuration, /oauth/*, etc.)
+    issuer: https://$ROVO_MCP_HOSTNAME
+    upstreamProviders:
+      - name: atlassian
+        type: oauth2
+        oauth2Config:
+          redirectUri: https://$ROVO_MCP_HOSTNAME/oauth/callback
+          authorizationEndpoint: "https://auth.atlassian.com/authorize?audience=api.atlassian.com"
+          tokenEndpoint: https://auth.atlassian.com/oauth/token
+          clientId: $ATLASSIAN_CLIENT_ID
+          clientSecretRef:
+            name: atlassian-client-secret
+            key: client-secret
+          scopes:
+            - read:me
+            - read:jira-user
+            - read:jira-work
+            - read:confluence-content.all
+            - read:confluence-space.summary
+            - read:confluence-user
+            - search:confluence
+            - offline_access
+          userInfo:
+            endpointUrl: https://api.atlassian.com/me
+            httpMethod: GET
+            fieldMapping:
+              subjectFields:
+                - account_id
+              nameFields:
+                - name
+                - display_name
+              emailFields:
+                - email
+
+---
+# MCPOIDCConfig: Validates ToolHive JWTs issued by the embedded auth server.
+# The issuer must match the embedded auth server's issuer above.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPOIDCConfig
+metadata:
+  name: rovo-mcp-oidc
+  namespace: toolhive-system
+spec:
+  type: inline
+  inline:
+    issuer: https://$ROVO_MCP_HOSTNAME
+    jwksAllowPrivateIP: true
+    protectedResourceAllowPrivateIP: true
+
+---
+# MCPRemoteProxy: Ties everything together.
+#   - authServerRef  → embedded auth server (incoming MCP client auth)
+#   - oidcConfigRef  → validates ToolHive JWTs between EAS and upstream
+#   The upstream swap middleware automatically replaces the ToolHive JWT
+#   with the stored Atlassian token before forwarding to the remote MCP server.
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPRemoteProxy
+metadata:
+  name: rovo-mcp-proxy
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "https://$ROVO_MCP_HOSTNAME/mcp"
+    toolhive.stacklok.dev/registry-title: "Atlassian Rovo MCP Server"
+    toolhive.stacklok.dev/registry-description: "Jira, Confluence, and Rovo agent access via Atlassian OAuth 2.0. Scoped to the authenticated user's existing permissions."
+spec:
+  remoteUrl: https://mcp.atlassian.com/v1/mcp
+  transport: streamable-http
+  proxyPort: 8080
+
+  authServerRef:
+    kind: MCPExternalAuthConfig
+    name: rovo-mcp-eas
+
+  oidcConfigRef:
+    name: rovo-mcp-oidc
+    audience: https://$ROVO_MCP_HOSTNAME/mcp
+    resourceUrl: https://$ROVO_MCP_HOSTNAME/mcp
+
+  audit:
+    enabled: true
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+---
+# HTTPRoute: Expose the proxy via Traefik ingress with TLS.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rovo-mcp-proxy-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $ROVO_MCP_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: mcp-rovo-mcp-proxy-remote-proxy
+          port: 8080
