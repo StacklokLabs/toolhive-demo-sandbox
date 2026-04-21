@@ -10,20 +10,20 @@ set -a  # automatically export all variables for subshells
 # - helm
 
 # Version pins to ensure consistent demo environment
-TRAEFIK_CHART_VERSION="39.0.7" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
+TRAEFIK_CHART_VERSION="39.0.8" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
 CERT_MANAGER_CHART_VERSION="v1.20.2" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
 OPENTELEMETRY_OPERATOR_VERSION="v0.148.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
 TEMPO_CHART_VERSION="2.0.0" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 LOKI_CHART_VERSION="11.7.0" # renovate: datasource=helm depName=loki registryUrl=https://grafana-community.github.io/helm-charts
-FLUENT_BIT_CHART_VERSION="0.57.2" # renovate: datasource=helm depName=fluent-bit registryUrl=https://fluent.github.io/helm-charts
+FLUENT_BIT_CHART_VERSION="0.57.3" # renovate: datasource=helm depName=fluent-bit registryUrl=https://fluent.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="29.2.1" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
-GRAFANA_CHART_VERSION="11.6.0" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
+GRAFANA_CHART_VERSION="11.6.1" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.28.0" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.21.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.21.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_SERVER_CHART_VERSION="1.1.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
 CLOUD_UI_VERSION="v0.5.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
-KEYCLOAK_VERSION="26.5.7" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
+KEYCLOAK_VERSION="26.6.1" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
 
 # Select the text-embeddings-inference image variant that matches the host arch.
 # Used by the optimizer-enabled vMCP gateways.
