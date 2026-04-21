@@ -1,7 +1,7 @@
 # Finance tools — backends for Bob (finance persona).
 # Stub for now: a single fetch backend badged for financial-docs use.
 # Aggregated by the vmcp-finance VirtualMCPServer.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPGroup
 metadata:
   name: finance-tools
@@ -9,7 +9,7 @@ metadata:
 spec:
   description: Finance tools for the finance persona (stubbed pending real backends)
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: finance-fetch

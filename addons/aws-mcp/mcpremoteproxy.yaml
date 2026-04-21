@@ -155,7 +155,7 @@ stringData:
 # Handles the OAuth 2.0 flow for MCP clients — redirects to Okta, issues
 # ToolHive JWTs, and stores the upstream Okta tokens for later use by the
 # upstream swap middleware.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPExternalAuthConfig
 metadata:
   name: aws-mcp-eas
@@ -186,7 +186,7 @@ spec:
 # After the upstream swap middleware replaces the ToolHive JWT with the Okta
 # token, this middleware calls AssumeRoleWithWebIdentity and signs the outgoing
 # request with SigV4.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPExternalAuthConfig
 metadata:
   name: aws-mcp-sts
@@ -203,7 +203,7 @@ spec:
 # The issuer must match the embedded auth server's issuer.
 # OIDC discovery against the self-signed Traefik cert is non-fatal — the
 # in-process key provider handles JWKS locally (no caBundleRef needed).
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPOIDCConfig
 metadata:
   name: aws-mcp-oidc
@@ -220,7 +220,7 @@ spec:
 #   - authServerRef         → embedded auth server (incoming MCP client auth)
 #   - externalAuthConfigRef → AWS STS (outgoing request signing)
 #   - oidcConfigRef         → validates ToolHive JWTs between the two
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRemoteProxy
 metadata:
   metadata:

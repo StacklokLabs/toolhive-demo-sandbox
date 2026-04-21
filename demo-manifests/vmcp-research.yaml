@@ -2,7 +2,7 @@
 # Using the VirtualMCPCompositeToolDefinition resource to demonstrate the reusability of composite
 # tools across different MCP servers. The composite tool is defined once and then referenced by
 # its name in the vMCP server configuration.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPCompositeToolDefinition
 metadata:
   name: composite-tool-research-topic
@@ -42,7 +42,7 @@ spec:
       dependsOn: [download]
 
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPServer
 metadata:
   name: vmcp-research

@@ -2,7 +2,7 @@
 # fronted by ToolHive's embedded OAuth authorization server delegating to
 # Okta for upstream identity. Exposed externally via a Cloudflare tunnel
 # (see cloudflared.yaml) — no Traefik HTTPRoute.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPOIDCConfig
 metadata:
   name: vmcp-infra-okta-oidc
@@ -12,7 +12,7 @@ spec:
   inline:
     issuer: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPServer
 metadata:
   name: vmcp-infra-okta
