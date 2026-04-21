@@ -16,7 +16,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/stacklok/dockyard/uvx/arxiv-mcp-server:0.3.2
+  image: ghcr.io/stacklok/dockyard/uvx/arxiv-mcp-server:0.4.11
   groupRef:
     name: research-tools
   transport: stdio

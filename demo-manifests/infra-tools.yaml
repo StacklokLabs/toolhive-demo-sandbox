@@ -16,7 +16,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/pab1it0/prometheus-mcp-server:1.5.3
+  image: ghcr.io/pab1it0/prometheus-mcp-server:1.6.0
   groupRef:
     name: infra-tools
   transport: streamable-http

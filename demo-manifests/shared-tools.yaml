@@ -36,7 +36,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/stacklok/dockyard/npx/context7:2.1.4
+  image: ghcr.io/stacklok/dockyard/npx/context7:2.1.8
   groupRef:
     name: shared-tools
   transport: stdio
