@@ -1,6 +1,6 @@
 # Shared tools — docs/fetch helpers available to every authenticated user.
 # Aggregated by the vmcp-docs VirtualMCPServer.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPGroup
 metadata:
   name: shared-tools
@@ -8,7 +8,7 @@ metadata:
 spec:
   description: Docs/fetch helpers available to all personas
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: fetch
@@ -28,7 +28,7 @@ spec:
   audit:
     enabled: true
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: context7
@@ -51,7 +51,7 @@ spec:
 # Proxy in front of the hosted ToolHive docs MCP server. No remote auth
 # required, so this can serve as a backend for vmcp-docs and also be
 # published into the registry via K8s discovery.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRemoteProxy
 metadata:
   name: toolhive-docs

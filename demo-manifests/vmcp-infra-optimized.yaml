@@ -1,7 +1,7 @@
 # Optimizer-enabled mirror of the infra vMCP. Aggregates the same infra-tools
 # backends as vmcp-infra but exposes only find_tool and call_tool primitives
 # to clients, using the EmbeddingServer for semantic tool discovery.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPServer
 metadata:
   name: vmcp-infra-optimized

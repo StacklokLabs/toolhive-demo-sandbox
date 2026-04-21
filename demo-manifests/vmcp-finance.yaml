@@ -2,7 +2,7 @@
 # Stub: currently exposes a single fetch-based tool badged for financial docs.
 # Expand finance-tools.yaml with real backends (ledger, invoicing, etc.) as
 # they become available.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPServer
 metadata:
   name: vmcp-finance

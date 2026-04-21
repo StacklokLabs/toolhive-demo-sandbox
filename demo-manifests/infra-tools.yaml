@@ -1,6 +1,6 @@
 # Infra tools — backends for Alice (engineering/platform persona).
 # Aggregated by the vmcp-infra VirtualMCPServer.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPGroup
 metadata:
   name: infra-tools
@@ -8,7 +8,7 @@ metadata:
 spec:
   description: Platform/infra tools for the engineering persona
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: prometheus
@@ -37,7 +37,7 @@ spec:
   audit:
     enabled: true
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: grafana
@@ -63,7 +63,7 @@ spec:
   audit:
     enabled: true
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: osv
@@ -83,7 +83,7 @@ spec:
   audit:
     enabled: true
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: oci-registry

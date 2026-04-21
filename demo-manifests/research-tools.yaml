@@ -1,6 +1,6 @@
 # Research tools — backends for the shared research workflow.
 # Aggregated by the vmcp-research VirtualMCPServer.
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPGroup
 metadata:
   name: research-tools
@@ -8,7 +8,7 @@ metadata:
 spec:
   description: Research workflow backends shared across personas
 ---
-apiVersion: toolhive.stacklok.dev/v1alpha1
+apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: arxiv
