@@ -296,6 +296,8 @@ metadata:
     app.kubernetes.io/part-of: toolhive
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: keycloak
