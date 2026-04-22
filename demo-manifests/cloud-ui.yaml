@@ -56,7 +56,7 @@ spec:
               protocol: TCP
           env:
             - name: API_BASE_URL
-              value: http://registry-server-toolhive-registry-server.toolhive-system:8080
+              value: http://toolhive-registry-api.toolhive-system:8080
             # Better Auth configuration
             - name: BETTER_AUTH_SECRET
               value: demo-secret-change-in-production

@@ -21,7 +21,7 @@ GRAFANA_CHART_VERSION="11.6.1" # renovate: datasource=helm depName=grafana regis
 CLOUDNATIVE_PG_CHART_VERSION="0.28.0" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
 TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.24.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
 TOOLHIVE_OPERATOR_CHART_VERSION="0.24.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
-REGISTRY_SERVER_CHART_VERSION="1.3.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-registry-server
+REGISTRY_SERVER_VERSION="v1.3.0" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
 CLOUD_UI_VERSION="v0.5.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 KEYCLOAK_VERSION="26.6.1" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
 
@@ -223,8 +223,14 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f 
 run_quiet sh -c "envsubst < demo-manifests/vmcp-research.yaml | kubectl apply -f -" || die "Failed to apply vmcp-research"
 echo " ✓"
 
+# Clean up any prior Helm-managed Registry Server release — the operator-managed
+# MCPRegistry below replaces it. No-op on fresh clusters or clusters already
+# migrated.
+run_quiet sh -c "helm -n toolhive-system uninstall registry-server 2>/dev/null || true"
+
 echo -n "Installing Registry Server..."
-run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME' < demo-manifests/registry-server-helm-values.yaml | helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version $REGISTRY_SERVER_CHART_VERSION --namespace toolhive-system --values - --wait" || die "Failed to install Registry Server"
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
+run_quiet kubectl -n toolhive-system wait --for=condition=Ready --timeout=5m mcpregistry/toolhive-registry || die "MCPRegistry failed to become ready"
 run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
 echo " ✓"
 

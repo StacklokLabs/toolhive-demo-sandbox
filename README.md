@@ -104,7 +104,7 @@ None at this time. Please open issues if you encounter any problems.
 - [x] Harden the bootstrap script with more error checking and idempotency
 - [x] Add toolhive-cloud-ui deployment
 - [x] Add MCP Optimizer demo server
-- [ ] Deploy registry server using the ToolHive Operator instead of manually
+- [x] Deploy registry server using the ToolHive Operator instead of manually
 - [x] Add a Keycloak instance for authentication
 - [x] Claims-based authorization with group-scoped registry sources
 - [ ] Add an authenticated version of the vMCP server

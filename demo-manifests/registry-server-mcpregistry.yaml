@@ -1,0 +1,241 @@
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPRegistry
+metadata:
+  name: toolhive-registry
+  namespace: toolhive-system
+spec:
+  displayName: ToolHive Demo Registry
+
+  # Database credentials. cnpg-pgpass is created by infra/registry-server-db.yaml.
+  # The operator handles the init-container + permissions dance required by libpq
+  # (pgpass must be mode 0600, owned by the registry-api UID).
+  pgpassSecretRef:
+    name: cnpg-pgpass
+    key: .pgpass
+
+  # Mount the Traefik CA so the registry server can verify Keycloak's TLS cert.
+  # The traefik-ca ConfigMap is created by bootstrap.sh from the Traefik issuer.
+  volumes:
+    - name: traefik-ca
+      configMap:
+        name: traefik-ca
+  volumeMounts:
+    - name: traefik-ca
+      mountPath: /etc/ssl/certs/traefik-ca.crt
+      subPath: ca.crt
+      readOnly: true
+
+  # Pin the registry-api image, expose the internal-http port (8081), and
+  # override the probes to hit /health and /readiness there. The operator
+  # defaults probes to port 8080, but /health and /readiness on 8080 are
+  # behind the OAuth middleware — only port 8081 serves them without auth.
+  # Also: the operator's default image env points to v1.1.1; we want the
+  # tag previously installed via the Helm chart.
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: registry-api
+          image: ghcr.io/stacklok/thv-registry-api:$REGISTRY_SERVER_VERSION
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8081
+              name: internal-http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: internal-http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: internal-http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+  configYAML: |
+    sources:
+      # Shared tools — visible to all authenticated users
+      - name: toolhive-shared
+        format: upstream
+        git:
+          repository: https://github.com/stacklok/toolhive-catalog.git
+          branch: main
+          path: pkg/catalog/toolhive/data/registry-upstream.json
+        syncPolicy:
+          interval: "15m"
+        filter:
+          names:
+            include:
+              # toolhive-doc-mcp-remote is fronted by an MCPRemoteProxy in
+              # demo-manifests/shared-tools.yaml.
+              - io.github.stacklok/notion-remote
+              - io.github.stacklok/time
+        claims:
+          groups: everyone
+
+      # Engineering tools — restricted to the engineering group
+      - name: toolhive-engineering
+        format: upstream
+        git:
+          repository: https://github.com/stacklok/toolhive-catalog.git
+          branch: main
+          path: pkg/catalog/toolhive/data/registry-upstream.json
+        syncPolicy:
+          interval: "15m"
+        filter:
+          names:
+            include:
+              - io.github.stacklok/aws-documentation
+              - io.github.stacklok/filesystem
+              - io.github.stacklok/playwright
+        claims:
+          groups: engineering
+
+      # Finance tools — restricted to the finance group
+      - name: toolhive-finance
+        format: upstream
+        git:
+          repository: https://github.com/stacklok/toolhive-catalog.git
+          branch: main
+          path: pkg/catalog/toolhive/data/registry-upstream.json
+        syncPolicy:
+          interval: "15m"
+        filter:
+          names:
+            include:
+              - io.github.stacklok/stripe-remote
+        claims:
+          groups: finance
+
+      # Official registry — engineering tools
+      - name: official-engineering
+        format: upstream
+        api:
+          endpoint: https://registry.modelcontextprotocol.io
+        syncPolicy:
+          interval: "1h"
+        filter:
+          names:
+            include:
+              - com.figma.mcp/mcp
+              - com.gitlab/mcp
+              - com.postman/postman-mcp-server
+        claims:
+          groups: engineering
+
+      # Auto-discover MCP servers in the current Kubernetes cluster.
+      # Per-server visibility is controlled by authz-claims annotations on each MCPServer.
+      - name: k8s
+        kubernetes: {}
+
+      # ToolHive catalog without claims — used by the public registry
+      - name: toolhive-public
+        format: upstream
+        git:
+          repository: https://github.com/stacklok/toolhive-catalog.git
+          branch: main
+          path: pkg/catalog/toolhive/data/registry-upstream.json
+        syncPolicy:
+          interval: "15m"
+        filter:
+          names:
+            include:
+              # toolhive-doc-mcp-remote is published via MCPRemoteProxy (K8s source).
+              - io.github.stacklok/notion-remote
+              - io.github.stacklok/time
+              - io.github.stacklok/aws-documentation
+              - io.github.stacklok/filesystem
+              - io.github.stacklok/playwright
+              - io.github.stacklok/stripe-remote
+
+    registries:
+      - name: demo-registry
+        sources:
+          - toolhive-shared
+          - toolhive-engineering
+          - toolhive-finance
+          - official-engineering
+          - k8s
+
+      # Unauthenticated registry for CLI access (thv, curl, etc.)
+      - name: public
+        sources:
+          - toolhive-public
+          - k8s
+
+    # CNPG PostgreSQL database configuration (password supplied via pgpassSecretRef).
+    database:
+      host: registry-db-rw
+      port: 5432
+      user: db_app
+      migrationUser: db_migrator
+      database: registry
+      sslMode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: "30m"
+
+    auth:
+      mode: oauth
+      publicPaths:
+        - /registry/public
+      oauth:
+        resourceUrl: https://$REGISTRY_HOSTNAME
+        providers:
+          - name: keycloak
+            issuerUrl: https://$AUTH_HOSTNAME/realms/toolhive-demo
+            audience: toolhive-registry-server
+            allowPrivateIP: true
+            caCertPath: /etc/ssl/certs/traefik-ca.crt
+      authz:
+        roles:
+          # At least one role entry is required for Viper to recognize the authz
+          # block as non-nil, which enables per-entry claims-based filtering.
+          superAdmin:
+            - preferred_username: demo
+
+    telemetry:
+      enabled: true
+      serviceName: toolhive-registry-server
+      endpoint: mcp-collector.observability:4318
+      insecure: true
+      metrics:
+        enabled: true
+      tracing:
+        enabled: true
+        sampling: 1.0
+---
+# RBAC for the configYAML `k8s` source. The operator creates a ServiceAccount
+# named <mcpregistry-name>-registry-api but does not grant cluster-scoped
+# list/watch on the MCP CRDs that the registry server's Kubernetes discovery
+# source needs. Without this binding, the `k8s` source fails with
+# "cannot list resource 'mcpservers' at the cluster scope" and the pod's
+# readiness probe never succeeds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: toolhive-registry-k8s-source
+rules:
+  - apiGroups: ["toolhive.stacklok.dev"]
+    resources: ["mcpservers", "mcpremoteproxies", "virtualmcpservers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: toolhive-registry-k8s-source
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: toolhive-registry-k8s-source
+subjects:
+  - kind: ServiceAccount
+    name: toolhive-registry-registry-api
+    namespace: toolhive-system
