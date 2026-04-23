@@ -1,0 +1,154 @@
+# AWS vMCP — VirtualMCPServer with an MCPServerEntry for the AWS MCP Server.
+#
+# Unlike the aws-mcp addon (which deploys an MCPRemoteProxy), this addon uses
+# the vMCP pattern: a zero-infrastructure MCPServerEntry catalog entry is
+# aggregated by a VirtualMCPServer which runs the embedded auth server and
+# routes authenticated requests through the AWS STS middleware.
+#
+# The MCPServerEntry creates no pods; the vMCP proxies directly to the AWS
+# MCP regional endpoint. Per-backend outgoing auth is wired up via
+# outgoingAuth.backends[aws-mcp], which references the awsSts MCPExternalAuthConfig.
+
+---
+# MCPGroup: the vMCP discovers backends in this group.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPGroup
+metadata:
+  name: aws-vmcp-tools
+  namespace: toolhive-system
+spec:
+  description: AWS MCP catalog entries aggregated by the aws-vmcp VirtualMCPServer
+
+---
+# Secret: Okta client secret for the embedded auth server's upstream provider.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-vmcp-okta-client-secret
+  namespace: toolhive-system
+  labels:
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: toolhive
+type: Opaque
+stringData:
+  client-secret: $OKTA_CLIENT_SECRET
+
+---
+# MCPExternalAuthConfig: AWS STS token exchange for the AWS MCP backend.
+# The vMCP's upstream-swap middleware replaces the vMCP-issued JWT with the
+# stored Okta access token; this middleware exchanges that Okta token for
+# temporary AWS credentials via AssumeRoleWithWebIdentity and signs requests
+# with SigV4 for the "aws-mcp" service.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPExternalAuthConfig
+metadata:
+  name: aws-vmcp-sts
+  namespace: toolhive-system
+spec:
+  type: awsSts
+  awsSts:
+    region: $AWS_REGION
+    service: aws-mcp
+    fallbackRoleArn: arn:aws:iam::$AWS_ACCOUNT_ID:role/ToolHiveDemoMCPRole
+
+---
+# MCPServerEntry: zero-infrastructure catalog entry for the AWS MCP Server.
+# No pod or deployment — the vMCP proxies directly to the regional endpoint.
+# externalAuthConfigRef wires the awsSts middleware onto outgoing requests.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPServerEntry
+metadata:
+  name: aws-mcp
+  namespace: toolhive-system
+spec:
+  remoteUrl: https://aws-mcp.us-east-1.api.aws/mcp
+  transport: streamable-http
+  groupRef:
+    name: aws-vmcp-tools
+  externalAuthConfigRef:
+    name: aws-vmcp-sts
+
+---
+# MCPOIDCConfig: validates ToolHive JWTs issued by the vMCP's embedded auth server.
+# The issuer must match authServerConfig.issuer below.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPOIDCConfig
+metadata:
+  name: aws-vmcp-oidc
+  namespace: toolhive-system
+spec:
+  type: inline
+  inline:
+    issuer: https://$AWS_VMCP_HOSTNAME
+    jwksAllowPrivateIP: true
+    protectedResourceAllowPrivateIP: true
+
+---
+# VirtualMCPServer: aggregates the aws-vmcp-tools group behind an embedded
+# OAuth 2.0 authorization server. Okta is the upstream IDP; after login, the
+# vMCP issues its own JWT to MCP clients and stores the Okta token for
+# downstream use via the outgoingAuth.backends mapping.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: VirtualMCPServer
+metadata:
+  name: aws-vmcp
+  namespace: toolhive-system
+spec:
+  groupRef:
+    name: aws-vmcp-tools
+  authServerConfig:
+    issuer: https://$AWS_VMCP_HOSTNAME
+    upstreamProviders:
+      - name: okta
+        type: oidc
+        oidcConfig:
+          issuerUrl: https://$OKTA_DOMAIN/oauth2/default
+          clientId: $OKTA_CLIENT_ID
+          clientSecretRef:
+            name: aws-vmcp-okta-client-secret
+            key: client-secret
+          redirectUri: https://$AWS_VMCP_HOSTNAME/oauth/callback
+          scopes:
+            - openid
+            - email
+            - profile
+  incomingAuth:
+    type: oidc
+    oidcConfigRef:
+      name: aws-vmcp-oidc
+      audience: https://$AWS_VMCP_HOSTNAME/mcp
+      resourceUrl: https://$AWS_VMCP_HOSTNAME/mcp
+  outgoingAuth:
+    source: inline
+    backends:
+      # Map the MCPServerEntry name (aws-mcp) to the awsSts auth config.
+      # This is what causes the STS token exchange + SigV4 signing to run
+      # for outgoing requests to the AWS MCP endpoint.
+      aws-mcp:
+        type: externalAuthConfigRef
+        externalAuthConfigRef:
+          name: aws-vmcp-sts
+  serviceType: ClusterIP
+
+---
+# HTTPRoute: expose the vMCP via Traefik ingress with TLS.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: aws-vmcp-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $AWS_VMCP_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: vmcp-aws-vmcp
+          port: 4483
