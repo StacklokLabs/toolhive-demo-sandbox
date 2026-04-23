@@ -93,6 +93,38 @@ rendered vMCP configs / listing registry entries per persona), see
 
 Run the `./cleanup.sh` script to delete the cluster.
 
+## Development: loading a local ToolHive build
+
+`./dev-reload.sh` builds the operator / proxyrunner / vMCP images from a local
+ToolHive checkout, retags them to match the demo's expected image refs, loads
+them into the kind cluster, and restarts affected pods so new code takes
+effect.
+
+Requires [`ko`](https://ko.build), [`task`](https://taskfile.dev), `docker`,
+`kind`, and `kubectl`.
+
+```bash
+# Point at your local toolhive checkout (default: ../toolhive or ../../stacklok/toolhive)
+export TOOLHIVE_SRC=~/path/to/toolhive
+
+./dev-reload.sh                 # rebuild & reload all three (default)
+./dev-reload.sh --operator      # operator only
+./dev-reload.sh --proxyrunner   # MCPServer / MCPRemoteProxy pods
+./dev-reload.sh --vmcp          # VirtualMCPServer pods
+```
+
+### When to run it
+
+- **After `./bootstrap.sh`**: the base demo pods exist; this replaces their
+  images with your local build. Use this to iterate on ToolHive changes
+  against the live demo.
+- **Before deploying addons** (e.g. `addons/aws-mcp`, `addons/aws-vmcp`): once
+  the local images are loaded into the node cache with the tag the operator
+  expects, any new pods the addon creates use your local build automatically
+  (thanks to `imagePullPolicy: IfNotPresent`).
+- **After deploying addons**: re-run with `--proxyrunner` or `--vmcp` to
+  refresh addon-created pods with updated code.
+
 ## Known issues
 
 None at this time. Please open issues if you encounter any problems.
