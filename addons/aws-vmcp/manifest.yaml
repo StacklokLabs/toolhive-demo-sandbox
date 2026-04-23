@@ -65,9 +65,7 @@ spec:
   transport: streamable-http
   groupRef:
     name: aws-vmcp-tools
-  externalAuthConfigRef:
-    name: aws-vmcp-sts
-
+    
 ---
 # MCPOIDCConfig: validates ToolHive JWTs issued by the vMCP's embedded auth server.
 # The issuer must match authServerConfig.issuer below.
