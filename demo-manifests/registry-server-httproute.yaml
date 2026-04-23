@@ -19,5 +19,5 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: registry-server-toolhive-registry-server
+        - name: toolhive-registry-api
           port: 8080
