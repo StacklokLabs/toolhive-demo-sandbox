@@ -45,7 +45,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: docker.io/grafana/mcp-grafana:0.11.6
+  image: docker.io/grafana/mcp-grafana:0.12.0
   groupRef:
     name: infra-tools
   transport: streamable-http
