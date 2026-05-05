@@ -19,10 +19,10 @@ FLUENT_BIT_CHART_VERSION="0.57.3" # renovate: datasource=helm depName=fluent-bit
 PROMETHEUS_CHART_VERSION="29.2.1" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
 GRAFANA_CHART_VERSION="12.2.1" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
 CLOUDNATIVE_PG_CHART_VERSION="0.28.0" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.24.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
-TOOLHIVE_OPERATOR_CHART_VERSION="0.24.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
+TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.26.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
+TOOLHIVE_OPERATOR_CHART_VERSION="0.26.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
 REGISTRY_SERVER_VERSION="v1.4.0" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
-CLOUD_UI_VERSION="v0.5.1" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
+CLOUD_UI_VERSION="v0.6.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
 KEYCLOAK_VERSION="26.6.1" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
 
 # Select the text-embeddings-inference image variant that matches the host arch.
