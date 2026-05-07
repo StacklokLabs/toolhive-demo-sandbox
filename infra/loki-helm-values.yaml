@@ -2,11 +2,13 @@ loki:
   auth_enabled: false
   commonConfig:
     replication_factor: 1
+  storage:
+    type: filesystem
   schemaConfig:
     configs:
       - from: "2024-04-01"
         store: tsdb
-        object_store: s3
+        object_store: filesystem
         schema: v13
         index:
           prefix: loki_index_
@@ -19,8 +21,9 @@ loki:
   ruler:
     enable_api: true
 
+# Local filesystem backend; no S3 / minio needed for the demo.
 minio:
-  enabled: true
+  enabled: false
 
 deploymentMode: SingleBinary
 
@@ -60,10 +63,8 @@ bloomCompactor:
 bloomGateway:
   replicas: 0
 
-# Reduce memcached cache sizes from chart defaults (9830Mi/1229Mi) to
-# something appropriate for a demo environment.
+# Caches are unnecessary at demo log volumes; disabling reclaims ~70Mi.
 chunksCache:
-  allocatedMemory: 256
-
+  enabled: false
 resultsCache:
-  allocatedMemory: 128
+  enabled: false
