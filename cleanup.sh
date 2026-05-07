@@ -17,7 +17,7 @@ export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 # The rest we can just nuke from orbit. It's the only way to be sure.
 echo -n "Deleting Kind cluster..."
 run_quiet kind delete cluster --name toolhive-demo-in-a-box || true
-rm -f kubeconfig-toolhive-demo.yaml
+rm -f kubeconfig-toolhive-demo.yaml demo-endpoints.json
 echo " ✓"
 
 echo "Cleanup complete!"
