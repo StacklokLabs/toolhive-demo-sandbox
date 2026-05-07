@@ -49,7 +49,7 @@ graph TB
   Gateway -->|/registry/*| Reg
   Gateway -->|/vmcp-*, /mkp/*| Workloads
   Gateway -->|/auth| KC
-  Gateway -->|grafana-*.traefik.me| Graf
+  Gateway -->|grafana-*.sslip.io| Graf
 
   UI -->|OIDC| KC
   Reg -->|validate Bearer| KC

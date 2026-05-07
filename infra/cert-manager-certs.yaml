@@ -8,12 +8,12 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: traefik-me-wildcard
+  name: sslip-io-wildcard
   namespace: traefik
 spec:
-  secretName: traefik-me-tls
+  secretName: sslip-io-tls
   issuerRef:
     name: selfsigned-issuer
     kind: ClusterIssuer
   dnsNames:
-    - "*.traefik.me"
+    - "*.sslip.io"

@@ -5,7 +5,7 @@ Deploys the open source [GitHub MCP Server](https://github.com/github/github-mcp
 ## What it does
 
 - Deploys the GitHub MCP server (read-only mode) into `toolhive-system`
-- Exposes it at `/github` on the existing `mcp-<ip>.traefik.me` endpoint
+- Exposes it at `/github` on the existing `mcp-<ip>.sslip.io` endpoint
 - Exports to the ToolHive registry for discovery
 - Includes telemetry and audit logging via the shared OpenTelemetry config
 
