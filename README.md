@@ -50,6 +50,23 @@ So far, it includes:
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
+### Interactive entry point (experimental)
+
+`./demo.sh` is an optional TUI wrapper around the existing scripts. Run it with no arguments from a terminal for an interactive menu that detects whether a cluster is already running and offers the appropriate actions (bootstrap, deploy/teardown addons, validate, cleanup). Sub-pickers prompt for any missing addon `.env` values based on each addon's `.env.example`.
+
+```sh
+./demo.sh                            # interactive menu
+./demo.sh bootstrap                  # equivalent to ./bootstrap.sh
+./demo.sh up librechat aws-mcp       # deploy addons (prompts for missing .env on a TTY)
+./demo.sh down librechat             # tear down addons
+./demo.sh validate                   # run endpoint checks
+./demo.sh cleanup                    # destroy the cluster
+./demo.sh list                       # list known addons
+DRY_RUN=1 ./demo.sh up librechat     # echo external commands instead of running them
+```
+
+The interactive menu requires [gum](https://github.com/charmbracelet/gum) (`brew install gum`); the subcommand mode works without it and is suitable for CI or scripts.
+
 ## Authentication
 
 The demo uses Keycloak for OpenID Connect authentication:
