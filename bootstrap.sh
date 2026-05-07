@@ -13,7 +13,6 @@ set -a  # automatically export all variables for subshells
 TRAEFIK_CHART_VERSION="39.0.9" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
 CERT_MANAGER_CHART_VERSION="v1.20.2" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
 OPENTELEMETRY_OPERATOR_VERSION="v0.150.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
-TEMPO_CHART_VERSION="2.1.0" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 LOKI_CHART_VERSION="13.5.0" # renovate: datasource=helm depName=loki registryUrl=https://grafana-community.github.io/helm-charts
 FLUENT_BIT_CHART_VERSION="0.57.3" # renovate: datasource=helm depName=fluent-bit registryUrl=https://fluent.github.io/helm-charts
 PROMETHEUS_CHART_VERSION="29.6.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
@@ -122,7 +121,8 @@ if ! namespace_exists observability; then
 fi
 run_quiet kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OPENTELEMETRY_OPERATOR_VERSION}/opentelemetry-operator.yaml || die "Failed to install OpenTelemetry Operator"
 run_quiet kubectl wait --for=condition=available --timeout=5m deployment/opentelemetry-operator-controller-manager --namespace opentelemetry-operator-system || die "OpenTelemetry Operator failed to become ready"
-run_quiet helm upgrade --install tempo grafana-community/tempo --version "$TEMPO_CHART_VERSION" --namespace observability --values infra/tempo-helm-values.yaml --wait || die "Failed to install Tempo"
+# Tempo is opt-in via the observability-tempo addon. The core OTel collector
+# accepts traces but drops them; install the addon to wire up real tracing.
 run_quiet helm upgrade --install loki grafana-community/loki --version "$LOKI_CHART_VERSION" --namespace observability --values infra/loki-helm-values.yaml --wait || die "Failed to install Loki"
 run_quiet helm upgrade --install prometheus prometheus-community/prometheus --version "$PROMETHEUS_CHART_VERSION" --namespace observability --values infra/prometheus-helm-values.yaml --wait || die "Failed to install Prometheus"
 run_quiet helm upgrade --install grafana grafana-community/grafana --version "$GRAFANA_CHART_VERSION" --namespace observability --values infra/grafana-helm-values.yaml --set-file dashboards.default.toolhive-mcp.json=infra/grafana-dashboard-mcp.json --set-file dashboards.default.toolhive-audit-log.json=infra/grafana-dashboard-audit.json --set-file dashboards.default.toolhive-registry.json=infra/grafana-dashboard-registry.json --wait || die "Failed to install Grafana"

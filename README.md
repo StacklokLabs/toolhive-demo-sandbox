@@ -20,8 +20,8 @@ So far, it includes:
 - The MKP MCP server for managing the cluster, also exposed directly
 - A shared text-embeddings server (HuggingFace TEI) backing the optimizer-enabled vMCPs
 - Traefik as the gateway for routing traffic into the cluster
-- An observability stack to capture traces and metrics from the MCP servers
-- Grafana dashboard to view MCP server metrics
+- An observability stack (Prometheus, Loki, Grafana, OTel collector, fluent-bit) capturing metrics and audit logs from the MCP servers. Distributed tracing via Tempo is opt-in through the [observability-tempo addon](addons/observability-tempo/).
+- Grafana dashboards for MCP server metrics, audit logs, and the registry
 
 ## Prerequisites
 
