@@ -83,8 +83,8 @@ Get a bearer token and hit the authenticated registry as `demo`:
 ```sh
 export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o jsonpath='{.status.addresses[0].value}')
-AUTH=auth-${TRAEFIK_IP//./-}.traefik.me
-REG=registry-${TRAEFIK_IP//./-}.traefik.me
+AUTH=auth-${TRAEFIK_IP//./-}.sslip.io
+REG=registry-${TRAEFIK_IP//./-}.sslip.io
 TOKEN=$(curl -sk -X POST "https://$AUTH/realms/toolhive-demo/protocol/openid-connect/token" \
   -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")

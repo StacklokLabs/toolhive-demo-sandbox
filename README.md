@@ -41,10 +41,10 @@ So far, it includes:
 1. Clone this repo
 2. Run `./bootstrap.sh` from the repo root
 3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway (you can also just keep this running all the time)
-4. Accept the self-signed certificate for **both** `https://ui-<IP>.traefik.me` and `https://auth-<IP>.traefik.me` in your browser before logging in
+4. Accept the self-signed certificate for **both** `https://ui-<IP>.sslip.io` and `https://auth-<IP>.sslip.io` in your browser before logging in
 5. Point the ToolHive CLI at the public registry:
    ```sh
-   thv config set-registry http://registry-<IP>.traefik.me/registry/public --allow-private-ip
+   thv config set-registry http://registry-<IP>.sslip.io/registry/public --allow-private-ip
    ```
 6. Access the Cloud UI, MCP servers, and Grafana via the URLs printed at the end of the bootstrap process
 
@@ -54,7 +54,7 @@ The bootstrap script is idempotent and can be re-run to fix any issues or reappl
 
 The demo uses Keycloak for OpenID Connect authentication:
 
-- **Admin Console**: `https://auth-<IP>.traefik.me/admin`
+- **Admin Console**: `https://auth-<IP>.sslip.io/admin`
   - Username: `admin`
   - Password: `admin`
 
@@ -141,24 +141,24 @@ Waiting for all pods to be ready... ✓
 Validating registry server... ✓ (18 unique servers detected)
 Writing endpoint information to demo-endpoints.json... ✓
 Bootstrap complete! Access your demo services at the following URLs:
- - Keycloak Admin Console at https://auth-172-19-0-3.traefik.me/admin (admin/admin)
- - ToolHive Cloud UI at https://ui-172-19-0-3.traefik.me (NOTE: self-signed cert, expect a browser warning)
+ - Keycloak Admin Console at https://auth-172-19-0-3.sslip.io/admin (admin/admin)
+ - ToolHive Cloud UI at https://ui-172-19-0-3.sslip.io (NOTE: self-signed cert, expect a browser warning)
    Demo Users:
      demo  / demo   — Admin persona (registry superAdmin, sees all tools)
      alice / alice  — Engineering persona
      bob   / bob    — Finance persona
      All users see shared tools and in-cluster MCP servers.
- - ToolHive Registry Server at http://registry-172-19-0-3.traefik.me/registry/demo-registry
+ - ToolHive Registry Server at http://registry-172-19-0-3.sslip.io/registry/demo-registry
    (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)
- - Public Registry (no auth) at http://registry-172-19-0-3.traefik.me/registry/public for the ToolHive CLI or UI
-   (run 'thv config set-registry http://registry-172-19-0-3.traefik.me/registry/public --allow-private-ip' or addin the UI settings)
- - MKP MCP server (standalone, engineering) at http://mcp-172-19-0-3.traefik.me/mkp/mcp
- - vMCP Infra gateway (alice/engineering) at http://mcp-172-19-0-3.traefik.me/vmcp-infra/mcp
- - vMCP Infra gateway (optimizer-enabled) at http://mcp-172-19-0-3.traefik.me/vmcp-infra-optimized/mcp
- - vMCP Docs gateway (shared) at http://mcp-172-19-0-3.traefik.me/vmcp-docs/mcp
- - vMCP Finance gateway (bob/finance, stub) at http://mcp-172-19-0-3.traefik.me/vmcp-finance/mcp
- - vMCP Research gateway (shared) at http://mcp-172-19-0-3.traefik.me/vmcp-research/mcp
- - Grafana at http://grafana-172-19-0-3.traefik.me
+ - Public Registry (no auth) at http://registry-172-19-0-3.sslip.io/registry/public for the ToolHive CLI or UI
+   (run 'thv config set-registry http://registry-172-19-0-3.sslip.io/registry/public --allow-private-ip' or addin the UI settings)
+ - MKP MCP server (standalone, engineering) at http://mcp-172-19-0-3.sslip.io/mkp/mcp
+ - vMCP Infra gateway (alice/engineering) at http://mcp-172-19-0-3.sslip.io/vmcp-infra/mcp
+ - vMCP Infra gateway (optimizer-enabled) at http://mcp-172-19-0-3.sslip.io/vmcp-infra-optimized/mcp
+ - vMCP Docs gateway (shared) at http://mcp-172-19-0-3.sslip.io/vmcp-docs/mcp
+ - vMCP Finance gateway (bob/finance, stub) at http://mcp-172-19-0-3.sslip.io/vmcp-finance/mcp
+ - vMCP Research gateway (shared) at http://mcp-172-19-0-3.sslip.io/vmcp-research/mcp
+ - Grafana at http://grafana-172-19-0-3.sslip.io
 ```
 
 ## Windows notes

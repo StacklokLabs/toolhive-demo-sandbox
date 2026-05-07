@@ -22,7 +22,7 @@ verbose output, then `./validate.sh` to re-check endpoint health.
 ### Browser warning: "Your connection is not private"
 
 **Why.** Traefik fronts the sandbox with a self-signed wildcard cert for
-`*.traefik.me`. That lets us have an HTTPS demo without a public DNS / CA
+`*.sslip.io`. That lets us have an HTTPS demo without a public DNS / CA
 story, at the cost of a cert warning on first visit to each hostname.
 
 **Fix.** Click through the warning once per hostname (auth, ui, chat,
@@ -56,7 +56,7 @@ kubectl get gateway -n traefik traefik-gateway \
 
 **Why.** Keycloak's realm is imported from `infra/keycloak.yaml` with
 redirect URIs baked in for whatever Traefik LB IP was live at bootstrap
-time (e.g. `172-19-0-3.traefik.me`). The realm persists on the
+time (e.g. `172-19-0-3.sslip.io`). The realm persists on the
 `keycloak-h2-data` PVC, so `--import-realm` is a no-op on subsequent
 runs. If the Traefik IP drifts between bootstraps — typically because
 `cloud-provider-kind` was restarted and handed out a different address
@@ -177,10 +177,10 @@ before the snippets below, or point at the repo-local copy with
 Every snippet assumes the hostname preamble:
 
 ```sh
-# Derive the current hostnames (everything is IP-based via traefik.me).
+# Derive the current hostnames (everything is IP-based via sslip.io).
 TRAEFIK_IP=$(kubectl get gateways -n traefik traefik-gateway \
     -o jsonpath='{.status.addresses[0].value}')
-BASE=${TRAEFIK_IP//./-}.traefik.me
+BASE=${TRAEFIK_IP//./-}.sslip.io
 AUTH=auth-$BASE       # Keycloak
 REG=registry-$BASE    # Registry server
 UI=ui-$BASE           # Cloud UI

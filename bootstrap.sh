@@ -50,6 +50,26 @@ if [ -n "$MISSING_BINARIES" ]; then
 fi
 echo " ✓"
 
+# Check that sslip.io wildcard DNS resolves. The demo's hostnames
+# (auth/registry/ui/grafana/mcp) are all served from *.sslip.io, so an
+# outage of that service makes the demo unusable from a browser even though
+# the cluster will still bootstrap. Warn-and-continue rather than hard-fail
+# so users with a /etc/hosts override or offline-only goals can still proceed.
+echo -n "  Checking sslip.io DNS resolution..."
+SSLIP_IO_PROBE=$(getent hosts 1-2-3-4.sslip.io 2>/dev/null | awk '{print $1}' || true)
+if [ -z "$SSLIP_IO_PROBE" ]; then
+    SSLIP_IO_PROBE=$(dig +short +time=2 +tries=1 1-2-3-4.sslip.io 2>/dev/null | head -n1 || true)
+fi
+if [ "$SSLIP_IO_PROBE" = "1.2.3.4" ]; then
+    echo " ✓"
+else
+    echo " ⚠"
+    echo "    sslip.io did not resolve (expected 1-2-3-4.sslip.io → 1.2.3.4, got '${SSLIP_IO_PROBE:-empty}')."
+    echo "    The cluster will still bootstrap, but Cloud UI / Keycloak / registry"
+    echo "    will be unreachable by hostname until DNS is restored or you add"
+    echo "    /etc/hosts entries for *-<traefik-ip-with-dashes>.sslip.io."
+fi
+
 # Load environment variables from .env if it exists
 if [ -f "$(dirname "$0")/.env" ]; then
     source "$(dirname "$0")/.env"
@@ -143,7 +163,7 @@ else
     echo " ✓ ($TRAEFIK_IP)"
 fi
 
-TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.traefik.me"
+TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.sslip.io"
 export MCP_HOSTNAME="mcp-${TRAEFIK_HOSTNAME_BASE}"
 export REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
 export UI_HOSTNAME="ui-${TRAEFIK_HOSTNAME_BASE}"
@@ -186,7 +206,7 @@ run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n toolhive-sys
 echo " ✓"
 
 echo -n "Creating Traefik CA ConfigMap for registry server TLS verification..."
-run_quiet sh -c "kubectl get secret traefik-me-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
+run_quiet sh -c "kubectl get secret sslip-io-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
 echo " ✓"
 
 # Install all MCP resources before the Registry Server so its K8s reconciler
@@ -249,15 +269,19 @@ echo " ✓"
 
 # Validate registry by fetching a token and querying the server list
 echo -n "Validating registry server..."
+# `|| true` guards: with set -e, a $(...) assignment whose pipeline exits
+# non-zero (e.g. curl can't resolve the host, python3 fails on empty stdin)
+# would terminate the script silently before the empty-string fallbacks below
+# could run.
 REGISTRY_TOKEN=$(curl -sk -X POST "https://${AUTH_HOSTNAME}/realms/toolhive-demo/protocol/openid-connect/token" \
     -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
-    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+    2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null) || true
 if [ -z "$REGISTRY_TOKEN" ]; then
     echo " ⚠ (could not obtain token from Keycloak — registry validation skipped)"
 else
     SERVER_COUNT=$(curl -s "http://${REGISTRY_HOSTNAME}/registry/demo-registry/v0.1/servers?limit=100" \
         -H "Authorization: Bearer ${REGISTRY_TOKEN}" 2>/dev/null \
-        | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(set(s.get('server',{}).get('name','') for s in d.get('servers',[]))))" 2>/dev/null)
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(set(s.get('server',{}).get('name','') for s in d.get('servers',[]))))" 2>/dev/null) || true
     if [ -n "$SERVER_COUNT" ] && [ "$SERVER_COUNT" -gt 0 ] 2>/dev/null; then
         echo " ✓ ($SERVER_COUNT unique servers detected)"
     else

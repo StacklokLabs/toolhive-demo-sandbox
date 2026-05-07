@@ -48,7 +48,7 @@ addon_resolve_traefik() {
     if [ -z "$TRAEFIK_IP" ]; then
         die "Could not resolve Traefik Gateway IP. Is the demo cluster running?"
     fi
-    TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.traefik.me"
+    TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.sslip.io"
     echo " $TRAEFIK_IP"
 }
 
