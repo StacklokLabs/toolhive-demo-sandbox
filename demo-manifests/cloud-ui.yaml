@@ -69,8 +69,6 @@ spec:
               value: toolhive-cloud-ui
             - name: OIDC_CLIENT_SECRET
               value: cloud-ui-secret-change-in-production
-            - name: OIDC_PROVIDER_ID
-              value: keycloak
             - name: NODE_ENV
               value: development
             # Allow self-signed certificates (demo/dev only)

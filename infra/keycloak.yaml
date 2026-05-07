@@ -27,8 +27,8 @@ data:
           "enabled": true,
           "secret": "cloud-ui-secret-change-in-production",
           "redirectUris": [
-            "https://$UI_HOSTNAME/api/auth/oauth2/callback/keycloak",
-            "https://$UI_HOSTNAME/api/auth/callback/keycloak",
+            "https://$UI_HOSTNAME/api/auth/oauth2/callback/oidc",
+            "https://$UI_HOSTNAME/api/auth/callback/oidc",
             "http://localhost:3000/*"
           ],
           "webOrigins": ["+"],
