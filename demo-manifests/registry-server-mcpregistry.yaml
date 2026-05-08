@@ -56,7 +56,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
 
-  configYAML: |
+  configYAML: | # yaml
     sources:
       # Shared tools — visible to all authenticated users
       - name: toolhive-shared
@@ -70,10 +70,13 @@ spec:
         filter:
           names:
             include:
-              # toolhive-doc-mcp-remote is fronted by an MCPRemoteProxy in
-              # demo-manifests/shared-tools.yaml.
+              # MCP servers
               - io.github.stacklok/notion-remote
               - io.github.stacklok/time
+              # Skills
+              - io.github.stacklok/agents-md
+              - io.github.stacklok/doc-coauthoring
+              - io.github.stacklok/skill-creator
         claims:
           groups: everyone
 
@@ -89,9 +92,16 @@ spec:
         filter:
           names:
             include:
+              # MCP servers
               - io.github.stacklok/aws-documentation
               - io.github.stacklok/filesystem
               - io.github.stacklok/playwright
+              # Skills
+              - io.github.stacklok/ci-agent-hardening
+              - io.github.stacklok/claude-settings-audit
+              - io.github.stacklok/code-review
+              - io.github.stacklok/security-review
+              - io.github.stacklok/web-perf
         claims:
           groups: engineering
 
@@ -107,7 +117,12 @@ spec:
         filter:
           names:
             include:
+              # MCP servers
+              - io.github.stacklok/paypal
               - io.github.stacklok/stripe-remote
+              # Skills
+              - io.github.stacklok/claude-settings-audit
+              - io.github.stacklok/stripe-best-practices
         claims:
           groups: finance
 
@@ -144,13 +159,23 @@ spec:
         filter:
           names:
             include:
-              # toolhive-doc-mcp-remote is published via MCPRemoteProxy (K8s source).
-              - io.github.stacklok/notion-remote
-              - io.github.stacklok/time
+              # MCP servers
               - io.github.stacklok/aws-documentation
               - io.github.stacklok/filesystem
+              - io.github.stacklok/notion-remote
+              - io.github.stacklok/paypal
               - io.github.stacklok/playwright
               - io.github.stacklok/stripe-remote
+              - io.github.stacklok/time
+              # Skills
+              - io.github.stacklok/agents-md
+              - io.github.stacklok/ci-agent-hardening
+              - io.github.stacklok/claude-settings-audit
+              - io.github.stacklok/code-review
+              - io.github.stacklok/doc-coauthoring
+              - io.github.stacklok/security-review
+              - io.github.stacklok/skill-creator
+              - io.github.stacklok/web-perf
 
     registries:
       - name: demo-registry
