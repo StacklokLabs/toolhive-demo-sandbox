@@ -6,56 +6,6 @@ metadata:
 spec:
   displayName: ToolHive Demo Registry
 
-  # Database credentials. cnpg-pgpass is created by infra/registry-server-db.yaml.
-  # The operator handles the init-container + permissions dance required by libpq
-  # (pgpass must be mode 0600, owned by the registry-api UID).
-  pgpassSecretRef:
-    name: cnpg-pgpass
-    key: .pgpass
-
-  # Mount the Traefik CA so the registry server can verify Keycloak's TLS cert.
-  # The traefik-ca ConfigMap is created by bootstrap.sh from the Traefik issuer.
-  volumes:
-    - name: traefik-ca
-      configMap:
-        name: traefik-ca
-  volumeMounts:
-    - name: traefik-ca
-      mountPath: /etc/ssl/certs/traefik-ca.crt
-      subPath: ca.crt
-      readOnly: true
-
-  # Pin the registry-api image, expose the internal-http port (8081), and
-  # override the probes to hit /health and /readiness there. The operator
-  # defaults probes to port 8080, but /health and /readiness on 8080 are
-  # behind the OAuth middleware — only port 8081 serves them without auth.
-  # Also: the operator's default image env points to v1.1.1; we want the
-  # tag previously installed via the Helm chart.
-  podTemplateSpec:
-    spec:
-      containers:
-        - name: registry-api
-          image: ghcr.io/stacklok/thv-registry-api:$REGISTRY_SERVER_VERSION
-          ports:
-            - containerPort: 8080
-              name: http
-              protocol: TCP
-            - containerPort: 8081
-              name: internal-http
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: internal-http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /readiness
-              port: internal-http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-
   configYAML: | # yaml
     sources:
       # Shared tools — visible to all authenticated users
@@ -192,18 +142,6 @@ spec:
           - toolhive-public
           - k8s
 
-    # CNPG PostgreSQL database configuration (password supplied via pgpassSecretRef).
-    database:
-      host: registry-db-rw
-      port: 5432
-      user: db_app
-      migrationUser: db_migrator
-      database: registry
-      sslMode: disable
-      maxOpenConns: 10
-      maxIdleConns: 5
-      connMaxLifetime: "30m"
-
     auth:
       mode: oauth
       publicPaths:
@@ -233,6 +171,69 @@ spec:
       tracing:
         enabled: true
         sampling: 1.0
+
+    # CNPG PostgreSQL database configuration (password supplied via pgpassSecretRef).
+    database:
+      host: registry-db-rw
+      port: 5432
+      user: db_app
+      migrationUser: db_migrator
+      database: registry
+      sslMode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: "30m"
+
+  # Database credentials. cnpg-pgpass is created by infra/registry-server-db.yaml.
+  # The operator handles the init-container + permissions dance required by libpq
+  # (pgpass must be mode 0600, owned by the registry-api UID).
+  pgpassSecretRef:
+    name: cnpg-pgpass
+    key: .pgpass
+
+  # Mount the Traefik CA so the registry server can verify Keycloak's TLS cert.
+  # The traefik-ca ConfigMap is created by bootstrap.sh from the Traefik issuer.
+  volumes:
+    - name: traefik-ca
+      configMap:
+        name: traefik-ca
+  volumeMounts:
+    - name: traefik-ca
+      mountPath: /etc/ssl/certs/traefik-ca.crt
+      subPath: ca.crt
+      readOnly: true
+
+  # Pin the registry-api image, expose the internal-http port (8081), and
+  # override the probes to hit /health and /readiness there. The operator
+  # defaults probes to port 8080, but /health and /readiness on 8080 are
+  # behind the OAuth middleware — only port 8081 serves them without auth.
+  # Also: the operator's default image env points to v1.1.1; we want the
+  # tag previously installed via the Helm chart.
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: registry-api
+          image: ghcr.io/stacklok/thv-registry-api:$REGISTRY_SERVER_VERSION
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8081
+              name: internal-http
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: internal-http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: internal-http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
 ---
 # RBAC for the configYAML `k8s` source. The operator creates a ServiceAccount
 # named <mcpregistry-name>-registry-api but does not grant cluster-scoped
@@ -264,3 +265,27 @@ subjects:
   - kind: ServiceAccount
     name: toolhive-registry-registry-api
     namespace: toolhive-system
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: registry-server-route
+  namespace: toolhive-system
+  labels:
+    app: registry-server
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: toolhive
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  hostnames:
+    - $REGISTRY_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: toolhive-registry-api
+          port: 8080
