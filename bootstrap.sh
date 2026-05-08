@@ -251,7 +251,6 @@ run_quiet sh -c "helm -n toolhive-system uninstall registry-server 2>/dev/null |
 echo -n "Installing Registry Server..."
 run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
 run_quiet kubectl -n toolhive-system wait --for=condition=Ready --timeout=5m mcpregistry/toolhive-registry || die "MCPRegistry failed to become ready"
-run_quiet sh -c "envsubst < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
 echo " ✓"
 
 echo -n "Installing Cloud UI..."
