@@ -48,6 +48,8 @@ run_quiet addon_apply "$ADDON_DIR/httproute.yaml"
 echo " done"
 
 # Seed demo user via MongoDB (idempotent)
+# LibreChat has no "create admin user" REST endpoint, so direct insert is the
+# only way to bootstrap the first admin. Agent seeding below uses the REST API.
 DEMO_EMAIL="demo@toolhive.local"
 DEMO_PASS="demo1234"
 echo -n "Seeding demo user..."
@@ -70,6 +72,44 @@ kubectl exec -n librechat librechat-mongodb-0 -- mongosh --quiet LibreChat --eva
     print('exists');
   }
 " > /dev/null
+echo " done"
+
+# Seed Infra Agent via REST API (idempotent). Uses a transient curl pod because
+# the LibreChat image has no curl. uaParser middleware rejects non-browser UAs,
+# hence the Chrome User-Agent.
+echo -n "Seeding Infra Agent..."
+AGENT_NAME=$(awk -F'"' '/^[[:space:]]*"name":/ {print $4; exit}' "$ADDON_DIR/infra-agent.json")
+cat "$ADDON_DIR/infra-agent.json" | \
+  kubectl run "librechat-seed-$$" --rm -i --restart=Never -n librechat \
+    --image=curlimages/curl:8.10.1 --quiet --command -- \
+    sh -c '
+      cat > /tmp/agent.json
+      UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+      BASE="http://librechat.librechat.svc.cluster.local:3080"
+      EMAIL="$1"
+      PASS="$2"
+      NAME="$3"
+      TOKEN=$(curl -sS -A "$UA" -X POST "$BASE/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}" \
+        | sed "s/.*\"token\":\"\\([^\"]*\\)\".*/\\1/")
+      if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+        echo "login failed" >&2; exit 1
+      fi
+      EXISTS=$(curl -sS -A "$UA" "$BASE/api/agents" \
+        -H "Authorization: Bearer $TOKEN" | grep -c "\"name\":\"$NAME\"" || true)
+      if [ "$EXISTS" = "0" ]; then
+        HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" -A "$UA" -X POST "$BASE/api/agents" \
+          -H "Authorization: Bearer $TOKEN" \
+          -H "Content-Type: application/json" \
+          --data-binary @/tmp/agent.json)
+        if [ "$HTTP" != "200" ] && [ "$HTTP" != "201" ]; then
+          echo "create failed: HTTP $HTTP" >&2
+          cat /tmp/resp.json >&2
+          exit 1
+        fi
+      fi
+    ' _ "$DEMO_EMAIL" "$DEMO_PASS" "$AGENT_NAME" > /dev/null
 echo " done"
 
 echo ""
