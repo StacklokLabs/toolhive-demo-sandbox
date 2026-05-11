@@ -10,7 +10,7 @@ set -a  # automatically export all variables for subshells
 # - helm
 
 # Version pins to ensure consistent demo environment
-TRAEFIK_CHART_VERSION="39.0.9" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
+TRAEFIK_CHART_VERSION="40.0.1" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
 CERT_MANAGER_CHART_VERSION="v1.20.2" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
 OPENTELEMETRY_OPERATOR_VERSION="v0.150.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
 LOKI_CHART_VERSION="13.6.2" # renovate: datasource=helm depName=loki registryUrl=https://grafana-community.github.io/helm-charts
