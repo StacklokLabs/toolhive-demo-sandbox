@@ -96,39 +96,13 @@ spec:
       # Per-server visibility is controlled by authz-claims annotations on each MCPServer.
       - name: k8s
         kubernetes: {}
-
-      # ToolHive catalog without claims — used by the public registry
-      - name: toolhive-public
-        format: upstream
-        git:
-          repository: https://github.com/stacklok/toolhive-catalog.git
-          branch: main
-          path: pkg/catalog/toolhive/data/registry-upstream.json
-        syncPolicy:
-          interval: "15m"
-        filter:
-          names:
-            include:
-              # MCP servers
-              - io.github.stacklok/aws-documentation
-              - io.github.stacklok/filesystem
-              - io.github.stacklok/notion-remote
-              - io.github.stacklok/paypal
-              - io.github.stacklok/playwright
-              - io.github.stacklok/stripe-remote
-              - io.github.stacklok/time
-              # Skills
-              - io.github.stacklok/agents-md
-              - io.github.stacklok/ci-agent-hardening
-              - io.github.stacklok/claude-settings-audit
-              - io.github.stacklok/code-review
-              - io.github.stacklok/doc-coauthoring
-              - io.github.stacklok/security-review
-              - io.github.stacklok/skill-creator
-              - io.github.stacklok/web-perf
+        claims:
+          groups: everyone
 
     registries:
       - name: demo-registry
+        claims:
+          groups: everyone
         sources:
           - toolhive-shared
           - toolhive-engineering
@@ -139,12 +113,16 @@ spec:
       # Unauthenticated registry for CLI access (thv, curl, etc.)
       - name: public
         sources:
-          - toolhive-public
+          - toolhive-shared
+          - toolhive-engineering
+          - toolhive-finance
+          - official-engineering
           - k8s
 
     auth:
       mode: oauth
       publicPaths:
+        # Unauthenticated registry for CLI access (thv, curl, etc.)
         - /registry/public
       oauth:
         resourceUrl: https://$REGISTRY_HOSTNAME
