@@ -36,6 +36,13 @@ test:
 singleBinary:
   replicas: 1
 
+# Single-node kind: the gateway's default hard pod anti-affinity prevents the
+# new pod from scheduling alongside the old one during a rolling upgrade.
+# Switch to Recreate so the old pod terminates before the new one starts.
+gateway:
+  deploymentStrategy:
+    type: Recreate
+
 # Zero out replica counts of other deployment modes
 backend:
   replicas: 0
