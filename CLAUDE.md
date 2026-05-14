@@ -30,12 +30,14 @@ Current shape (as of this writing — grep the manifests to confirm):
 
 | MCPGroup | Backends | vMCP front-end | Audience |
 |---|---|---|---|
-| `infra-tools` | prometheus, grafana, osv, oci-registry, mkp | `vmcp-infra`, `vmcp-infra-optimized` | engineering |
+| `infra-tools` | prometheus, grafana, osv, oci-registry, mkp | `vmcp-infra`, `vmcp-infra-optimized`, `vmcp-platform` | engineering |
 | `shared-tools` | fetch, context7, toolhive-docs (MCPRemoteProxy) | `vmcp-docs` | everyone |
 | `finance-tools` | finance-fetch (stub) | `vmcp-finance` | finance |
 | `research-tools` | arxiv | `vmcp-research` | everyone |
 
-A single MCPServer/MCPRemoteProxy belongs to exactly one MCPGroup. Multiple vMCPs can share a groupRef (e.g. `vmcp-infra` and `vmcp-infra-optimized` both aggregate `infra-tools`).
+A single MCPServer/MCPRemoteProxy belongs to exactly one MCPGroup. Multiple vMCPs can share a groupRef (e.g. `vmcp-infra`, `vmcp-infra-optimized`, and `vmcp-platform` all aggregate `infra-tools`).
+
+`vmcp-platform` is the composite-tool showcase: same backends as `vmcp-infra` but exposes a curated tool set plus two high-level workflows — `audit_image_supply_chain` (parallel + forEach across the OCI registry tools, demonstrating attestation discovery and fan-out fetch) and `mcp_server_pulse` (pure parallel fan-out across mkp + Prometheus + Grafana for a single-call health snapshot of any ToolHive MCP server).
 
 ## Annotations that matter
 

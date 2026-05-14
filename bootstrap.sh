@@ -241,6 +241,7 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-infra-optimized.yaml | kubectl a
 run_quiet sh -c "envsubst < demo-manifests/vmcp-docs.yaml | kubectl apply -f -" || die "Failed to apply vmcp-docs"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f -" || die "Failed to apply vmcp-finance"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-research.yaml | kubectl apply -f -" || die "Failed to apply vmcp-research"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-platform.yaml | kubectl apply -f -" || die "Failed to apply vmcp-platform"
 echo " ✓"
 
 # Clean up any prior Helm-managed Registry Server release — the operator-managed
@@ -351,6 +352,13 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/vmcp-research/health"
     },
     {
+      "name": "vMCP Platform-Ops Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-platform/mcp",
+      "type": "mcp",
+      "test_with_thv": true,
+      "healthcheck_path": "/vmcp-platform/health"
+    },
+    {
       "name": "Grafana",
       "url": "http://$GRAFANA_HOSTNAME",
       "type": "http",
@@ -379,4 +387,5 @@ echo " - vMCP Infra gateway (optimizer-enabled) at http://$MCP_HOSTNAME/vmcp-inf
 echo " - vMCP Docs gateway (shared) at http://$MCP_HOSTNAME/vmcp-docs/mcp"
 echo " - vMCP Finance gateway (bob/finance, stub) at http://$MCP_HOSTNAME/vmcp-finance/mcp"
 echo " - vMCP Research gateway (shared) at http://$MCP_HOSTNAME/vmcp-research/mcp"
+echo " - vMCP Platform-Ops gateway (alice/engineering, composite-tool demo) at http://$MCP_HOSTNAME/vmcp-platform/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"
