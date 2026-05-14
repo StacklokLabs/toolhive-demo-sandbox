@@ -99,6 +99,12 @@ spec:
           # all-users group, so this works in any tenant without
           # extra group setup. tools/list narrows automatically
           # because per-item filtering reuses this call_tool policy.
+          #
+          # The readOnlyHint guard belt-and-suspenders the prefix
+          # match: if Grafana ever ships a mutating tool, the
+          # baseline tier won't accidentally include it. The `has`
+          # check defaults-deny tools that omit the annotation,
+          # avoiding a Cedar evaluation error.
           - |
             permit(
               principal in THVGroup::"Everyone",
@@ -106,6 +112,8 @@ spec:
               resource
             ) when {
               resource.name like "grafana_*"
+              && resource has readOnlyHint
+              && resource.readOnlyHint == true
             };
 
   outgoingAuth:
