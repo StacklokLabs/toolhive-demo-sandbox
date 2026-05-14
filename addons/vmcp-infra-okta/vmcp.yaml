@@ -21,7 +21,7 @@ metadata:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp"
     toolhive.stacklok.dev/registry-title: "Infra vMCP Gateway (Okta auth)"
-    toolhive.stacklok.dev/authz-claims: '{"groups": "engineering"}'
+    toolhive.stacklok.dev/authz-claims: '{"groups": "everyone"}'
     toolhive.stacklok.dev/registry-description: |
       Okta-authenticated companion to vmcp-infra. Same platform/infra backends (Prometheus, Grafana, OSV, OCI registry, MKP) behind an embedded OAuth authorization server that delegates to Okta.
     toolhive.stacklok.dev/tool-definitions: '[{"name":"prometheus_execute_query","description":"Execute a PromQL instant query against Prometheus"},{"name":"prometheus_execute_range_query","description":"Execute a PromQL range query with start time, end time, and step interval"},{"name":"prometheus_list_metrics","description":"List all available metrics in Prometheus with optional pagination support"},{"name":"prometheus_get_metric_metadata","description":"Get metadata for a specific metric"},{"name":"prometheus_get_targets","description":"Get information about all scrape targets"},{"name":"grafana_search_dashboards","description":"Search for Grafana dashboards by a query string."},{"name":"grafana_get_dashboard_by_uid","description":"Retrieves the complete dashboard for a specific dashboard identified by its UID."},{"name":"grafana_get_dashboard_panel_queries","description":"Retrieve panel queries from a Grafana dashboard."},{"name":"grafana_get_dashboard_property","description":"Get specific parts of a dashboard using JSONPath expressions."},{"name":"grafana_get_dashboard_summary","description":"Get a compact summary of a dashboard."},{"name":"grafana_list_datasources","description":"List all configured datasources in Grafana."},{"name":"grafana_get_datasource","description":"Retrieves detailed information about a specific datasource."},{"name":"grafana_query_prometheus","description":"Query a PromQL-compatible datasource using a PromQL expression."},{"name":"grafana_list_prometheus_metric_names","description":"Lists metric names in a PromQL-compatible datasource."},{"name":"grafana_list_prometheus_label_names","description":"List label names in a PromQL-compatible datasource."},{"name":"grafana_list_prometheus_label_values","description":"Get the values for a specific label name in a PromQL-compatible datasource."},{"name":"grafana_query_loki_stats","description":"Retrieves statistics about log streams matching a given LogQL selector."},{"name":"grafana_query_loki_logs","description":"Executes a LogQL query against a Loki datasource."},{"name":"grafana_list_loki_label_names","description":"Lists all available label names found in logs within a Loki datasource."},{"name":"grafana_list_loki_label_values","description":"Retrieves all unique values associated with a specific labelName within a Loki datasource."},{"name":"osv_get_vulnerability","description":"Get details for a specific vulnerability by ID"},{"name":"osv_query_vulnerability","description":"Query for vulnerabilities affecting a specific package version or commit"},{"name":"oci-registry_get_image_config","description":"Get the config for an OCI image"},{"name":"oci-registry_get_image_info","description":"Get information about an OCI image"},{"name":"oci-registry_get_image_manifest","description":"Get the manifest for an OCI image"},{"name":"oci-registry_get_referrer_content","description":"Fetch the content of a specific referrer artifact."},{"name":"oci-registry_list_referrers","description":"List OCI artifacts (SBOMs, signatures, provenance, VEX) attached to an image."},{"name":"oci-registry_list_tags","description":"List tags for a repository with pagination support"},{"name":"mkp_apply_resource","description":"Apply (create or update) a Kubernetes resource"},{"name":"mkp_delete_resource","description":"Delete a Kubernetes resource"},{"name":"mkp_get_resource","description":"Get a Kubernetes resource or its subresource"},{"name":"mkp_list_resources","description":"List Kubernetes resources"},{"name":"mkp_post_resource","description":"Post to a Kubernetes resource or its subresource"}]'
@@ -69,6 +69,44 @@ spec:
       name: vmcp-infra-okta-oidc
       audience: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
       resourceUrl: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
+    # Cedar policy: tiered RBAC driven by Okta group claims.
+    # primaryUpstreamProvider tells the Cedar authorizer to read claims
+    # from the Okta access token (not the ToolHive-issued JWT), so
+    # THVGroup membership reflects Okta directory groups.
+    authzConfig:
+      type: inline
+      inline:
+        # Tell Cedar to evaluate claims from the Okta access token
+        # rather than the ToolHive-issued JWT, so THVGroup membership
+        # reflects Okta directory groups.
+        primaryUpstreamProvider: okta
+        policies:
+          # Engineering tier: full access to every aggregated tool,
+          # including the raw Prometheus queries, OSV vulnerability
+          # lookups, OCI registry inspection, and the mutating MKP
+          # (Kubernetes) tools. Requires an "Engineering" group in
+          # the Okta directory; without one, no user gets elevated.
+          - |
+            permit(
+              principal in THVGroup::"Engineering",
+              action == Action::"call_tool",
+              resource
+            );
+          # Baseline tier: anyone in the directory sees the curated
+          # Grafana dashboard layer (search, view, query Prometheus
+          # and Loki through Grafana). Raw Prometheus, OSV, OCI, and
+          # MKP stay platform-internal. "Everyone" is Okta's built-in
+          # all-users group, so this works in any tenant without
+          # extra group setup. tools/list narrows automatically
+          # because per-item filtering reuses this call_tool policy.
+          - |
+            permit(
+              principal in THVGroup::"Everyone",
+              action == Action::"call_tool",
+              resource
+            ) when {
+              resource.name like "grafana_*"
+            };
 
   outgoingAuth:
     source: inline
