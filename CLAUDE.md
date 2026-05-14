@@ -33,7 +33,6 @@ Current shape (as of this writing — grep the manifests to confirm):
 | `infra-tools` | prometheus, grafana, osv, oci-registry, mkp | `vmcp-infra`, `vmcp-infra-optimized`, `vmcp-platform` | engineering |
 | `shared-tools` | fetch, context7, toolhive-docs (MCPRemoteProxy) | `vmcp-docs` | everyone |
 | `finance-tools` | finance-fetch (stub) | `vmcp-finance` | finance |
-| `research-tools` | arxiv | `vmcp-research` | everyone |
 
 A single MCPServer/MCPRemoteProxy belongs to exactly one MCPGroup. Multiple vMCPs can share a groupRef (e.g. `vmcp-infra`, `vmcp-infra-optimized`, and `vmcp-platform` all aggregate `infra-tools`).
 

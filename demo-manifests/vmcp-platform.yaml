@@ -161,7 +161,7 @@ spec:
     properties:
       server_name:
         type: string
-        description: MCP server name as labelled in Kubernetes / Prometheus (e.g. arxiv, mkp, osv)
+        description: MCP server name as labelled in Kubernetes / Prometheus (e.g. mkp, osv, fetch, grafana)
       namespace:
         type: string
         description: Kubernetes namespace where the server runs
