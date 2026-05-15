@@ -157,7 +157,7 @@ Bootstrap complete! Access your demo services at the following URLs:
  - vMCP Infra gateway (optimizer-enabled) at http://mcp-172-19-0-3.sslip.io/vmcp-infra-optimized/mcp
  - vMCP Docs gateway (shared) at http://mcp-172-19-0-3.sslip.io/vmcp-docs/mcp
  - vMCP Finance gateway (bob/finance, stub) at http://mcp-172-19-0-3.sslip.io/vmcp-finance/mcp
- - vMCP Research gateway (shared) at http://mcp-172-19-0-3.sslip.io/vmcp-research/mcp
+ - vMCP Platform-Ops gateway (alice/engineering, composite-tool demo) at http://mcp-172-19-0-3.sslip.io/vmcp-platform/mcp
  - Grafana at http://grafana-172-19-0-3.sslip.io
 ```
 

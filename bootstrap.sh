@@ -223,7 +223,6 @@ echo -n "Installing persona MCPGroups and backends..."
 run_quiet kubectl apply -f demo-manifests/infra-tools.yaml || die "Failed to apply infra-tools group"
 run_quiet kubectl apply -f demo-manifests/shared-tools.yaml || die "Failed to apply shared-tools group"
 run_quiet kubectl apply -f demo-manifests/finance-tools.yaml || die "Failed to apply finance-tools group"
-run_quiet kubectl apply -f demo-manifests/research-tools.yaml || die "Failed to apply research-tools group"
 run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
 # Wait for backend MCPServer and MCPRemoteProxy resources to reach Ready phase
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
@@ -240,7 +239,7 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-infra.yaml | kubectl apply -f -"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-infra-optimized.yaml | kubectl apply -f -" || die "Failed to apply vmcp-infra-optimized"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-docs.yaml | kubectl apply -f -" || die "Failed to apply vmcp-docs"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f -" || die "Failed to apply vmcp-finance"
-run_quiet sh -c "envsubst < demo-manifests/vmcp-research.yaml | kubectl apply -f -" || die "Failed to apply vmcp-research"
+run_quiet sh -c "envsubst < demo-manifests/vmcp-platform.yaml | kubectl apply -f -" || die "Failed to apply vmcp-platform"
 echo " ✓"
 
 # Clean up any prior Helm-managed Registry Server release — the operator-managed
@@ -344,11 +343,11 @@ cat > demo-endpoints.json <<EOF
       "healthcheck_path": "/vmcp-finance/health"
     },
     {
-      "name": "vMCP Research Gateway",
-      "url": "http://$MCP_HOSTNAME/vmcp-research/mcp",
+      "name": "vMCP Platform-Ops Gateway",
+      "url": "http://$MCP_HOSTNAME/vmcp-platform/mcp",
       "type": "mcp",
       "test_with_thv": true,
-      "healthcheck_path": "/vmcp-research/health"
+      "healthcheck_path": "/vmcp-platform/health"
     },
     {
       "name": "Grafana",
@@ -378,5 +377,5 @@ echo " - vMCP Infra gateway (alice/engineering) at http://$MCP_HOSTNAME/vmcp-inf
 echo " - vMCP Infra gateway (optimizer-enabled) at http://$MCP_HOSTNAME/vmcp-infra-optimized/mcp"
 echo " - vMCP Docs gateway (shared) at http://$MCP_HOSTNAME/vmcp-docs/mcp"
 echo " - vMCP Finance gateway (bob/finance, stub) at http://$MCP_HOSTNAME/vmcp-finance/mcp"
-echo " - vMCP Research gateway (shared) at http://$MCP_HOSTNAME/vmcp-research/mcp"
+echo " - vMCP Platform-Ops gateway (alice/engineering, composite-tool demo) at http://$MCP_HOSTNAME/vmcp-platform/mcp"
 echo " - Grafana at http://$GRAFANA_HOSTNAME"

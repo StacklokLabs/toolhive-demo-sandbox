@@ -1,0 +1,333 @@
+# Platform-Ops vMCP gateway — a dedicated demo of composite tool workflows.
+#
+# Aggregates the same infra-tools group as vmcp-infra but exposes a curated
+# tool set plus two high-level composite tools that chain backends together:
+#
+#   - audit_image_supply_chain — investigate a single container image:
+#       OCI info, OCI config, attestation referrers, available tags, and (via
+#       forEach) the content of every referrer in parallel.
+#   - mcp_server_pulse — real-time snapshot of a ToolHive MCP server by
+#       fanning out across Kubernetes (mkp), Prometheus, and Grafana in
+#       parallel.
+#
+# Defined as standalone VirtualMCPCompositeToolDefinition resources so each
+# composite can be reviewed / reused on its own.
+---
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: VirtualMCPCompositeToolDefinition
+metadata:
+  name: composite-tool-audit-image-supply-chain
+  namespace: toolhive-system
+spec:
+  name: audit_image_supply_chain
+  description: |
+    Full supply-chain audit of a container image. Pulls OCI image info, OCI
+    config, attestation referrers (SBOMs, signatures, provenance), and the
+    most recent tags in parallel, then forEach-fetches every attestation's
+    content concurrently. Useful for a single-call answer to "what's in this
+    image, what's attested about it, and what other versions are available?".
+  parameters:
+    type: object
+    properties:
+      image_ref:
+        type: string
+        description: Full image reference including tag (e.g. ghcr.io/stacklok/toolhive/proxyrunner:v0.27.2)
+      repository:
+        type: string
+        description: Repository portion of the image (without tag, e.g. ghcr.io/stacklok/toolhive/proxyrunner) — used to list available tags
+    required:
+      - image_ref
+      - repository
+  timeout: 5m
+  steps:
+    # All four primary lookups run in parallel — no dependsOn between them.
+    - id: image_info
+      tool: oci-registry_get_image_info
+      arguments:
+        image_ref: "{{.params.image_ref}}"
+    - id: image_config
+      tool: oci-registry_get_image_config
+      arguments:
+        image_ref: "{{.params.image_ref}}"
+    - id: referrers
+      tool: oci-registry_list_referrers
+      arguments:
+        image_ref: "{{.params.image_ref}}"
+    - id: tags
+      tool: oci-registry_list_tags
+      arguments:
+        repository: "{{.params.repository}}"
+        sort: "semver-desc"
+        limit: 10
+    # forEach over the referrer list to grab each attestation's body in
+    # parallel. onError: continue so a single malformed artifact doesn't abort
+    # the whole audit.
+    - id: attestations
+      type: forEach
+      collection: "{{json .steps.referrers.output.referrers}}"
+      itemVar: ref
+      maxParallel: 5
+      step:
+        id: fetch_attestation
+        type: tool
+        tool: oci-registry_get_referrer_content
+        arguments:
+          image_ref: "{{.params.image_ref}}"
+          digest: "{{.forEach.ref.digest}}"
+          max_bytes: 4096
+      dependsOn:
+        - referrers
+      onError:
+        action: continue
+      # defaultResults are required for fields referenced in `output:` when the
+      # step may be skipped (which happens because onError: continue).
+      defaultResults:
+        iterations: []
+        count: 0
+        completed: 0
+        failed: 0
+  # Aggregate the per-step outputs into one structured response. Without this,
+  # the composite would only return the last step's output (the forEach result).
+  output:
+    properties:
+      image_ref:
+        type: string
+        description: The image reference that was audited
+        value: "{{.params.image_ref}}"
+      architecture:
+        type: string
+        description: CPU architecture of the image
+        value: "{{.steps.image_info.output.architecture}}"
+      os:
+        type: string
+        description: Operating system of the image
+        value: "{{.steps.image_info.output.os}}"
+      digest:
+        type: string
+        description: Content-addressable digest of the image
+        value: "{{.steps.image_info.output.digest}}"
+      layers:
+        type: integer
+        description: Number of layers in the image
+        value: "{{.steps.image_info.output.layers}}"
+      size_bytes:
+        type: integer
+        description: Total image size in bytes
+        value: "{{.steps.image_info.output.size}}"
+      created:
+        type: string
+        description: Image build timestamp (RFC3339)
+        value: "{{.steps.image_info.output.created}}"
+      referrer_count:
+        type: integer
+        description: Number of OCI referrers (attestations) attached to this image
+        value: "{{.steps.referrers.output.count}}"
+      referrers:
+        type: array
+        description: All attestation artifacts attached to this image (SBOMs, signatures, provenance)
+        value: "{{json .steps.referrers.output.referrers}}"
+      recent_tags:
+        type: array
+        description: Most recent tags in the repository (semver-desc, max 10)
+        value: "{{json .steps.tags.output.tags}}"
+      attestations_fetched:
+        type: integer
+        description: Count of referrers whose content was successfully fetched
+        value: "{{.steps.attestations.output.completed}}"
+      attestations_failed:
+        type: integer
+        description: Count of referrers whose content fetch failed
+        value: "{{.steps.attestations.output.failed}}"
+      attestations:
+        type: array
+        description: Result of fetching each referrer (forEach iterations)
+        value: "{{json .steps.attestations.output.iterations}}"
+---
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: VirtualMCPCompositeToolDefinition
+metadata:
+  name: composite-tool-mcp-server-pulse
+  namespace: toolhive-system
+spec:
+  name: mcp_server_pulse
+  description: |
+    Real-time health snapshot of a ToolHive MCP server. Fans out across
+    Kubernetes (running pods), Prometheus (lifetime tool-call totals + 24h
+    tool-call increase + 15m vMCP backend request rate), and Grafana
+    (related dashboards) in a single call — all five lookups execute in
+    parallel.
+  parameters:
+    type: object
+    properties:
+      server_name:
+        type: string
+        description: MCP server name as labelled in Kubernetes / Prometheus (e.g. mkp, osv, fetch, grafana)
+      namespace:
+        type: string
+        description: Kubernetes namespace where the server runs
+        default: toolhive-system
+    required:
+      - server_name
+  timeout: 2m
+  steps:
+    - id: pods
+      tool: mkp_list_resources
+      arguments:
+        resource_type: namespaced
+        group: ""
+        version: v1
+        resource: pods
+        namespace: "{{.params.namespace}}"
+        label_selector: "toolhive-name={{.params.server_name}}"
+        include_annotations: false
+    # Two queries (in parallel) so a quiet cluster still has a non-zero
+    # signal — totals answer "has this server ever been used?" and the 24h
+    # window answers "is it warm right now?". `increase()` over a wider
+    # window also produces a meaningful number when traffic is sparse.
+    - id: tool_call_totals
+      tool: prometheus_execute_query
+      arguments:
+        query: 'sum by (tool, status) (toolhive_mcp_tool_calls_total{server="{{.params.server_name}}"})'
+    - id: tool_calls_24h
+      tool: prometheus_execute_query
+      arguments:
+        query: 'sum by (tool, status) (increase(toolhive_mcp_tool_calls_total{server="{{.params.server_name}}"}[24h]))'
+    - id: backend_requests_15m
+      tool: prometheus_execute_query
+      arguments:
+        query: 'sum by (action) (rate(toolhive_vmcp_backend_requests_total{target_workload_name="{{.params.server_name}}"}[15m]))'
+    # The demo cluster ships three cluster-wide ToolHive dashboards
+    # (toolhive-mcp, toolhive-audit-log, toolhive-registry) and no per-server
+    # dashboards. Searching by server name would always return 0 — instead
+    # return the operational dashboards that include this server's traffic.
+    - id: dashboards
+      tool: grafana_search_dashboards
+      arguments:
+        query: "toolhive"
+        limit: 5
+  output:
+    properties:
+      server_name:
+        type: string
+        description: MCP server name that was probed
+        value: "{{.params.server_name}}"
+      namespace:
+        type: string
+        description: Kubernetes namespace
+        value: "{{.params.namespace}}"
+      pods:
+        type: string
+        description: Kubernetes PartialObjectMetadataList for matching pods (JSON)
+        value: "{{.steps.pods.output.text}}"
+      tool_call_totals:
+        type: array
+        description: Lifetime per-tool call counts for this MCP server (counter total since pod start) — shows whether the server has ever been used
+        value: "{{json .steps.tool_call_totals.output.result}}"
+      tool_calls_last_24h:
+        type: array
+        description: Per-tool call counts over the last 24 hours (sum of increase over [24h]) — shows recent activity
+        value: "{{json .steps.tool_calls_24h.output.result}}"
+      backend_request_rate_15m:
+        type: array
+        description: vMCP backend request rate over the last 15 minutes by action (req/sec)
+        value: "{{json .steps.backend_requests_15m.output.result}}"
+      related_dashboards:
+        type: string
+        description: Cluster-wide ToolHive operational dashboards (MCP activity, audit log, registry) whose panels include this server's traffic
+        value: "{{.steps.dashboards.output.text}}"
+---
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-platform
+  namespace: toolhive-system
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-platform/mcp"
+    toolhive.stacklok.dev/registry-title: "Platform-Ops vMCP Gateway"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "engineering"}'
+    toolhive.stacklok.dev/registry-description: |
+      Showcase vMCP demonstrating composite-tool workflows: chains OCI registry,
+      OSV, Kubernetes, Prometheus, and Grafana into single high-level calls
+      (audit_image_supply_chain, mcp_server_pulse).
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"audit_image_supply_chain","description":"Full supply-chain audit of a container image (info, config, attestations, tags) using parallel + forEach steps"},{"name":"mcp_server_pulse","description":"Real-time health snapshot of an MCP server — fans out across Kubernetes, Prometheus, and Grafana in parallel"},{"name":"oci-registry_get_referrer_content","description":"Drill into the body of a specific attestation referrer (SBOM, signature, provenance) identified by audit_image_supply_chain"},{"name":"osv_query_vulnerability","description":"Query OSV for vulnerabilities affecting a package version or commit"},{"name":"mkp_list_resources","description":"List Kubernetes resources (workload discovery)"},{"name":"mkp_get_resource","description":"Get a full Kubernetes resource spec (e.g. extract container images from a Deployment)"}]'
+spec:
+  groupRef:
+    name: infra-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: vmcp-platform-server
+  config:
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+      tools:
+        # Tight curation to nudge agents toward the composites. Tools used by
+        # the composites' DAG remain in the routing table (so the composites
+        # can call them) but are hidden from tools/list. Use vmcp-infra if
+        # you need the full primitive surface.
+        #
+        # What stays exposed via tools/list:
+        #   - oci-registry.get_referrer_content: drill into an attestation
+        #     body the audit identified (each body is capped at 4KB inside
+        #     the composite).
+        #   - mkp.list_resources / get_resource: discover workloads and
+        #     extract container images from Deployment/Pod specs
+        #     (list_resources returns PartialObjectMetadata only, so the get
+        #     is needed for "audit the X image in my cluster" flows).
+        #   - osv.query_vulnerability: vuln follow-up on a package surfaced
+        #     by an SBOM.
+        - workload: oci-registry
+          filter:
+            - "get_referrer_content"
+        - workload: osv
+          filter:
+            - "query_vulnerability"
+        - workload: mkp
+          filter:
+            - "list_resources"
+            - "get_resource"
+        # Hide every grafana/prometheus tool from tools/list. They remain
+        # available in the routing table so mcp_server_pulse can still call
+        # prometheus_execute_query and grafana_search_dashboards internally.
+        - workload: grafana
+          excludeAll: true
+        - workload: prometheus
+          excludeAll: true
+    compositeToolRefs:
+      - name: composite-tool-audit-image-supply-chain
+      - name: composite-tool-mcp-server-pulse
+  incomingAuth:
+    type: anonymous
+  outgoingAuth:
+    source: inline
+  serviceType: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vmcp-platform-route
+  namespace: toolhive-system
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vmcp-platform
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: vmcp-vmcp-platform
+          port: 4483
