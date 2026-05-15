@@ -1,0 +1,22 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: headlamp-estate-route
+  namespace: headlamp-estate
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  hostnames:
+    - "$HEADLAMP_ESTATE_HOSTNAME"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /estate-api
+      backendRefs:
+        - name: headlamp-estate-api
+          port: 8081
+    - backendRefs:
+        - name: headlamp-estate
+          port: 80

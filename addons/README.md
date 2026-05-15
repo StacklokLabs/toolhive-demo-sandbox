@@ -27,6 +27,7 @@ Add-ons deploy into their own Kubernetes namespace and are independent of each o
 | [aws-mcp](aws-mcp/) | AWS MCP Remote Proxy with Okta SSO and STS credential exchange |
 | [github-mcp-local](github-mcp-local/) | GitHub MCP server (PAT, read-only) on the shared MCP gateway |
 | [cloud-ui-openrouter](cloud-ui-openrouter/) | Patch Cloud UI with an OpenRouter API key |
+| [headlamp-estate](headlamp-estate/) | Cluster-local Headlamp view for the ToolHive estate and access model |
 
 ## Creating a new add-on
 

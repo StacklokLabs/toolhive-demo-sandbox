@@ -1,0 +1,56 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: headlamp-estate-readonly
+rules:
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - events
+      - namespaces
+      - pods
+      - services
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources:
+      - customresourcedefinitions
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources:
+      - httproutes
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["toolhive.stacklok.dev"]
+    resources:
+      - embeddingservers
+      - mcpexternalauthconfigs
+      - mcpgroups
+      - mcpoidcconfigs
+      - mcpregistries
+      - mcpremoteproxies
+      - mcpserverentries
+      - mcpservers
+      - mcptelemetryconfigs
+      - mcptoolconfigs
+      - virtualmcpcompositetooldefinitions
+      - virtualmcpservers
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-estate-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: headlamp-estate-readonly
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-estate
+    namespace: headlamp-estate

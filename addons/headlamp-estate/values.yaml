@@ -1,0 +1,41 @@
+config:
+  inCluster: true
+  inClusterContextName: main
+  pluginsDir: /headlamp/plugins
+  watchPlugins: true
+
+serviceAccount:
+  create: true
+  name: headlamp-estate
+
+clusterRoleBinding:
+  create: false
+
+extraContainers:
+  - name: estate-api
+    image: ghcr.io/headlamp-k8s/headlamp:v0.42.0
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh", "-c"]
+    args:
+      - nc -lk -p 8081 -e /estate-api/handler.sh
+    ports:
+      - name: estate-api
+        containerPort: 8081
+    volumeMounts:
+      - name: toolhive-estate-api
+        mountPath: /estate-api
+        readOnly: true
+
+volumeMounts:
+  - name: toolhive-estate-plugin
+    mountPath: /headlamp/plugins/toolhive-estate
+    readOnly: true
+
+volumes:
+  - name: toolhive-estate-plugin
+    configMap:
+      name: toolhive-estate-plugin
+  - name: toolhive-estate-api
+    configMap:
+      name: toolhive-estate-api
+      defaultMode: 0555

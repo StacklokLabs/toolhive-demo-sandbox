@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: headlamp-estate-api
+  namespace: headlamp-estate
+spec:
+  selector:
+    app.kubernetes.io/instance: headlamp-estate
+    app.kubernetes.io/name: headlamp
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
