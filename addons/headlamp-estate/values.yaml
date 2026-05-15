@@ -1,6 +1,5 @@
 config:
-  inCluster: true
-  inClusterContextName: main
+  inCluster: false
   pluginsDir: /headlamp/plugins
   watchPlugins: true
 

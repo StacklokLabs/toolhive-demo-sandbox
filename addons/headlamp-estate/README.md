@@ -10,9 +10,9 @@ This is a prototype management-plane view, not a general Kubernetes dashboard:
 - estate data is served through a narrow `/estate-api` sidecar endpoint, so
   browser users do not need a Kubernetes login token.
 
-The stock Headlamp sidebar remains available in this prototype so routing and
-cluster selection stay close to upstream behavior. The read-only ToolHive estate
-view is exposed as a no-auth `ToolHive Estate` page.
+The Headlamp shell is intentionally not configured with an in-cluster Kubernetes
+context. The read-only ToolHive estate view is exposed as a no-auth `ToolHive
+Estate` page, while the sidecar handles Kubernetes reads server-side.
 
 ## What It Shows
 

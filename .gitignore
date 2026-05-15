@@ -3,10 +3,6 @@ kubeconfig-toolhive-demo.yaml
 demo-endpoints.json
 local-demos/*
 !local-demos/.gitkeep
-!local-demos/estate-view/
-!local-demos/estate-view/**
-local-demos/estate-view/__pycache__/
-local-demos/estate-view/*.pyc
 
 addons/**/.env
 addons/**/node_modules/

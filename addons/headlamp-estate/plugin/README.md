@@ -2,8 +2,8 @@
 
 Cluster-local Headlamp plugin for the ToolHive estate addon.
 
-The plugin is intentionally read-only. It calls the Kubernetes API through Headlamp,
-loads ToolHive CRDs and selected `HTTPRoute` resources, and renders:
+The plugin is intentionally read-only. It fetches estate JSON from the parent
+addon's `/estate-api` sidecar and renders:
 
 - vMCP gateway inventory
 - backend workload inventory
