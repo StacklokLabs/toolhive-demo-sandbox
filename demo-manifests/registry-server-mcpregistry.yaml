@@ -1,7 +1,7 @@
 apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRegistry
 metadata:
-  name: toolhive-registry
+  name: $REGISTRY_RESOURCE_NAME
   namespace: $RELEASE_NAMESPACE
 spec:
   displayName: ToolHive Demo Registry
@@ -241,7 +241,7 @@ roleRef:
   name: toolhive-registry-k8s-source
 subjects:
   - kind: ServiceAccount
-    name: toolhive-registry-registry-api
+    name: ${REGISTRY_RESOURCE_NAME}-registry-api
     namespace: $RELEASE_NAMESPACE
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -265,5 +265,5 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: toolhive-registry-api
+        - name: ${REGISTRY_RESOURCE_NAME}-api
           port: 8080

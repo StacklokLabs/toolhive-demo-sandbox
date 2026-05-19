@@ -56,7 +56,7 @@ spec:
               protocol: TCP
           env:
             - name: API_BASE_URL
-              value: http://toolhive-registry-api.$RELEASE_NAMESPACE:8080
+              value: http://${REGISTRY_RESOURCE_NAME}-api.$RELEASE_NAMESPACE:8080
             # Better Auth configuration
             - name: BETTER_AUTH_SECRET
               value: demo-secret-change-in-production
