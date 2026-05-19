@@ -1,7 +1,7 @@
 # Cloudflare tunnel that exposes vmcp-infra-okta externally over HTTPS.
 # The tunnel's public hostname must match ${VMCP_OKTA_CLOUDFLARED_DOMAIN};
 # configure it in the Cloudflare dashboard to point at
-# vmcp-vmcp-infra-okta.toolhive-system.svc.cluster.local:4483
+# vmcp-vmcp-infra-okta.mcp-workloads.svc.cluster.local:4483
 apiVersion: apps/v1
 kind: Deployment
 metadata:

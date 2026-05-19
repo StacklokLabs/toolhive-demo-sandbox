@@ -6,7 +6,7 @@ kubectl delete -f "$ADDON_DIR/mcpserver.yaml" --ignore-not-found > /dev/null 2>&
 echo " done"
 
 echo -n "Removing GitHub token secret..."
-kubectl delete secret github-local-token -n toolhive-system --ignore-not-found > /dev/null 2>&1
+kubectl delete secret github-local-token -n mcp-workloads --ignore-not-found > /dev/null 2>&1
 echo " done"
 
 echo "GitHub MCP server removed."

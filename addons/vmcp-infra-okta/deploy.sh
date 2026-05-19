@@ -10,18 +10,18 @@ addon_require_env VMCP_OKTA_CLOUDFLARED_TUNNEL_TOKEN
 
 addon_create_namespace
 
-# Okta client secret lives in toolhive-system alongside the vMCP resource.
+# Okta client secret lives in mcp-workloads alongside the vMCP resource.
 echo -n "Creating Okta client secret..."
 kubectl create secret generic vmcp-infra-okta-client-secret \
     --from-literal=client-secret="$VMCP_OKTA_CLIENT_SECRET" \
-    --namespace toolhive-system \
+    --namespace mcp-workloads \
     --dry-run=client -o yaml | kubectl apply -f - > /dev/null
 echo " done"
 
 echo -n "Applying VirtualMCPServer..."
 run_quiet addon_apply "$ADDON_DIR/vmcp.yaml"
 run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready \
-    --timeout=3m virtualmcpserver/vmcp-infra-okta -n toolhive-system
+    --timeout=3m virtualmcpserver/vmcp-infra-okta -n mcp-workloads
 echo " done"
 
 echo -n "Creating Cloudflare tunnel token..."

@@ -66,7 +66,7 @@ In the [Cloudflare dashboard](https://one.dash.cloudflare.com/), create a tunnel
 - **Domain**: `stacklok-demo.com` (or any domain you control)
 - **Path**: (empty — all paths must route, including `/oauth/callback`)
 - **Service Type**: `HTTP`
-- **Service URL**: `vmcp-vmcp-infra-okta.toolhive-system.svc.cluster.local:4483`
+- **Service URL**: `vmcp-vmcp-infra-okta.mcp-workloads.svc.cluster.local:4483`
 
 Copy the tunnel token.
 
@@ -86,7 +86,7 @@ cp .env.example .env   # then fill in the Okta + tunnel values
 ## Verify
 
 ```bash
-kubectl get virtualmcpserver vmcp-infra-okta -n toolhive-system
+kubectl get virtualmcpserver vmcp-infra-okta -n mcp-workloads
 kubectl get pods -n vmcp-infra-okta
 ```
 

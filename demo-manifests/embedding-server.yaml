@@ -6,6 +6,6 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: EmbeddingServer
 metadata:
   name: optimizer-embedding
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   image: $EMBEDDING_IMAGE

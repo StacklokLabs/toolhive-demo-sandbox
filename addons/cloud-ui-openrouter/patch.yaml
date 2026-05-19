@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloud-ui
-  namespace: toolhive-system
 spec:
   template:
     spec:

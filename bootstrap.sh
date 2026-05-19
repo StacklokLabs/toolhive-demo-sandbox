@@ -2,27 +2,15 @@
 set -e
 set -a  # automatically export all variables for subshells
 
-# Bootstrap script for ToolHive demo-in-a-box Kubernetes cluster
+# Bootstrap script for the ToolHive demo sandbox Kubernetes cluster.
 
 ## Requirements:
 # - kind
 # - kubectl
 # - helm
 
-# Version pins to ensure consistent demo environment
-TRAEFIK_CHART_VERSION="40.0.1" # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
-CERT_MANAGER_CHART_VERSION="v1.20.2" # renovate: datasource=docker depName=quay.io/jetstack/charts/cert-manager versioning=semver
-OPENTELEMETRY_OPERATOR_VERSION="v0.150.0" # renovate: datasource=github-releases depName=open-telemetry/opentelemetry-operator
-LOKI_CHART_VERSION="16.0.0" # renovate: datasource=helm depName=loki registryUrl=https://grafana-community.github.io/helm-charts
-FLUENT_BIT_CHART_VERSION="0.57.3" # renovate: datasource=helm depName=fluent-bit registryUrl=https://fluent.github.io/helm-charts
-PROMETHEUS_CHART_VERSION="29.6.0" # renovate: datasource=helm depName=prometheus registryUrl=https://prometheus-community.github.io/helm-charts
-GRAFANA_CHART_VERSION="12.3.0" # renovate: datasource=helm depName=grafana registryUrl=https://grafana-community.github.io/helm-charts
-CLOUDNATIVE_PG_CHART_VERSION="0.28.0" # renovate: datasource=helm depName=cloudnative-pg registryUrl=https://cloudnative-pg.github.io/charts
-TOOLHIVE_OPERATOR_CRDS_CHART_VERSION="0.27.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator-crds
-TOOLHIVE_OPERATOR_CHART_VERSION="0.27.2" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive/toolhive-operator
-REGISTRY_SERVER_VERSION="v1.4.3" # renovate: datasource=docker depName=ghcr.io/stacklok/thv-registry-api
-CLOUD_UI_VERSION="v0.6.0" # renovate: datasource=docker depName=ghcr.io/stacklok/toolhive-cloud-ui
-KEYCLOAK_VERSION="26.6.1" # renovate: datasource=docker depName=quay.io/keycloak/keycloak versioning=semver
+# Chart/image pins and cluster identity live in versions.env
+. "$(dirname "$0")/versions.env"
 
 # Select the text-embeddings-inference image variant that matches the host arch.
 # Used by the optimizer-enabled vMCP gateways.
@@ -75,14 +63,14 @@ if [ -f "$(dirname "$0")/.env" ]; then
 fi
 
 echo -n "Creating Kind cluster..."
-if kind get clusters 2>/dev/null | grep -q "^toolhive-demo-in-a-box$"; then
+if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
     echo " (already exists, skipping)"
 else
     run_quiet kind create cluster --config "$(dirname "$0")/kind-config.yaml" || die "Failed to create Kind cluster"
     echo " ✓"
 fi
-run_quiet sh -c "kind get kubeconfig --name toolhive-demo-in-a-box > kubeconfig-toolhive-demo.yaml" || die "Failed to get kubeconfig"
-export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
+run_quiet sh -c "kind get kubeconfig --name ${CLUSTER_NAME} > ${KUBECONFIG_FILE}" || die "Failed to get kubeconfig"
+export KUBECONFIG=$(pwd)/${KUBECONFIG_FILE}
 
 # Traefik chart installs Gateway API CRDs automatically, installing them separately breaks things.
 # echo "Installing Gateway API..."
@@ -133,7 +121,7 @@ echo " ✓"
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
 echo -n "Installing ToolHive Operator..."
 run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
-run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace toolhive-system --create-namespace --wait || die "Failed to install ToolHive Operator"
+run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace "$RELEASE_NAMESPACE" --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
 # Check if traefik gateway already has an IP assigned
@@ -199,14 +187,24 @@ run_quiet sh -c "kubectl create configmap keycloak-bootstrap-state -n keycloak \
     --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to stamp Keycloak bootstrap state"
 echo " ✓"
 
-echo -n "Creating PostgreSQL server for ToolHive Registry Server..."
+echo -n "Installing PostgreSQL (registry DB)..."
 run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
-run_quiet kubectl apply -f infra/registry-server-db.yaml || die "Failed to create PostgreSQL server for Registry Server"
-run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n toolhive-system --timeout=5m || die "PostgreSQL server for Registry Server failed to become ready"
+run_quiet sh -c "envsubst '\$RELEASE_NAMESPACE' < infra/registry-server-db.yaml | kubectl apply -f -" || die "Failed to create PostgreSQL cluster for registry DB"
+run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n "$RELEASE_NAMESPACE" --timeout=5m || die "PostgreSQL cluster failed to become ready"
 echo " ✓"
 
 echo -n "Creating Traefik CA ConfigMap for registry server TLS verification..."
-run_quiet sh -c "kubectl get secret sslip-io-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n toolhive-system --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
+run_quiet sh -c "kubectl get secret sslip-io-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n $RELEASE_NAMESPACE --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
+echo " ✓"
+
+# MCP/vMCP/MCPGroup workloads live in their own namespace so the operator
+# and registry server (in $RELEASE_NAMESPACE) stay decoupled from user
+# workloads. The operator watches cluster-wide and the registry's K8s
+# source defaults to all namespaces, so this split needs no further config.
+echo -n "Creating mcp-workloads namespace..."
+if ! namespace_exists mcp-workloads; then
+    run_quiet kubectl create namespace mcp-workloads || die "Failed to create mcp-workloads namespace"
+fi
 echo " ✓"
 
 # Install all MCP resources before the Registry Server so its K8s reconciler
@@ -215,26 +213,26 @@ echo " ✓"
 # with git-source commits on the same serializable transactions and trips
 # SQLSTATE 40001 conflicts, sometimes starving sources out entirely.
 
-echo -n "Installing shared MCPTelemetryConfig resource..."
+echo -n "Applying shared MCPTelemetryConfig..."
 run_quiet kubectl apply -f demo-manifests/mcp-telemetry-config.yaml || die "Failed to apply MCPTelemetryConfig resources"
 echo " ✓"
 
-echo -n "Installing persona MCPGroups and backends..."
+echo -n "Applying persona MCPGroups + backends..."
 run_quiet kubectl apply -f demo-manifests/infra-tools.yaml || die "Failed to apply infra-tools group"
 run_quiet kubectl apply -f demo-manifests/shared-tools.yaml || die "Failed to apply shared-tools group"
 run_quiet kubectl apply -f demo-manifests/finance-tools.yaml || die "Failed to apply finance-tools group"
 run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
 # Wait for backend MCPServer and MCPRemoteProxy resources to reach Ready phase
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPServer resources failed to become ready"
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpremoteproxy -l demo.toolhive.stacklok.dev/vmcp-backend=true -n toolhive-system || die "vMCP backend MCPRemoteProxy resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n mcp-workloads || die "vMCP backend MCPServer resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpremoteproxy -l demo.toolhive.stacklok.dev/vmcp-backend=true -n mcp-workloads || die "vMCP backend MCPRemoteProxy resources failed to become ready"
 echo " ✓"
 
-echo -n "Installing embedding server for optimizer-enabled vMCPs..."
+echo -n "Applying optimizer EmbeddingServer ($EMBEDDING_IMAGE)..."
 run_quiet sh -c "envsubst < demo-manifests/embedding-server.yaml | kubectl apply -f -" || die "Failed to apply embedding server"
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=10m embeddingserver/optimizer-embedding -n toolhive-system || die "EmbeddingServer failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=10m embeddingserver/optimizer-embedding -n mcp-workloads || die "EmbeddingServer failed to become ready"
 echo " ✓"
 
-echo -n "Installing persona vMCP gateways..."
+echo -n "Applying persona VirtualMCPServer gateways..."
 run_quiet sh -c "envsubst < demo-manifests/vmcp-infra.yaml | kubectl apply -f -" || die "Failed to apply vmcp-infra"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-infra-optimized.yaml | kubectl apply -f -" || die "Failed to apply vmcp-infra-optimized"
 run_quiet sh -c "envsubst < demo-manifests/vmcp-docs.yaml | kubectl apply -f -" || die "Failed to apply vmcp-docs"
@@ -245,14 +243,14 @@ echo " ✓"
 # Clean up any prior Helm-managed Registry Server release — the operator-managed
 # MCPRegistry below replaces it. No-op on fresh clusters or clusters already
 # migrated.
-run_quiet sh -c "helm -n toolhive-system uninstall registry-server 2>/dev/null || true"
+run_quiet sh -c "helm -n $RELEASE_NAMESPACE uninstall registry-server 2>/dev/null || true"
 
-echo -n "Installing Registry Server..."
-run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
-run_quiet kubectl -n toolhive-system wait --for=condition=Ready --timeout=5m mcpregistry/toolhive-registry || die "MCPRegistry failed to become ready"
+echo -n "Applying MCPRegistry (registry server)..."
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION \$RELEASE_NAMESPACE \$KC_REALM' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
+run_quiet kubectl -n "$RELEASE_NAMESPACE" wait --for=condition=Ready --timeout=5m mcpregistry/"$REGISTRY_RESOURCE_NAME" || die "MCPRegistry failed to become ready"
 echo " ✓"
 
-echo -n "Installing Cloud UI..."
+echo -n "Applying Cloud UI..."
 run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
 echo " ✓"
 
@@ -262,7 +260,8 @@ run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" |
 echo " ✓"
 
 echo -n "Waiting for all pods to be ready..."
-run_quiet wait_for_pods_ready toolhive-system 300 || die "Pods failed to become ready"
+run_quiet wait_for_pods_ready "$RELEASE_NAMESPACE" 300 || die "Pods in $RELEASE_NAMESPACE failed to become ready"
+run_quiet wait_for_pods_ready mcp-workloads 300 || die "Pods in mcp-workloads failed to become ready"
 echo " ✓"
 
 # Validate registry by fetching a token and querying the server list
@@ -271,7 +270,7 @@ echo -n "Validating registry server..."
 # non-zero (e.g. curl can't resolve the host, python3 fails on empty stdin)
 # would terminate the script silently before the empty-string fallbacks below
 # could run.
-REGISTRY_TOKEN=$(curl -sk -X POST "https://${AUTH_HOSTNAME}/realms/toolhive-demo/protocol/openid-connect/token" \
+REGISTRY_TOKEN=$(curl -sk -X POST "https://${AUTH_HOSTNAME}/realms/${KC_REALM}/protocol/openid-connect/token" \
     -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
     2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null) || true
 if [ -z "$REGISTRY_TOKEN" ]; then
@@ -360,22 +359,22 @@ cat > demo-endpoints.json <<EOF
 EOF
 echo " ✓"
 
-echo "Bootstrap complete! Access your demo services at the following URLs:"
-echo " - Keycloak Admin Console at https://$AUTH_HOSTNAME/admin (admin/admin)"
-echo " - ToolHive Cloud UI at https://$UI_HOSTNAME (NOTE: self-signed cert, expect a browser warning)"
-echo "   Demo Users:"
-echo "     demo  / demo   — Admin persona (registry superAdmin, sees all tools)"
-echo "     alice / alice  — Engineering persona"
-echo "     bob   / bob    — Finance persona"
-echo "     All users see shared tools and in-cluster MCP servers."
-echo " - ToolHive Registry Server at http://$REGISTRY_HOSTNAME/registry/demo-registry"
-echo "   (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)"
-echo " - Public Registry (no auth) at http://$REGISTRY_HOSTNAME/registry/public for the ToolHive CLI or UI"
-echo "   (run 'thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip' or addin the UI settings)"
-echo " - MKP MCP server (standalone, engineering) at http://$MCP_HOSTNAME/mkp/mcp"
-echo " - vMCP Infra gateway (alice/engineering) at http://$MCP_HOSTNAME/vmcp-infra/mcp"
-echo " - vMCP Infra gateway (optimizer-enabled) at http://$MCP_HOSTNAME/vmcp-infra-optimized/mcp"
-echo " - vMCP Docs gateway (shared) at http://$MCP_HOSTNAME/vmcp-docs/mcp"
-echo " - vMCP Finance gateway (bob/finance, stub) at http://$MCP_HOSTNAME/vmcp-finance/mcp"
-echo " - vMCP Platform-Ops gateway (alice/engineering, composite-tool demo) at http://$MCP_HOSTNAME/vmcp-platform/mcp"
-echo " - Grafana at http://$GRAFANA_HOSTNAME"
+echo ""
+echo "Bootstrap complete."
+echo ""
+echo "User-facing endpoints:"
+echo "  Cloud UI:               https://$UI_HOSTNAME  (self-signed cert)"
+echo "  Keycloak admin:         https://$AUTH_HOSTNAME/admin  (admin/admin)"
+echo "  Registry (auth):        http://$REGISTRY_HOSTNAME/registry/demo-registry"
+echo "  Registry (public):      http://$REGISTRY_HOSTNAME/registry/public"
+echo "  MKP MCP server:         http://$MCP_HOSTNAME/mkp/mcp"
+echo "  vMCP gateways:          http://$MCP_HOSTNAME/{vmcp-infra,vmcp-infra-optimized,vmcp-docs,vmcp-finance,vmcp-platform}/mcp"
+echo "  Grafana:                http://$GRAFANA_HOSTNAME"
+echo ""
+echo "Demo users in the $KC_REALM realm:"
+echo "  demo  / demo   - admin persona (registry superAdmin, sees all tools)"
+echo "  alice / alice  - engineering persona"
+echo "  bob   / bob    - finance persona"
+echo ""
+echo "Point thv at the public registry (no auth):"
+echo "  thv config set-registry http://$REGISTRY_HOSTNAME/registry/public --allow-private-ip"

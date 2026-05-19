@@ -2,7 +2,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: github-local
-  namespace: toolhive-system
+  namespace: mcp-workloads
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/github-local/mcp"
@@ -29,7 +29,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: github-local-mcp-route
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   parentRefs:
     - name: traefik-gateway

@@ -6,6 +6,13 @@ Guidance for Claude Code when working in this repo. Complements `README.md` (use
 
 A self-contained ToolHive-on-Kubernetes demo sandbox driven by `./bootstrap.sh`. Creates a kind cluster, deploys the ToolHive operator + registry server + cloud-UI + Keycloak, plus a set of persona-scoped MCP groups and vMCP gateways. Targets demoing the platform, not production.
 
+## Namespace layout
+
+- `toolhive-system` (platform; settable via `RELEASE_NAMESPACE` in `versions.env`): the ToolHive operator, the MCPRegistry CR + its Postgres + Traefik CA configmap, the cloud-UI Deployment.
+- `mcp-workloads` (hardcoded): every ToolHive workload CR. MCPGroups, MCPServers, MCPRemoteProxies, VirtualMCPServers, EmbeddingServer, MCPTelemetryConfig all live here.
+
+The operator watches cluster-wide and the registry's K8s source defaults to all namespaces, so no extra wiring is needed.
+
 ## Repo layout
 
 ```
@@ -96,7 +103,7 @@ curl -s "http://$REG/registry/demo-registry/v0.1/servers?limit=200" -H "Authoriz
 Inspect vMCP backend discovery:
 
 ```sh
-kubectl get vmcp <name> -n toolhive-system -o jsonpath='{.status.discoveredBackends[*].name}'
+kubectl get vmcp <name> -n mcp-workloads -o jsonpath='{.status.discoveredBackends[*].name}'
 ```
 
 ## Editing checklist

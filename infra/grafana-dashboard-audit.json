@@ -282,7 +282,7 @@
   "templating": {
     "list": [
       {
-        "current": { "selected": true, "text": "toolhive-system", "value": "toolhive-system" },
+        "current": { "selected": true, "text": "mcp-workloads", "value": "mcp-workloads" },
         "datasource": { "type": "loki", "uid": "loki" },
         "definition": "",
         "includeAll": true,

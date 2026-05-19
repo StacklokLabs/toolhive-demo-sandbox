@@ -50,7 +50,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^bootstrap\\.sh$/", "/^addons/.+/deploy\\.sh$/"],
+      "managerFilePatterns": ["/^versions\\.env$/", "/^bootstrap\\.sh$/", "/^addons/.+/deploy\\.sh$/"],
       "matchStrings": [
         "[A-Z_]+=\"(?<currentValue>[^\"]+)\"\\s*#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)(?:\\s+depName=(?<depName>[^\\s]+))?(?:\\s+registryUrl=(?<registryUrl>[^\\s]+))?(?:\\s+versioning=(?<versioning>[^\\s]+))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+))?"
       ],

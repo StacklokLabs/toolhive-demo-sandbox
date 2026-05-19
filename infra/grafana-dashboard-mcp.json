@@ -1435,7 +1435,7 @@
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "max by (k8s_pod_name) (k8s_pod_cpu_usage{k8s_namespace_name=\"toolhive-system\"}) * 100",
+              "expr": "max by (k8s_pod_name) (k8s_pod_cpu_usage{k8s_namespace_name=\"mcp-workloads\"}) * 100",
               "legendFormat": "{{k8s_pod_name}}",
               "range": true,
               "refId": "A"
@@ -1531,7 +1531,7 @@
                 "uid": "prometheus"
               },
               "editorMode": "code",
-              "expr": "sum by (k8s_pod_name) (k8s_pod_memory_usage_bytes{k8s_namespace_name=\"toolhive-system\"})",
+              "expr": "sum by (k8s_pod_name) (k8s_pod_memory_usage_bytes{k8s_namespace_name=\"mcp-workloads\"})",
               "legendFormat": "{{k8s_pod_name}}",
               "range": true,
               "refId": "A"
