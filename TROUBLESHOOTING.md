@@ -169,8 +169,8 @@ kubectl rollout restart deployment/librechat -n librechat
 ## Useful commands
 
 Kubernetes context is the one `kind create cluster` wrote — usually
-`kind-toolhive-demo-in-a-box`. If you've got other clusters in your
-kubeconfig, `kubectl config use-context kind-toolhive-demo-in-a-box`
+`kind-toolhive-demo-sandbox`. If you've got other clusters in your
+kubeconfig, `kubectl config use-context kind-toolhive-demo-sandbox`
 before the snippets below, or point at the repo-local copy with
 `export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml`.
 

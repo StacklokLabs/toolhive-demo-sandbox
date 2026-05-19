@@ -25,7 +25,7 @@ jobs:
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           config: kind-config.yaml
-          cluster_name: toolhive-demo-in-a-box
+          cluster_name: toolhive-demo-sandbox
           cloud_provider: true
 
       - name: Verify cluster is running
