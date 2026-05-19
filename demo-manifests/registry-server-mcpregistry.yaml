@@ -2,7 +2,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRegistry
 metadata:
   name: toolhive-registry
-  namespace: toolhive-system
+  namespace: $RELEASE_NAMESPACE
 spec:
   displayName: ToolHive Demo Registry
 
@@ -128,7 +128,7 @@ spec:
         resourceUrl: https://$REGISTRY_HOSTNAME
         providers:
           - name: keycloak
-            issuerUrl: https://$AUTH_HOSTNAME/realms/toolhive-demo
+            issuerUrl: https://$AUTH_HOSTNAME/realms/$KC_REALM
             audience: toolhive-registry-server
             allowPrivateIP: true
             caCertPath: /etc/ssl/certs/traefik-ca.crt
@@ -242,13 +242,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: toolhive-registry-registry-api
-    namespace: toolhive-system
+    namespace: $RELEASE_NAMESPACE
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: registry-server-route
-  namespace: toolhive-system
+  namespace: $RELEASE_NAMESPACE
   labels:
     app: registry-server
     app.kubernetes.io/component: backend

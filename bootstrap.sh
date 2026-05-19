@@ -189,7 +189,7 @@ echo " ✓"
 
 echo -n "Installing PostgreSQL (registry DB)..."
 run_quiet helm upgrade --install cloudnative-pg cnpg/cloudnative-pg --version "$CLOUDNATIVE_PG_CHART_VERSION" --namespace cnpg-system --create-namespace --wait || die "Failed to install CloudNativePG Operator"
-run_quiet kubectl apply -f infra/registry-server-db.yaml || die "Failed to create PostgreSQL cluster for registry DB"
+run_quiet sh -c "envsubst '\$RELEASE_NAMESPACE' < infra/registry-server-db.yaml | kubectl apply -f -" || die "Failed to create PostgreSQL cluster for registry DB"
 run_quiet kubectl wait --for=condition=Ready cluster/registry-db -n "$RELEASE_NAMESPACE" --timeout=5m || die "PostgreSQL cluster failed to become ready"
 echo " ✓"
 
@@ -246,7 +246,7 @@ echo " ✓"
 run_quiet sh -c "helm -n $RELEASE_NAMESPACE uninstall registry-server 2>/dev/null || true"
 
 echo -n "Applying MCPRegistry (registry server)..."
-run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION \$RELEASE_NAMESPACE \$KC_REALM' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
 run_quiet kubectl -n "$RELEASE_NAMESPACE" wait --for=condition=Ready --timeout=5m mcpregistry/"$REGISTRY_RESOURCE_NAME" || die "MCPRegistry failed to become ready"
 echo " ✓"
 
