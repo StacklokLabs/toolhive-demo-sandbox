@@ -19,7 +19,7 @@ export MCP_HOSTNAME="mcp-${TRAEFIK_HOSTNAME_BASE}"
 echo -n "Creating GitHub token secret..."
 kubectl create secret generic github-local-token \
     --from-literal=token="$GITHUB_PAT" \
-    --namespace toolhive-system \
+    --namespace mcp-workloads \
     --dry-run=client -o yaml | kubectl apply -f - > /dev/null
 echo " done"
 
@@ -28,7 +28,7 @@ run_quiet addon_apply "$ADDON_DIR/mcpserver.yaml"
 echo " done"
 
 echo -n "Waiting for GitHub MCP server..."
-run_quiet addon_wait_ready toolhive-name=github-local toolhive-system
+run_quiet addon_wait_ready toolhive-name=github-local mcp-workloads
 echo " done"
 
 echo ""
