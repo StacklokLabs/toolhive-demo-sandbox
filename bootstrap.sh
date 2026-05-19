@@ -197,6 +197,16 @@ echo -n "Creating Traefik CA ConfigMap for registry server TLS verification..."
 run_quiet sh -c "kubectl get secret sslip-io-tls -n traefik -o jsonpath='{.data.ca\\.crt}' | base64 -d | kubectl create configmap traefik-ca -n $RELEASE_NAMESPACE --from-file=ca.crt=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -" || die "Failed to create Traefik CA ConfigMap"
 echo " ✓"
 
+# MCP/vMCP/MCPGroup workloads live in their own namespace so the operator
+# and registry server (in $RELEASE_NAMESPACE) stay decoupled from user
+# workloads. The operator watches cluster-wide and the registry's K8s
+# source defaults to all namespaces, so this split needs no further config.
+echo -n "Creating mcp-workloads namespace..."
+if ! namespace_exists mcp-workloads; then
+    run_quiet kubectl create namespace mcp-workloads || die "Failed to create mcp-workloads namespace"
+fi
+echo " ✓"
+
 # Install all MCP resources before the Registry Server so its K8s reconciler
 # and git-source syncs run against a steady state — otherwise the burst of
 # reconcile events during initial MCPServer/VirtualMCPServer readiness races
@@ -213,13 +223,13 @@ run_quiet kubectl apply -f demo-manifests/shared-tools.yaml || die "Failed to ap
 run_quiet kubectl apply -f demo-manifests/finance-tools.yaml || die "Failed to apply finance-tools group"
 run_quiet sh -c "envsubst < demo-manifests/mcpserver-mkp.yaml | kubectl apply -f -" || die "Failed to install MKP MCP server"
 # Wait for backend MCPServer and MCPRemoteProxy resources to reach Ready phase
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n "$RELEASE_NAMESPACE" || die "vMCP backend MCPServer resources failed to become ready"
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpremoteproxy -l demo.toolhive.stacklok.dev/vmcp-backend=true -n "$RELEASE_NAMESPACE" || die "vMCP backend MCPRemoteProxy resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpserver -l demo.toolhive.stacklok.dev/vmcp-backend=true -n mcp-workloads || die "vMCP backend MCPServer resources failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m mcpremoteproxy -l demo.toolhive.stacklok.dev/vmcp-backend=true -n mcp-workloads || die "vMCP backend MCPRemoteProxy resources failed to become ready"
 echo " ✓"
 
 echo -n "Applying optimizer EmbeddingServer ($EMBEDDING_IMAGE)..."
 run_quiet sh -c "envsubst < demo-manifests/embedding-server.yaml | kubectl apply -f -" || die "Failed to apply embedding server"
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=10m embeddingserver/optimizer-embedding -n "$RELEASE_NAMESPACE" || die "EmbeddingServer failed to become ready"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=10m embeddingserver/optimizer-embedding -n mcp-workloads || die "EmbeddingServer failed to become ready"
 echo " ✓"
 
 echo -n "Applying persona VirtualMCPServer gateways..."
@@ -250,7 +260,8 @@ run_quiet sh -c "envsubst < infra/grafana-httproute.yaml | kubectl apply -f -" |
 echo " ✓"
 
 echo -n "Waiting for all pods to be ready..."
-run_quiet wait_for_pods_ready "$RELEASE_NAMESPACE" 300 || die "Pods failed to become ready"
+run_quiet wait_for_pods_ready "$RELEASE_NAMESPACE" 300 || die "Pods in $RELEASE_NAMESPACE failed to become ready"
+run_quiet wait_for_pods_ready mcp-workloads 300 || die "Pods in mcp-workloads failed to become ready"
 echo " ✓"
 
 # Validate registry by fetching a token and querying the server list

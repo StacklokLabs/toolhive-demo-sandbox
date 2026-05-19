@@ -4,7 +4,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPTelemetryConfig
 metadata:
   name: shared-otel
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   openTelemetry:
     enabled: true

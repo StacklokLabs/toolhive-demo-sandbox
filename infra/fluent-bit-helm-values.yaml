@@ -12,10 +12,10 @@ config:
     [INPUT]
         Name              tail
         Tag               kube.*
-        # Target only the toolhive (MCP proxy) and vmcp (Virtual MCP) containers in toolhive-system.
+        # Target only the toolhive (MCP proxy) and vmcp (Virtual MCP) containers in mcp-workloads.
         # Both emit structured JSON covering audit events and application logs.
         # /var/log/containers symlinks use the naming convention FluentBit's kubernetes filter expects.
-        Path              /var/log/containers/*_toolhive-system_toolhive-*.log,/var/log/containers/*_toolhive-system_vmcp-*.log
+        Path              /var/log/containers/*_mcp-workloads_toolhive-*.log,/var/log/containers/*_mcp-workloads_vmcp-*.log
         Parser            cri
         DB                /var/log/flb-toolhive.db
         Mem_Buf_Limit     5MB

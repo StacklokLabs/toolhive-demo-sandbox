@@ -4,7 +4,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPGroup
 metadata:
   name: shared-tools
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   description: Docs/fetch helpers available to all personas
 ---
@@ -12,7 +12,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: fetch
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
@@ -32,7 +32,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: context7
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
@@ -55,7 +55,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRemoteProxy
 metadata:
   name: toolhive-docs
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
   annotations:

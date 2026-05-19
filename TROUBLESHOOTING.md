@@ -143,8 +143,8 @@ curl -s "http://$REG/registry/demo-registry/v0.1/servers?limit=200" \
 
 ```sh
 kubectl get mcpserver,mcpremoteproxy,vmcp -A | grep -vE "Ready|Running"
-kubectl describe <kind>/<name> -n toolhive-system | tail -30
-kubectl get pods -n toolhive-system | grep -vE "Running|Completed"
+kubectl describe <kind>/<name> -n mcp-workloads | tail -30
+kubectl get pods -n mcp-workloads | grep -vE "Running|Completed"
 ```
 
 For pull errors, check disk (`docker system df`) and consider `docker
@@ -250,14 +250,14 @@ what the operator actually handed the vmcp binary is to read the
 generated ConfigMap:
 
 ```sh
-kubectl get configmap <vmcp-name>-vmcp-config -n toolhive-system \
+kubectl get configmap <vmcp-name>-vmcp-config -n mcp-workloads \
     -o jsonpath='{.data.config\.yaml}'
 ```
 
 ### List a vMCP's discovered backends
 
 ```sh
-kubectl get vmcp <vmcp-name> -n toolhive-system \
+kubectl get vmcp <vmcp-name> -n mcp-workloads \
     -o jsonpath='{.status.discoveredBackends[*].name}'
 ```
 

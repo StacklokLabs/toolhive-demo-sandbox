@@ -2,7 +2,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: mkp
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
   annotations:
@@ -32,7 +32,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: mkp-sa
-  namespace: toolhive-system
+  namespace: mcp-workloads
 ---
 # NOTE: This ClusterRoleBinding uses cluster-admin for example purposes only.
 # In production, you should create a custom ClusterRole with the minimum
@@ -44,7 +44,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: mkp-sa
-    namespace: toolhive-system
+    namespace: mcp-workloads
 roleRef:
   kind: ClusterRole
   name: cluster-admin
@@ -54,7 +54,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: mkp-mcp-route
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   parentRefs:
     - name: traefik-gateway

@@ -17,7 +17,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPCompositeToolDefinition
 metadata:
   name: composite-tool-audit-image-supply-chain
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   name: audit_image_supply_chain
   description: |
@@ -147,7 +147,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPCompositeToolDefinition
 metadata:
   name: composite-tool-mcp-server-pulse
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   name: mcp_server_pulse
   description: |
@@ -165,7 +165,7 @@ spec:
       namespace:
         type: string
         description: Kubernetes namespace where the server runs
-        default: toolhive-system
+        default: mcp-workloads
     required:
       - server_name
   timeout: 2m
@@ -240,7 +240,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: VirtualMCPServer
 metadata:
   name: vmcp-platform
-  namespace: toolhive-system
+  namespace: mcp-workloads
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "http://$MCP_HOSTNAME/vmcp-platform/mcp"
@@ -312,7 +312,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: vmcp-platform-route
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   parentRefs:
     - name: traefik-gateway

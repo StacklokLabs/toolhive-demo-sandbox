@@ -4,7 +4,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPGroup
 metadata:
   name: infra-tools
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   description: Platform/infra tools for the engineering persona
 ---
@@ -12,7 +12,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: prometheus
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
@@ -41,7 +41,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: grafana
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
@@ -67,7 +67,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: osv
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
@@ -87,7 +87,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
   name: oci-registry
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
