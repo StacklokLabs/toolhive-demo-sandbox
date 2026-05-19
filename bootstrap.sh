@@ -72,9 +72,10 @@ fi
 run_quiet sh -c "kind get kubeconfig --name ${CLUSTER_NAME} > ${KUBECONFIG_FILE}" || die "Failed to get kubeconfig"
 export KUBECONFIG=$(pwd)/${KUBECONFIG_FILE}
 
-# Traefik chart installs Gateway API CRDs automatically, installing them separately breaks things.
-# echo "Installing Gateway API..."
-# kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+# Traefik chart no longer installs the Gateway API CRDs by default, so install them up front to ensure they're available before Traefik lands
+echo -n "Installing Gateway API..."
+run_quiet kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/${GATEWAY_API_VERSION}/standard-install.yaml || die "Failed to install Gateway API"
+echo " ✓"
 
 # Add Helm repos and update
 echo -n "Adding Helm repositories..."
