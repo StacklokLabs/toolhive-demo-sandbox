@@ -1,12 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: cloud-ui
 spec:
   template:
     spec:
       containers:
-        - name: cloud-ui
+        - name: ${CLOUD_UI_CONTAINER}
           env:
             - name: OPENROUTER_API_KEY
               valueFrom:

@@ -4,8 +4,8 @@ Patches the ToolHive Cloud UI deployment to add an OpenRouter API key, enabling 
 
 ## What it does
 
-- Creates an OpenRouter API key secret in the release namespace (`toolhive-system` by default)
-- Patches the existing cloud-ui Deployment to inject the key as an environment variable
+- Creates an OpenRouter API key secret in `$RELEASE_NAMESPACE` (see `versions.env`)
+- Detects the cloud-ui Deployment (Stacklok Enterprise chart or the OSS standalone manifest) and patches it to inject the key as an environment variable
 - Cloud UI restarts automatically to pick up the change
 
 ## Prerequisites
