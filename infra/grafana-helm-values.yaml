@@ -4,7 +4,7 @@ grafana.ini:
   org:
     name: Stacklok
   dashboards:
-    default_home_dashboard_path: /var/lib/grafana/dashboards/default/toolhive-mcp.json
+    default_home_dashboard_path: /var/lib/grafana/dashboards/default/mcp-observability.json
 
 env:
   GF_AUTH_ANONYMOUS_ENABLED: true
