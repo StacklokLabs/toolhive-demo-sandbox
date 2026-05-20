@@ -197,7 +197,7 @@ spec:
       arguments:
         query: 'sum by (action) (rate(toolhive_vmcp_backend_requests_total{target_workload_name="{{.params.server_name}}"}[15m]))'
     # The demo cluster ships three cluster-wide ToolHive dashboards
-    # (toolhive-mcp, toolhive-audit-log, toolhive-registry) and no per-server
+    # (mcp-observability, audit-log, registry-server) and no per-server
     # dashboards. Searching by server name would always return 0 — instead
     # return the operational dashboards that include this server's traffic.
     - id: dashboards

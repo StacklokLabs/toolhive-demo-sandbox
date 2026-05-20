@@ -129,7 +129,7 @@ spec:
         providers:
           - name: keycloak
             issuerUrl: https://$AUTH_HOSTNAME/realms/$KC_REALM
-            audience: toolhive-registry-server
+            audience: registry-server
             allowPrivateIP: true
             caCertPath: /etc/ssl/certs/traefik-ca.crt
       authz:
@@ -141,7 +141,7 @@ spec:
 
     telemetry:
       enabled: true
-      serviceName: toolhive-registry-server
+      serviceName: ${REGISTRY_RESOURCE_NAME}-server
       endpoint: mcp-collector.observability:4318
       insecure: true
       metrics:

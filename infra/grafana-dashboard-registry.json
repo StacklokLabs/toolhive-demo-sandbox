@@ -27,9 +27,9 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "ToolHive Observability",
+      "title": "MCP Observability",
       "type": "link",
-      "url": "/d/toolhive-mcp-observability"
+      "url": "/d/mcp-observability"
     },
     {
       "asDropdown": false,
@@ -40,7 +40,7 @@
       "targetBlank": false,
       "title": "Audit Log",
       "type": "link",
-      "url": "/d/toolhive-audit-log"
+      "url": "/d/audit-log"
     }
   ],
   "panels": [
@@ -754,6 +754,6 @@
   "timepicker": {},
   "timezone": "",
   "title": "ToolHive Registry Server",
-  "uid": "toolhive-registry-server",
+  "uid": "registry-server",
   "version": 1
 }
