@@ -6,6 +6,13 @@ Guidance for Claude Code when working in this repo. Complements `README.md` (use
 
 A self-contained ToolHive-on-Kubernetes demo sandbox driven by `./bootstrap.sh`. Creates a kind cluster, deploys the ToolHive operator + registry server + cloud-UI + Keycloak, plus a set of persona-scoped MCP groups and vMCP gateways. Targets demoing the platform, not production.
 
+## Namespace layout
+
+- `toolhive-system` (platform; settable via `RELEASE_NAMESPACE` in `versions.env`): the ToolHive operator, the MCPRegistry CR + its Postgres + Traefik CA configmap, the cloud-UI Deployment.
+- `mcp-workloads` (hardcoded): every ToolHive workload CR. MCPGroups, MCPServers, MCPRemoteProxies, VirtualMCPServers, EmbeddingServer, MCPTelemetryConfig all live here.
+
+The operator watches cluster-wide and the registry's K8s source defaults to all namespaces, so no extra wiring is needed.
+
 ## Repo layout
 
 ```
@@ -30,12 +37,13 @@ Current shape (as of this writing — grep the manifests to confirm):
 
 | MCPGroup | Backends | vMCP front-end | Audience |
 |---|---|---|---|
-| `infra-tools` | prometheus, grafana, osv, oci-registry, mkp | `vmcp-infra`, `vmcp-infra-optimized` | engineering |
+| `infra-tools` | prometheus, grafana, osv, oci-registry, mkp | `vmcp-infra`, `vmcp-infra-optimized`, `vmcp-platform` | engineering |
 | `shared-tools` | fetch, context7, toolhive-docs (MCPRemoteProxy) | `vmcp-docs` | everyone |
 | `finance-tools` | finance-fetch (stub) | `vmcp-finance` | finance |
-| `research-tools` | arxiv | `vmcp-research` | everyone |
 
-A single MCPServer/MCPRemoteProxy belongs to exactly one MCPGroup. Multiple vMCPs can share a groupRef (e.g. `vmcp-infra` and `vmcp-infra-optimized` both aggregate `infra-tools`).
+A single MCPServer/MCPRemoteProxy belongs to exactly one MCPGroup. Multiple vMCPs can share a groupRef (e.g. `vmcp-infra`, `vmcp-infra-optimized`, and `vmcp-platform` all aggregate `infra-tools`).
+
+`vmcp-platform` is the composite-tool showcase: same backends as `vmcp-infra` but exposes a curated tool set plus two high-level workflows — `audit_image_supply_chain` (parallel + forEach across the OCI registry tools, demonstrating attestation discovery and fan-out fetch) and `mcp_server_pulse` (pure parallel fan-out across mkp + Prometheus + Grafana for a single-call health snapshot of any ToolHive MCP server).
 
 ## Annotations that matter
 
@@ -83,8 +91,8 @@ Get a bearer token and hit the authenticated registry as `demo`:
 ```sh
 export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml
 TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o jsonpath='{.status.addresses[0].value}')
-AUTH=auth-${TRAEFIK_IP//./-}.traefik.me
-REG=registry-${TRAEFIK_IP//./-}.traefik.me
+AUTH=auth-${TRAEFIK_IP//./-}.sslip.io
+REG=registry-${TRAEFIK_IP//./-}.sslip.io
 TOKEN=$(curl -sk -X POST "https://$AUTH/realms/toolhive-demo/protocol/openid-connect/token" \
   -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
@@ -95,7 +103,7 @@ curl -s "http://$REG/registry/demo-registry/v0.1/servers?limit=200" -H "Authoriz
 Inspect vMCP backend discovery:
 
 ```sh
-kubectl get vmcp <name> -n toolhive-system -o jsonpath='{.status.discoveredBackends[*].name}'
+kubectl get vmcp <name> -n mcp-workloads -o jsonpath='{.status.discoveredBackends[*].name}'
 ```
 
 ## Editing checklist

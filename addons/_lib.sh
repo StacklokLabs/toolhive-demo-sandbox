@@ -14,9 +14,13 @@ REPO_ROOT="$(cd "$ADDONS_ROOT/.." && pwd)"
 # Source repo helpers (run_quiet, die, wait_for_pods_ready, etc.)
 . "$REPO_ROOT/helpers.sh"
 
+# Source identity vars (CLUSTER_NAME, KUBECONFIG_FILE, RELEASE_NAMESPACE, ...)
+# so addons can reference them without re-deriving.
+. "$REPO_ROOT/versions.env"
+
 # Use the demo kubeconfig if it exists
-if [ -f "$REPO_ROOT/kubeconfig-toolhive-demo.yaml" ]; then
-    export KUBECONFIG="$REPO_ROOT/kubeconfig-toolhive-demo.yaml"
+if [ -f "$REPO_ROOT/$KUBECONFIG_FILE" ]; then
+    export KUBECONFIG="$REPO_ROOT/$KUBECONFIG_FILE"
 fi
 
 # Load .env — addon-local first, then repo root fallback
@@ -48,7 +52,7 @@ addon_resolve_traefik() {
     if [ -z "$TRAEFIK_IP" ]; then
         die "Could not resolve Traefik Gateway IP. Is the demo cluster running?"
     fi
-    TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.traefik.me"
+    TRAEFIK_HOSTNAME_BASE="${TRAEFIK_IP//./-}.sslip.io"
     echo " $TRAEFIK_IP"
 }
 

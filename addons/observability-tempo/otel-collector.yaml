@@ -1,3 +1,6 @@
+# Full OTel collector config with the Tempo exporter wired into the traces
+# pipeline. Applied by deploy.sh; teardown.sh re-applies the slim core variant
+# at infra/otel-collector.yaml.
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
@@ -20,19 +23,20 @@ spec:
         timeout: 5s
 
     exporters:
+      otlp/tempo:
+        endpoint: tempo:4317
+        tls:
+          insecure: true
       prometheus:
         endpoint: 0.0.0.0:8889
       debug: {}
 
-    # Traces pipeline accepts OTLP and drops to debug so MCP servers don't see
-    # receiver errors. The observability-tempo addon overlays this resource to
-    # add an OTLP exporter pointing at Tempo.
     service:
       pipelines:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [debug]
+          exporters: [otlp/tempo, debug]
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]

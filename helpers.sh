@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Common helper functions for ToolHive demo-in-a-box scripts
+# Common helper functions for the ToolHive demo sandbox scripts.
 
 # Enable debug mode with DEBUG=1 environment variable
 DEBUG=${DEBUG:-0}

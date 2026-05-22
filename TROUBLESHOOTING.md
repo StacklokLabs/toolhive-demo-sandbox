@@ -22,7 +22,7 @@ verbose output, then `./validate.sh` to re-check endpoint health.
 ### Browser warning: "Your connection is not private"
 
 **Why.** Traefik fronts the sandbox with a self-signed wildcard cert for
-`*.traefik.me`. That lets us have an HTTPS demo without a public DNS / CA
+`*.sslip.io`. That lets us have an HTTPS demo without a public DNS / CA
 story, at the cost of a cert warning on first visit to each hostname.
 
 **Fix.** Click through the warning once per hostname (auth, ui, chat,
@@ -56,7 +56,7 @@ kubectl get gateway -n traefik traefik-gateway \
 
 **Why.** Keycloak's realm is imported from `infra/keycloak.yaml` with
 redirect URIs baked in for whatever Traefik LB IP was live at bootstrap
-time (e.g. `172-19-0-3.traefik.me`). The realm persists on the
+time (e.g. `172-19-0-3.sslip.io`). The realm persists on the
 `keycloak-h2-data` PVC, so `--import-realm` is a no-op on subsequent
 runs. If the Traefik IP drifts between bootstraps — typically because
 `cloud-provider-kind` was restarted and handed out a different address
@@ -143,8 +143,8 @@ curl -s "http://$REG/registry/demo-registry/v0.1/servers?limit=200" \
 
 ```sh
 kubectl get mcpserver,mcpremoteproxy,vmcp -A | grep -vE "Ready|Running"
-kubectl describe <kind>/<name> -n toolhive-system | tail -30
-kubectl get pods -n toolhive-system | grep -vE "Running|Completed"
+kubectl describe <kind>/<name> -n mcp-workloads | tail -30
+kubectl get pods -n mcp-workloads | grep -vE "Running|Completed"
 ```
 
 For pull errors, check disk (`docker system df`) and consider `docker
@@ -169,18 +169,18 @@ kubectl rollout restart deployment/librechat -n librechat
 ## Useful commands
 
 Kubernetes context is the one `kind create cluster` wrote — usually
-`kind-toolhive-demo-in-a-box`. If you've got other clusters in your
-kubeconfig, `kubectl config use-context kind-toolhive-demo-in-a-box`
+`kind-toolhive-demo-sandbox`. If you've got other clusters in your
+kubeconfig, `kubectl config use-context kind-toolhive-demo-sandbox`
 before the snippets below, or point at the repo-local copy with
 `export KUBECONFIG=$(pwd)/kubeconfig-toolhive-demo.yaml`.
 
 Every snippet assumes the hostname preamble:
 
 ```sh
-# Derive the current hostnames (everything is IP-based via traefik.me).
+# Derive the current hostnames (everything is IP-based via sslip.io).
 TRAEFIK_IP=$(kubectl get gateways -n traefik traefik-gateway \
     -o jsonpath='{.status.addresses[0].value}')
-BASE=${TRAEFIK_IP//./-}.traefik.me
+BASE=${TRAEFIK_IP//./-}.sslip.io
 AUTH=auth-$BASE       # Keycloak
 REG=registry-$BASE    # Registry server
 UI=ui-$BASE           # Cloud UI
@@ -250,14 +250,14 @@ what the operator actually handed the vmcp binary is to read the
 generated ConfigMap:
 
 ```sh
-kubectl get configmap <vmcp-name>-vmcp-config -n toolhive-system \
+kubectl get configmap <vmcp-name>-vmcp-config -n mcp-workloads \
     -o jsonpath='{.data.config\.yaml}'
 ```
 
 ### List a vMCP's discovered backends
 
 ```sh
-kubectl get vmcp <vmcp-name> -n toolhive-system \
+kubectl get vmcp <vmcp-name> -n mcp-workloads \
     -o jsonpath='{.status.discoveredBackends[*].name}'
 ```
 

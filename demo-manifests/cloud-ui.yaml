@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cloud-ui
-  namespace: toolhive-system
+  namespace: $RELEASE_NAMESPACE
   labels:
     app: cloud-ui
     app.kubernetes.io/component: frontend
@@ -21,7 +21,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloud-ui
-  namespace: toolhive-system
+  namespace: $RELEASE_NAMESPACE
   labels:
     app: cloud-ui
     app.kubernetes.io/component: frontend
@@ -56,7 +56,7 @@ spec:
               protocol: TCP
           env:
             - name: API_BASE_URL
-              value: http://toolhive-registry-api.toolhive-system:8080
+              value: http://${REGISTRY_RESOURCE_NAME}-api.$RELEASE_NAMESPACE:8080
             # Better Auth configuration
             - name: BETTER_AUTH_SECRET
               value: demo-secret-change-in-production
@@ -64,13 +64,11 @@ spec:
               value: https://$UI_HOSTNAME
             # OIDC configuration (Keycloak)
             - name: OIDC_ISSUER_URL
-              value: https://$AUTH_HOSTNAME/realms/toolhive-demo
+              value: https://$AUTH_HOSTNAME/realms/$KC_REALM
             - name: OIDC_CLIENT_ID
               value: toolhive-cloud-ui
             - name: OIDC_CLIENT_SECRET
               value: cloud-ui-secret-change-in-production
-            - name: OIDC_PROVIDER_ID
-              value: keycloak
             - name: NODE_ENV
               value: development
             # Allow self-signed certificates (demo/dev only)
@@ -123,7 +121,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: ui-route
-  namespace: toolhive-system
+  namespace: $RELEASE_NAMESPACE
   labels:
     app: cloud-ui
     app.kubernetes.io/component: frontend
@@ -149,7 +147,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: ui-http-redirect
-  namespace: toolhive-system
+  namespace: $RELEASE_NAMESPACE
   labels:
     app: cloud-ui
     app.kubernetes.io/component: frontend

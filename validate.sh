@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Validation script for ToolHive demo-in-a-box environment
-# Reads demo-endpoints.json and validates all deployed services
+# Validation script for the ToolHive demo sandbox environment.
+# Reads demo-endpoints.json and validates all deployed services.
 
 ENDPOINTS_FILE="demo-endpoints.json"
 FAILED_TESTS=0

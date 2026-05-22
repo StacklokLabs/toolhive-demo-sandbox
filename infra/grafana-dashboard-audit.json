@@ -24,9 +24,9 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "ToolHive Observability",
+      "title": "MCP Observability",
       "type": "link",
-      "url": "/d/toolhive-mcp-observability"
+      "url": "/d/mcp-observability"
     },
     {
       "asDropdown": false,
@@ -37,7 +37,7 @@
       "targetBlank": false,
       "title": "Registry Server",
       "type": "link",
-      "url": "/d/toolhive-registry-server"
+      "url": "/d/registry-server"
     }
   ],
   "panels": [
@@ -282,7 +282,7 @@
   "templating": {
     "list": [
       {
-        "current": { "selected": true, "text": "toolhive-system", "value": "toolhive-system" },
+        "current": { "selected": true, "text": "mcp-workloads", "value": "mcp-workloads" },
         "datasource": { "type": "loki", "uid": "loki" },
         "definition": "",
         "includeAll": true,
@@ -352,6 +352,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "ToolHive Audit Log",
-  "uid": "toolhive-audit-log",
+  "uid": "audit-log",
   "version": 1
 }

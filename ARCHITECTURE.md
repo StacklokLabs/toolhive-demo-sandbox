@@ -49,7 +49,7 @@ graph TB
   Gateway -->|/registry/*| Reg
   Gateway -->|/vmcp-*, /mkp/*| Workloads
   Gateway -->|/auth| KC
-  Gateway -->|grafana-*.traefik.me| Graf
+  Gateway -->|grafana-*.sslip.io| Graf
 
   UI -->|OIDC| KC
   Reg -->|validate Bearer| KC
@@ -85,7 +85,6 @@ graph LR
 
   subgraph SharedGateways[everyone-gated]
     vmcpDocs[vmcp-docs]
-    vmcpResearch[vmcp-research]
   end
 
   subgraph FinGateways[finance-gated]
@@ -94,25 +93,20 @@ graph LR
 
   InfraTools[(infra-tools<br/>prometheus · grafana<br/>osv · oci-registry · mkp)]
   SharedTools[(shared-tools<br/>fetch · context7<br/>toolhive-docs proxy)]
-  ResearchTools[(research-tools<br/>arxiv)]
   FinTools[(finance-tools<br/>finance-fetch)]
 
   alice --> vmcpInfra
   alice --> vmcpOpt
   alice --> vmcpDocs
-  alice --> vmcpResearch
   bob --> vmcpDocs
-  bob --> vmcpResearch
   bob --> vmcpFin
   demo -.all.-> vmcpInfra
   demo -.all.-> vmcpDocs
   demo -.all.-> vmcpFin
-  demo -.all.-> vmcpResearch
 
   vmcpInfra --> InfraTools
   vmcpOpt --> InfraTools
   vmcpDocs --> SharedTools
-  vmcpResearch --> ResearchTools
   vmcpFin --> FinTools
 ```
 
