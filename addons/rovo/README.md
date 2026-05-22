@@ -21,7 +21,7 @@ The DCR discovery document at `https://mcp.atlassian.com/.well-known/oauth-autho
 
 - A Rovo-licensed Atlassian Cloud site (the MCP server requires Rovo to be enabled).
 - Demo cluster running with Traefik exposed (the bootstrap script handles this).
-- Auth server callback domain allowlisted at `https://admin.atlassian.com/` -> "Rovo" -> "Rovo MCP Server" (e.g. `https://rovo-mcp-172-19-0-4.traefik.me/**`).
+- Auth server callback domain allowlisted at `https://admin.atlassian.com/` -> "Rovo" -> "Rovo MCP Server" (e.g. `https://rovo-mcp-172-19-0-3.sslip.io/**`).
 
 That's it — no developer console app, no client ID, no client secret.
 
@@ -37,7 +37,7 @@ bash addons/rovo/teardown.sh
 
 ## Connecting with Claude Code
 
-The proxy is served over HTTPS via Traefik's traefik.me wildcard certificate. Node.js does not trust this CA by default, so launch Claude with TLS verification disabled:
+The proxy is served over HTTPS via Traefik's sslip.io wildcard certificate. Node.js does not trust this CA by default, so launch Claude with TLS verification disabled:
 
 ```bash
 NODE_TLS_REJECT_UNAUTHORIZED=0 claude

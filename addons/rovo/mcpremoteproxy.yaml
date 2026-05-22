@@ -24,7 +24,7 @@
 # │ ENVIRONMENT VARIABLES                                               │
 # │                                                                     │
 # │   $ROVO_MCP_HOSTNAME   Traefik ingress hostname for this proxy      │
-# │                        (e.g. rovo-mcp-172-19-0-5.traefik.me)        │
+# │                        (e.g. rovo-mcp-172-19-0-3.sslip.io)          │
 # │                                                                     │
 # │ No Atlassian client credentials are needed — DCR handles            │
 # │ registration at runtime against the MCP server's OAuth metadata.    │
