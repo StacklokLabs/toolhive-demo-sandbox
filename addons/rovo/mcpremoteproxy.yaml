@@ -39,7 +39,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPExternalAuthConfig
 metadata:
   name: rovo-mcp-eas
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   type: embeddedAuthServer
   embeddedAuthServer:
@@ -75,7 +75,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPOIDCConfig
 metadata:
   name: rovo-mcp-oidc
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   type: inline
   inline:
@@ -93,7 +93,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRemoteProxy
 metadata:
   name: rovo-mcp-proxy
-  namespace: toolhive-system
+  namespace: mcp-workloads
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "https://$ROVO_MCP_HOSTNAME/mcp"
@@ -113,6 +113,10 @@ spec:
     audience: https://$ROVO_MCP_HOSTNAME/mcp
     resourceUrl: https://$ROVO_MCP_HOSTNAME/mcp
 
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: github-local-server
+
   audit:
     enabled: true
 
@@ -130,7 +134,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: rovo-mcp-proxy-route
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   parentRefs:
     - name: traefik-gateway
