@@ -1,6 +1,7 @@
 .env
 kubeconfig-toolhive-demo.yaml
 demo-endpoints.json
+traefik-ca.crt
 local-demos/*
 !local-demos/.gitkeep
 
