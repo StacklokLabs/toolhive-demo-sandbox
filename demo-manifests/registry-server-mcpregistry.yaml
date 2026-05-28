@@ -138,6 +138,8 @@ spec:
           # block as non-nil, which enables per-entry claims-based filtering.
           superAdmin:
             - preferred_username: demo
+          manageEntries:
+            - groups: engineering
 
     telemetry:
       enabled: true
