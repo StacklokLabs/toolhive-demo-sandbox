@@ -295,6 +295,19 @@ cat > demo-endpoints.json <<EOF
   "base_hostname": "$TRAEFIK_HOSTNAME_BASE",
   "endpoints": [
     {
+      "name": "Keycloak",
+      "url": "https://$AUTH_HOSTNAME",
+      "type": "https",
+      "expect_cert_error": true,
+      "healthcheck_path": "/realms/$KC_REALM/.well-known/openid-configuration"
+    },
+    {
+      "name": "Grafana",
+      "url": "http://$GRAFANA_HOSTNAME",
+      "type": "http",
+      "healthcheck_path": "/api/health"
+    },
+    {
       "name": "Cloud UI",
       "url": "https://$UI_HOSTNAME",
       "type": "https",
@@ -348,12 +361,6 @@ cat > demo-endpoints.json <<EOF
       "type": "mcp",
       "test_with_thv": true,
       "healthcheck_path": "/vmcp-platform/health"
-    },
-    {
-      "name": "Grafana",
-      "url": "http://$GRAFANA_HOSTNAME",
-      "type": "http",
-      "healthcheck_path": "/api/health"
     }
   ]
 }
