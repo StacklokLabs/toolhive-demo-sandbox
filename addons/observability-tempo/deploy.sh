@@ -1,7 +1,7 @@
 #!/bin/bash
 . "$(dirname "$0")/../_lib.sh"
 
-TEMPO_CHART_VERSION="2.1.2" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
+TEMPO_CHART_VERSION="2.2.0" # renovate: datasource=helm depName=tempo registryUrl=https://grafana-community.github.io/helm-charts
 
 # Tempo lives in the observability namespace alongside the rest of the stack
 # so the Grafana datasource and OTel collector resolve `tempo` by short name.
