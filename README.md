@@ -114,7 +114,7 @@ Run the `./cleanup.sh` script to delete the cluster.
 
 ## Development: loading a local ToolHive build
 
-`./dev-reload.sh` builds the operator / proxyrunner / vMCP images from a local
+`./scripts/dev-reload.sh` builds the operator / proxyrunner / vMCP images from a local
 ToolHive checkout, retags them to match the demo's expected image refs, loads
 them into the kind cluster, and restarts affected pods so new code takes
 effect.
@@ -126,10 +126,10 @@ Requires [`ko`](https://ko.build), [`task`](https://taskfile.dev), `docker`,
 # Point at your local toolhive checkout (default: ../toolhive or ../../stacklok/toolhive)
 export TOOLHIVE_SRC=~/path/to/toolhive
 
-./dev-reload.sh                 # rebuild & reload all three (default)
-./dev-reload.sh --operator      # operator only
-./dev-reload.sh --proxyrunner   # MCPServer / MCPRemoteProxy pods
-./dev-reload.sh --vmcp          # VirtualMCPServer pods
+./scripts/dev-reload.sh                 # rebuild & reload all three (default)
+./scripts/dev-reload.sh --operator      # operator only
+./scripts/dev-reload.sh --proxyrunner   # MCPServer / MCPRemoteProxy pods
+./scripts/dev-reload.sh --vmcp          # VirtualMCPServer pods
 ```
 
 ### When to run it

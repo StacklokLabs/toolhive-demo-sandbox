@@ -12,7 +12,7 @@ ADDONS_ROOT="$(cd "$ADDON_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$ADDONS_ROOT/.." && pwd)"
 
 # Source repo helpers (run_quiet, die, wait_for_pods_ready, etc.)
-. "$REPO_ROOT/helpers.sh"
+. "$REPO_ROOT/scripts/helpers.sh"
 
 # Source identity vars (CLUSTER_NAME, KUBECONFIG_FILE, RELEASE_NAMESPACE, ...)
 # so addons can reference them without re-deriving.

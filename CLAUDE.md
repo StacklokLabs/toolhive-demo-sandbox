@@ -16,11 +16,13 @@ The operator watches cluster-wide and the registry's K8s source defaults to all 
 ## Repo layout
 
 ```
+demo.sh                    # front door: interactive TUI (gum) or plain CLI over the scripts below
 bootstrap.sh               # one-shot cluster bring-up; idempotent
 cleanup.sh                 # tears down the kind cluster
 validate.sh                # post-bootstrap endpoint checks (reads demo-endpoints.json)
-helpers.sh                 # run_quiet / die / wait_for_pods_ready
 kind-config.yaml           # kind cluster definition
+versions.env               # pins + identity vars (CLUSTER_NAME, etc.); sourced by the scripts
+scripts/                   # supporting shell: helpers.sh (run_quiet/die/wait_for_pods_ready), dev-reload, export-traefik-cert
 infra/                     # cluster-level infra: traefik, o11y, keycloak, registry DB
 demo-manifests/            # ToolHive resources (MCPGroups, MCPServers, vMCPs, registry config)
 addons/                    # opt-in extras (librechat, cloud-ui-openrouter, vmcp-infra-okta, ...)

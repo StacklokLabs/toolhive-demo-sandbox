@@ -5,8 +5,8 @@ set -e
 # affected pods so the demo picks up your changes.
 #
 # Usage:
-#   ./dev-reload.sh [--crds] [--operator] [--proxyrunner] [--vmcp] [--all]
-#   TOOLHIVE_SRC=~/path/to/toolhive ./dev-reload.sh
+#   ./scripts/dev-reload.sh [--crds] [--operator] [--proxyrunner] [--vmcp] [--all]
+#   TOOLHIVE_SRC=~/path/to/toolhive ./scripts/dev-reload.sh
 #
 # Flags (default: --all):
 #   --crds          Helm-upgrade the operator CRDs from the local chart
@@ -17,24 +17,29 @@ set -e
 #
 # Requires:
 #   - TOOLHIVE_SRC env var pointing to the toolhive repo checkout
-#     (defaults to ../toolhive relative to this script)
+#     (defaults to ../toolhive relative to the repo root)
 #   - ko (https://ko.build)
 #   - task (https://taskfile.dev)
 #   - kind, kubectl, docker
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "$SCRIPT_DIR/helpers.sh"
+. "$REPO_ROOT/versions.env"   # CLUSTER_NAME
 
 # Resolve TOOLHIVE_SRC. Try, in order: the env var (if set), then a couple
 # of common checkout locations. The resolved path is printed below so it is
 # obvious which clone we are building from — silently building from a
 # stale path is the failure mode we are guarding against.
-TOOLHIVE_SRC="${TOOLHIVE_SRC:-$(cd "$SCRIPT_DIR/../../stacklok/toolhive" 2>/dev/null && pwd)}"
+# The `|| true` guards keep `set -e` from killing the script when a candidate
+# path is absent (a failed command substitution in a bare assignment is fatal
+# under set -e); we want the explicit "not found" die below to run instead.
+TOOLHIVE_SRC="${TOOLHIVE_SRC:-$(cd "$REPO_ROOT/../../stacklok/toolhive" 2>/dev/null && pwd || true)}"
 if [ -z "$TOOLHIVE_SRC" ] || [ ! -d "$TOOLHIVE_SRC" ]; then
-    TOOLHIVE_SRC="$(cd "$SCRIPT_DIR/../toolhive" 2>/dev/null && pwd)"
+    TOOLHIVE_SRC="$(cd "$REPO_ROOT/../toolhive" 2>/dev/null && pwd || true)"
 fi
-KIND_CLUSTER="toolhive-demo-in-a-box"
-KUBECONFIG_FILE="$SCRIPT_DIR/kubeconfig-toolhive-demo.yaml"
+KIND_CLUSTER="$CLUSTER_NAME"
+KUBECONFIG_FILE="$REPO_ROOT/kubeconfig-toolhive-demo.yaml"
 
 if [ -z "$TOOLHIVE_SRC" ] || [ ! -d "$TOOLHIVE_SRC" ]; then
     die "ToolHive source not found — set TOOLHIVE_SRC to the repo path"
