@@ -166,7 +166,7 @@ if $UPDATE_CRDS; then
         die "CRD chart not found at $CRDS_CHART"
     fi
     echo -n "Upgrading ToolHive CRDs from $CRDS_CHART..."
-    run_quiet helm upgrade --install toolhive-operator-crds "$CRDS_CHART" --wait
+    run_quiet helm upgrade --install toolhive-operator-crds "$CRDS_CHART" --namespace toolhive-system --create-namespace --wait
     echo " ✓"
 fi
 
