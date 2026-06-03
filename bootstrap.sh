@@ -121,7 +121,7 @@ echo " ✓"
 
 # Reference: https://docs.stacklok.com/toolhive/tutorials/quickstart-k8s
 echo -n "Installing ToolHive Operator..."
-run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --wait || die "Failed to install ToolHive Operator CRDs"
+run_quiet helm upgrade --install toolhive-operator-crds oci://ghcr.io/stacklok/toolhive/toolhive-operator-crds --version "$TOOLHIVE_OPERATOR_CRDS_CHART_VERSION" --namespace "$RELEASE_NAMESPACE" --create-namespace --wait || die "Failed to install ToolHive Operator CRDs"
 run_quiet helm upgrade --install toolhive-operator oci://ghcr.io/stacklok/toolhive/toolhive-operator --version "$TOOLHIVE_OPERATOR_CHART_VERSION" --namespace "$RELEASE_NAMESPACE" --create-namespace --wait || die "Failed to install ToolHive Operator"
 echo " ✓"
 
