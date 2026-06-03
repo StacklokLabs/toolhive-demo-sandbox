@@ -3,7 +3,7 @@
 # Cleanup script for the ToolHive demo sandbox Kubernetes cluster.
 
 # Source common helper functions and identity vars
-. "$(dirname "$0")/helpers.sh"
+. "$(dirname "$0")/scripts/helpers.sh"
 . "$(dirname "$0")/versions.env"
 
 # Names to look for: the current cluster name plus any legacy names that

@@ -20,7 +20,7 @@ case "$(uname -m)" in
 esac
 
 # Source common helper functions
-. "$(dirname "$0")/helpers.sh"
+. "$(dirname "$0")/scripts/helpers.sh"
 
 echo "Running preflight checks..."
 

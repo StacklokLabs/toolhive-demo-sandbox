@@ -50,6 +50,25 @@ So far, it includes:
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
+### Interactive entry point (`demo.sh`)
+
+`./demo.sh` is a single front door over the scripts above. Run it with no arguments from a terminal for an interactive menu that detects whether a cluster is already running and offers the appropriate actions (bootstrap, deploy/teardown addons, validate, cleanup). Sub-pickers prompt for any missing addon `.env` values based on each addon's `.env.example`.
+
+It also works as a plain CLI, so the same entry point serves both demos and automation:
+
+```sh
+./demo.sh                            # interactive menu
+./demo.sh bootstrap                  # equivalent to ./bootstrap.sh
+./demo.sh up librechat aws-mcp       # deploy addons (prompts for missing .env on a TTY)
+./demo.sh down librechat             # tear down addons
+./demo.sh validate                   # run endpoint checks
+./demo.sh cleanup                    # destroy the cluster
+./demo.sh list                       # list known addons
+DRY_RUN=1 ./demo.sh up librechat     # echo external commands instead of running them
+```
+
+The interactive menu requires [gum](https://github.com/charmbracelet/gum) (`brew install gum`); the subcommand mode works without it and is suitable for CI or scripts. The underlying `bootstrap.sh`, `cleanup.sh`, and `validate.sh` remain usable directly if you prefer.
+
 ## Authentication
 
 The demo uses Keycloak for OpenID Connect authentication:
@@ -95,7 +114,7 @@ Run the `./cleanup.sh` script to delete the cluster.
 
 ## Development: loading a local ToolHive build
 
-`./dev-reload.sh` builds the operator / proxyrunner / vMCP images from a local
+`./scripts/dev-reload.sh` builds the operator / proxyrunner / vMCP images from a local
 ToolHive checkout, retags them to match the demo's expected image refs, loads
 them into the kind cluster, and restarts affected pods so new code takes
 effect.
@@ -107,10 +126,10 @@ Requires [`ko`](https://ko.build), [`task`](https://taskfile.dev), `docker`,
 # Point at your local toolhive checkout (default: ../toolhive or ../../stacklok/toolhive)
 export TOOLHIVE_SRC=~/path/to/toolhive
 
-./dev-reload.sh                 # rebuild & reload all three (default)
-./dev-reload.sh --operator      # operator only
-./dev-reload.sh --proxyrunner   # MCPServer / MCPRemoteProxy pods
-./dev-reload.sh --vmcp          # VirtualMCPServer pods
+./scripts/dev-reload.sh                 # rebuild & reload all three (default)
+./scripts/dev-reload.sh --operator      # operator only
+./scripts/dev-reload.sh --proxyrunner   # MCPServer / MCPRemoteProxy pods
+./scripts/dev-reload.sh --vmcp          # VirtualMCPServer pods
 ```
 
 ### When to run it
