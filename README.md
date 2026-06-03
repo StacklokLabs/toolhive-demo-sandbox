@@ -40,8 +40,8 @@ So far, it includes:
 
 1. Clone this repo
 2. Run `./bootstrap.sh` from the repo root
-3. When prompted, run `sudo cloud-provider-kind` in a separate terminal to assign a local IP to the traefik Gateway (you can also just keep this running all the time)
-4. Accept the self-signed certificate for **both** `https://ui-<IP>.sslip.io` and `https://auth-<IP>.sslip.io` in your browser before logging in
+3. When prompted, run `sudo cloud-provider-kind --gateway-channel disabled` in a separate terminal to assign a local IP to the traefik Gateway (you can also just keep this running all the time). The `--gateway-channel disabled` flag stops cloud-provider-kind from installing its own copy of the Gateway API CRDs, which would conflict with the ones bootstrap.sh has already applied.
+4. Accept the self-signed certificate for `https://auth-<IP>.sslip.io` and `https://ui-<IP>.sslip.io` in your browser before logging in.
 5. Point the ToolHive CLI at the public registry:
    ```sh
    thv config set-registry http://registry-<IP>.sslip.io/registry/public --allow-private-ip

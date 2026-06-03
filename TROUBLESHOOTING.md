@@ -1,4 +1,4 @@
-# Troubleshooting
+# Troubleshooting <!-- omit from toc -->
 
 Common operational issues when running the demo sandbox. Structure:
 **Symptom → Why → Fix**.
@@ -8,14 +8,22 @@ verbose output, then `./validate.sh` to re-check endpoint health.
 
 ## Contents
 
-- [Browser warning: "Your connection is not private"](#browser-warning-your-connection-is-not-private)
-- [`kubectl get gateway` shows no IP address (`EXTERNAL-IP: <pending>`)](#kubectl-get-gateway-shows-no-ip-address-external-ip-pending)
-- [OIDC login fails with "Invalid redirect URI"](#oidc-login-fails-with-invalid-redirect-uri)
-- [Edits to `infra/keycloak.yaml` don't take effect on re-bootstrap](#edits-to-infrakeycloakyaml-dont-take-effect-on-re-bootstrap)
-- [Registry server returns an empty list of servers](#registry-server-returns-an-empty-list-of-servers)
-- [MCP resources stuck in `Pending` or `Failed`](#mcp-resources-stuck-in-pending-or-failed)
-- [LibreChat: "Too many login attempts, please try again after 5 minutes"](#librechat-too-many-login-attempts-please-try-again-after-5-minutes)
+- [Contents](#contents)
+  - [Browser warning: "Your connection is not private"](#browser-warning-your-connection-is-not-private)
+  - [`kubectl get gateway` shows no IP address (`EXTERNAL-IP: <pending>`)](#kubectl-get-gateway-shows-no-ip-address-external-ip-pending)
+  - [OIDC login fails with "Invalid redirect URI"](#oidc-login-fails-with-invalid-redirect-uri)
+  - [Edits to `infra/keycloak.yaml` don't take effect on re-bootstrap](#edits-to-infrakeycloakyaml-dont-take-effect-on-re-bootstrap)
+  - [Registry server returns an empty list of servers](#registry-server-returns-an-empty-list-of-servers)
+  - [MCP resources stuck in `Pending` or `Failed`](#mcp-resources-stuck-in-pending-or-failed)
+  - [LibreChat: "Too many login attempts, please try again after 5 minutes"](#librechat-too-many-login-attempts-please-try-again-after-5-minutes)
 - [Useful commands](#useful-commands)
+  - [Mint a user token for curl testing](#mint-a-user-token-for-curl-testing)
+  - [List registry entries visible to a persona](#list-registry-entries-visible-to-a-persona)
+  - [Patch Keycloak client redirect URIs in place](#patch-keycloak-client-redirect-uris-in-place)
+  - [Inspect a vMCP's operator-rendered config](#inspect-a-vmcps-operator-rendered-config)
+  - [List a vMCP's discovered backends](#list-a-vmcps-discovered-backends)
+  - [Validate manifest changes against the live CRDs](#validate-manifest-changes-against-the-live-crds)
+  - [Nuke everything and start over](#nuke-everything-and-start-over)
 
 ---
 
@@ -42,7 +50,7 @@ nothing with a hostname works.
 **Fix.** Start the provider (leave it running in a dedicated terminal):
 
 ```sh
-sudo cloud-provider-kind
+sudo cloud-provider-kind --gateway-channel disabled
 ```
 
 Then re-check:
