@@ -19,8 +19,13 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT
-readonly CLUSTER_NAME="toolhive-demo-in-a-box"
 readonly ADDONS_DIR="$REPO_ROOT/addons"
+
+# CLUSTER_NAME lives in versions.env (the single source of truth, kept in sync
+# with kind-config.yaml). Source it rather than duplicate the literal here.
+# shellcheck source=versions.env
+source "$REPO_ROOT/versions.env"
+readonly CLUSTER_NAME
 
 DRY_RUN="${DRY_RUN:-0}"
 

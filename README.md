@@ -50,9 +50,11 @@ So far, it includes:
 
 The bootstrap script is idempotent and can be re-run to fix any issues or reapply configurations.
 
-### Interactive entry point (experimental)
+### Interactive entry point (`demo.sh`)
 
-`./demo.sh` is an optional TUI wrapper around the existing scripts. Run it with no arguments from a terminal for an interactive menu that detects whether a cluster is already running and offers the appropriate actions (bootstrap, deploy/teardown addons, validate, cleanup). Sub-pickers prompt for any missing addon `.env` values based on each addon's `.env.example`.
+`./demo.sh` is a single front door over the scripts above. Run it with no arguments from a terminal for an interactive menu that detects whether a cluster is already running and offers the appropriate actions (bootstrap, deploy/teardown addons, validate, cleanup). Sub-pickers prompt for any missing addon `.env` values based on each addon's `.env.example`.
+
+It also works as a plain CLI, so the same entry point serves both demos and automation:
 
 ```sh
 ./demo.sh                            # interactive menu
@@ -65,7 +67,7 @@ The bootstrap script is idempotent and can be re-run to fix any issues or reappl
 DRY_RUN=1 ./demo.sh up librechat     # echo external commands instead of running them
 ```
 
-The interactive menu requires [gum](https://github.com/charmbracelet/gum) (`brew install gum`); the subcommand mode works without it and is suitable for CI or scripts.
+The interactive menu requires [gum](https://github.com/charmbracelet/gum) (`brew install gum`); the subcommand mode works without it and is suitable for CI or scripts. The underlying `bootstrap.sh`, `cleanup.sh`, and `validate.sh` remain usable directly if you prefer.
 
 ## Authentication
 
