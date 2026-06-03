@@ -137,7 +137,7 @@ if [ -z "$TRAEFIK_IP" ]; then
     # below surface the honest "Is cloud-provider-kind running?" message instead.
     if [ -t 0 ]; then
         echo ""
-        read -p "Run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
+        read -p "Run 'sudo cloud-provider-kind --gateway-channel disabled' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
     fi
 
     # Wait for the IP to be assigned (with timeout)
