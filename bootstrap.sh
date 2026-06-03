@@ -131,9 +131,15 @@ TRAEFIK_IP=$(kubectl get gateways --namespace traefik traefik-gateway -o "jsonpa
 
 if [ -z "$TRAEFIK_IP" ]; then
     echo " (no IP yet)"
-    echo ""
-    read -p "Run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
-    
+    # Only prompt when attached to a terminal. In CI (e.g. the ARC runner) stdin
+    # is not a TTY, so read would hit EOF, return non-zero, and trip set -e with a
+    # confusing instant exit. Skipping straight to the wait loop lets the timeout
+    # below surface the honest "Is cloud-provider-kind running?" message instead.
+    if [ -t 0 ]; then
+        echo ""
+        read -p "Run 'sudo cloud-provider-kind' in another terminal to assign an IP to the traefik gateway. Press Enter to continue once running..."
+    fi
+
     # Wait for the IP to be assigned (with timeout)
     echo -n "Waiting for IP assignment..."
     for i in {1..30}; do
