@@ -15,6 +15,9 @@ data:
       "enabled": true,
       "displayName": "ToolHive Demo",
       "sslRequired": "external",
+      "browserSecurityHeaders": {
+        "strictTransportSecurity": "max-age=0"
+      },
       "rememberMe": true,
       "accessTokenLifespan": 3600,
       "ssoSessionIdleTimeout": 7200,
