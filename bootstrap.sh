@@ -27,7 +27,7 @@ echo "Running preflight checks..."
 # Check for required binaries
 echo -n "  Checking required binaries..."
 MISSING_BINARIES=""
-for binary in kind cloud-provider-kind kubectl helm; do
+for binary in kind cloud-provider-kind kubectl helm envsubst; do
     if ! command -v "$binary" > /dev/null 2>&1; then
         MISSING_BINARIES="$MISSING_BINARIES $binary"
     fi

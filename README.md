@@ -26,8 +26,16 @@ So far, it includes:
 ## Prerequisites
 
 - macOS, Linux, or Windows (with WSL2, see note) with Docker (Podman might work too, but untested)
-- kind, kubectl, and helm
+- kind, kubectl, helm, and gettext (for envsubst)
 - [cloud-provider-kind](https://kubernetes-sigs.github.io/cloud-provider-kind/#/user/install/install_go)
+- jq (optional, for the validation script)
+- gum (optional, for the interactive `demo.sh` menu)
+
+On macOS, the easiest way to get these is via Homebrew:
+
+```sh
+brew install kind cloud-provider-kind kubectl helm gum gettext jq
+```
 
 > [!NOTE]
 > Windows support is experimental and may require additional configuration. See [Windows notes](#windows-notes) section for details.
