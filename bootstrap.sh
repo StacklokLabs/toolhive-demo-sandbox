@@ -257,8 +257,17 @@ run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER
 run_quiet kubectl -n "$RELEASE_NAMESPACE" wait --for=condition=Ready --timeout=5m mcpregistry/"$REGISTRY_RESOURCE_NAME" || die "MCPRegistry failed to become ready"
 echo " ✓"
 
+# Migrate clusters created before Cloud UI moved to its Helm chart: the old
+# raw-manifest Deployment/Service own the "cloud-ui" name and would block Helm
+# from adopting it. Remove them when present and not already Helm-managed.
+if kubectl get deployment cloud-ui -n "$RELEASE_NAMESPACE" >/dev/null 2>&1 && \
+   [ "$(kubectl get deployment cloud-ui -n "$RELEASE_NAMESPACE" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null)" != "Helm" ]; then
+    run_quiet kubectl delete deployment,service cloud-ui -n "$RELEASE_NAMESPACE" --ignore-not-found
+fi
+
 echo -n "Applying Cloud UI..."
-run_quiet sh -c "envsubst < demo-manifests/cloud-ui.yaml | kubectl apply -f -" || die "Failed to install Cloud UI"
+run_quiet sh -c "envsubst < demo-manifests/cloud-ui-helm-values.yaml | helm upgrade --install cloud-ui oci://ghcr.io/stacklok/toolhive-cloud-ui/toolhive-cloud-ui --version $CLOUD_UI_CHART_VERSION --namespace $RELEASE_NAMESPACE --values -" || die "Failed to install Cloud UI"
+run_quiet sh -c "envsubst < demo-manifests/cloud-ui-httproutes.yaml | kubectl apply -f -" || die "Failed to apply Cloud UI HTTPRoutes"
 echo " ✓"
 
 # Expose Grafana via Traefik, using its own hostname for simplicity

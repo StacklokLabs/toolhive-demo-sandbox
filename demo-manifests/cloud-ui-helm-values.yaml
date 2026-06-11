@@ -1,0 +1,32 @@
+# Helm values for the ToolHive Cloud UI chart (oci://ghcr.io/stacklok/toolhive-cloud-ui/toolhive-cloud-ui).
+#
+# Rendered through envsubst in bootstrap.sh, then piped to `helm upgrade --install`.
+# The secrets below are demo placeholders; do not reuse them in production.
+
+# Keep the chart's resources named "cloud-ui" so the HTTPRoutes in
+# cloud-ui-httproutes.yaml and the cloud-ui-openrouter addon can find the
+# Service / Deployment by that name. (The container is still "toolhive-cloud-ui".)
+fullnameOverride: cloud-ui
+
+# Demo/dev environment. Chart defaults cover image, probes, resources, and
+# security context; only the app config differs.
+env:
+  - name: API_BASE_URL
+    value: http://${REGISTRY_RESOURCE_NAME}-api.${RELEASE_NAMESPACE}:8080
+  # Better Auth configuration
+  - name: BETTER_AUTH_SECRET
+    value: demo-secret-change-in-production
+  - name: BETTER_AUTH_URL
+    value: https://${UI_HOSTNAME}
+  # OIDC configuration (Keycloak)
+  - name: OIDC_ISSUER_URL
+    value: https://${AUTH_HOSTNAME}/realms/${KC_REALM}
+  - name: OIDC_CLIENT_ID
+    value: toolhive-cloud-ui
+  - name: OIDC_CLIENT_SECRET
+    value: cloud-ui-secret-change-in-production
+  - name: NODE_ENV
+    value: development
+  # Allow self-signed certificates (demo/dev only)
+  - name: NODE_TLS_REJECT_UNAUTHORIZED
+    value: "0"
