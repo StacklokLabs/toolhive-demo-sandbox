@@ -142,7 +142,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: okta-client-secret
-  namespace: toolhive-system
+  namespace: mcp-workloads
   labels:
     app.kubernetes.io/component: auth
     app.kubernetes.io/part-of: toolhive
@@ -159,7 +159,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPExternalAuthConfig
 metadata:
   name: aws-mcp-eas
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   type: embeddedAuthServer
   embeddedAuthServer:
@@ -190,7 +190,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPExternalAuthConfig
 metadata:
   name: aws-mcp-sts
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   type: awsSts
   awsSts:
@@ -207,7 +207,7 @@ apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPOIDCConfig
 metadata:
   name: aws-mcp-oidc
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   type: inline
   inline:
@@ -223,9 +223,8 @@ spec:
 apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPRemoteProxy
 metadata:
-  metadata:
   name: aws-mcp-proxy
-  namespace: toolhive-system
+  namespace: mcp-workloads
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "https://$AWS_MCP_HOSTNAME/mcp"
@@ -266,7 +265,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: aws-mcp-proxy-route
-  namespace: toolhive-system
+  namespace: mcp-workloads
 spec:
   parentRefs:
     - name: traefik-gateway

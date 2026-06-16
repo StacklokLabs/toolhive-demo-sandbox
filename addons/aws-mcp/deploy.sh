@@ -18,7 +18,7 @@ echo " done"
 
 # --- Wait for proxy to be ready ---
 echo -n "Waiting for AWS MCP proxy..."
-run_quiet addon_wait_ready app.kubernetes.io/instance=aws-mcp-proxy toolhive-system 180
+run_quiet addon_wait_ready app.kubernetes.io/instance=aws-mcp-proxy mcp-workloads 180
 echo " done"
 
 echo ""

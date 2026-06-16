@@ -13,7 +13,7 @@ For setup instructions, see [`README.md`](README.md). If you're modifying the de
 
 ## 1. Cluster at a glance
 
-The demo is a single-node kind cluster. Traefik fronts every externally-reachable endpoint (except the Cloudflare-tunnel addons); Keycloak is the identity provider for the registry and cloud UI; the ToolHive operator reconciles the MCP workloads in `toolhive-system`; and an OTel pipeline captures traces/metrics from every MCP server.
+The demo is a single-node kind cluster. Traefik fronts every externally-reachable endpoint (except the Cloudflare-tunnel addons); Keycloak is the identity provider for the registry and cloud UI; the ToolHive operator (in `toolhive-system`) reconciles the MCP workloads in `mcp-workloads`; and an OTel pipeline captures traces/metrics from every MCP server.
 
 ```mermaid
 graph TB
@@ -40,6 +40,9 @@ graph TB
     Reg[Registry Server]
     UI[Cloud UI]
     PG[(Postgres<br/>registry-db<br/>CloudNativePG)]
+  end
+
+  subgraph mcpworkloads[namespace: mcp-workloads]
     Emb[EmbeddingServer<br/>HuggingFace TEI]
     Workloads[MCPServers<br/>MCPRemoteProxies<br/>VirtualMCPServers]
   end
