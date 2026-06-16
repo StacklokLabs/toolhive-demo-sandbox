@@ -1,16 +1,17 @@
 #!/bin/bash
 . "$(dirname "$0")/../_lib.sh"
 
-# Detect cloud-ui flavor: enterprise Helm chart vs OSS standalone manifest.
+# Detect the cloud-ui deployment name. Both the enterprise and OSS demos run
+# the same toolhive-cloud-ui Helm chart (container "toolhive-cloud-ui"); only
+# the release/deployment name differs by the Helm release name used.
 if kubectl get deployment stacklok-toolhive-cloud-ui -n "$RELEASE_NAMESPACE" >/dev/null 2>&1; then
     CLOUD_UI_DEPLOYMENT="stacklok-toolhive-cloud-ui"
-    CLOUD_UI_CONTAINER="toolhive-cloud-ui"
 elif kubectl get deployment cloud-ui -n "$RELEASE_NAMESPACE" >/dev/null 2>&1; then
     CLOUD_UI_DEPLOYMENT="cloud-ui"
-    CLOUD_UI_CONTAINER="cloud-ui"
 else
     CLOUD_UI_DEPLOYMENT=""
 fi
+CLOUD_UI_CONTAINER="toolhive-cloud-ui"
 
 if [ -n "$CLOUD_UI_DEPLOYMENT" ]; then
     echo -n "Removing OpenRouter env from $CLOUD_UI_DEPLOYMENT..."

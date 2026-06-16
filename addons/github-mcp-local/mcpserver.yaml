@@ -9,7 +9,7 @@ metadata:
     toolhive.stacklok.dev/registry-title: "GitHub MCP Server (Local)"
     toolhive.stacklok.dev/registry-description: "Read-only access to GitHub repositories, issues, and pull requests via PAT."
 spec:
-  image: ghcr.io/github/github-mcp-server:v1.2.0
+  image: ghcr.io/github/github-mcp-server:v1.3.0
   transport: stdio
   proxyPort: 8080
   secrets:

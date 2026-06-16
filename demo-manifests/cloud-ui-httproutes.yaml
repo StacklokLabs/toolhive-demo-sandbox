@@ -1,0 +1,51 @@
+# Gateway API routing for the Cloud UI. The chart ships only the Service and
+# Deployment, so the HTTPRoutes that front it live here and are applied after
+# `helm upgrade --install`. They target the chart's Service by name (cloud-ui).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ui-route
+  namespace: $RELEASE_NAMESPACE
+  labels:
+    app: cloud-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: toolhive
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - $UI_HOSTNAME
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: cloud-ui
+          port: 80
+---
+# Redirect HTTP → HTTPS for the UI hostname
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ui-http-redirect
+  namespace: $RELEASE_NAMESPACE
+  labels:
+    app: cloud-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: toolhive
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: web
+  hostnames:
+    - $UI_HOSTNAME
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

@@ -4,16 +4,17 @@
 addon_load_env
 addon_require_env OPENROUTER_API_KEY
 
-# Detect cloud-ui flavor: enterprise Helm chart vs OSS standalone manifest.
+# Detect the cloud-ui deployment name. Both the enterprise and OSS demos run
+# the same toolhive-cloud-ui Helm chart (container "toolhive-cloud-ui"); only
+# the release/deployment name differs by the Helm release name used.
 if kubectl get deployment stacklok-toolhive-cloud-ui -n "$RELEASE_NAMESPACE" >/dev/null 2>&1; then
     CLOUD_UI_DEPLOYMENT="stacklok-toolhive-cloud-ui"
-    CLOUD_UI_CONTAINER="toolhive-cloud-ui"
 elif kubectl get deployment cloud-ui -n "$RELEASE_NAMESPACE" >/dev/null 2>&1; then
     CLOUD_UI_DEPLOYMENT="cloud-ui"
-    CLOUD_UI_CONTAINER="cloud-ui"
 else
     die "No cloud-ui deployment found in namespace $RELEASE_NAMESPACE (tried stacklok-toolhive-cloud-ui and cloud-ui). Has bootstrap.sh completed?"
 fi
+CLOUD_UI_CONTAINER="toolhive-cloud-ui"
 export CLOUD_UI_CONTAINER
 
 echo -n "Creating OpenRouter API key secret..."
