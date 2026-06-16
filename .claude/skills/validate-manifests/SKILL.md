@@ -35,7 +35,7 @@ Exit code is non-zero if any file fails. Output lines are prefixed with `PASS`, 
 
 - Demo cluster running (the script aborts with a clear message if `kubectl cluster-info` fails)
 - `envsubst` and `kubectl` on PATH
-- Script sets `KUBECONFIG=$REPO_ROOT/kubeconfig-toolhive-demo.yaml` automatically if that file exists
+- Script sets `KUBECONFIG=$REPO_ROOT/$KUBECONFIG_FILE` (read from `versions.env`) automatically if that file exists
 
 ## What it skips
 
