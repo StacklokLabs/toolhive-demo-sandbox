@@ -72,9 +72,13 @@ fi
 run_quiet sh -c "kind get kubeconfig --name ${CLUSTER_NAME} > ${KUBECONFIG_FILE}" || die "Failed to get kubeconfig"
 export KUBECONFIG=$(pwd)/${KUBECONFIG_FILE}
 
-# Traefik chart no longer installs the Gateway API CRDs by default, so install them up front to ensure they're available before Traefik lands
+# Traefik chart no longer installs the Gateway API CRDs by default, so install them up front to ensure they're available before Traefik lands.
+# --force-conflicts: recent cloud-provider-kind versions also install/own the
+# Gateway API CRDs, so a plain server-side apply collides on the shared fields.
+# The bundle is identical (same GATEWAY_API_VERSION), so forcing only transfers
+# field-manager ownership — no behavioral change to the CRDs.
 echo -n "Installing Gateway API..."
-run_quiet kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/${GATEWAY_API_VERSION}/standard-install.yaml || die "Failed to install Gateway API"
+run_quiet kubectl apply --server-side --force-conflicts -f https://github.com/kubernetes-sigs/gateway-api/releases/download/${GATEWAY_API_VERSION}/standard-install.yaml || die "Failed to install Gateway API"
 echo " ✓"
 
 # Add Helm repos and update

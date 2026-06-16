@@ -128,7 +128,9 @@ them into the kind cluster, and restarts affected pods so new code takes
 effect.
 
 Requires [`ko`](https://ko.build), [`task`](https://taskfile.dev), `docker`,
-`kind`, and `kubectl`.
+**`kind` ≥ 0.32.0**, and `kubectl`. (`kind` 0.31 and earlier fail at `kind load`
+against the pinned `kindest/node:v1.36.1` with `unknown containerd config
+version: 4`; 0.32.0+ fixes it — `brew upgrade kind`.)
 
 ```bash
 # Point at your local toolhive checkout (default: ../toolhive or ../../stacklok/toolhive)
