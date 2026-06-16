@@ -45,7 +45,11 @@ untrusted outside the sandbox.
 running on the host to allocate external IPs. It's a separate process
 from the cluster itself — if it isn't running (crashed, laptop rebooted,
 never started), `LoadBalancer` Services stay `<pending>` forever and
-nothing with a hostname works.
+nothing with a hostname works. It also doesn't always pick up a cluster
+created *after* it launched, so a provider started before `bootstrap.sh`
+may need a restart. Because `helm --wait` on Traefik blocks on that IP,
+a missing one surfaces during bootstrap as a `context deadline exceeded`
+timeout at **"Installing Traefik..."**.
 
 **Fix.** Start the provider (leave it running in a dedicated terminal):
 

@@ -20,7 +20,9 @@ set -e
 #     (defaults to ../toolhive relative to the repo root)
 #   - ko (https://ko.build)
 #   - task (https://taskfile.dev)
-#   - kind, kubectl, docker
+#   - kind >= 0.32.0, kubectl, docker
+#     (kind 0.31 and earlier fail at `kind load` against kindest/node:v1.36.1
+#      with "unknown containerd config version: 4" — fix: `brew upgrade kind`)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -59,8 +61,10 @@ OPERATOR_IMAGE=$(kubectl get deployment toolhive-operator -n toolhive-system \
     -o jsonpath='{.spec.template.spec.containers[?(@.name=="manager")].image}' 2>/dev/null || echo "")
 
 # proxyrunner and vmcp image refs live in the operator's ConfigMap/env, but the
-# simplest source of truth is an existing pod that already uses them.
-PROXYRUNNER_IMAGE=$(kubectl get deployment -n toolhive-system -o json 2>/dev/null \
+# simplest source of truth is an existing pod that already uses them. Workload
+# pods (MCPServers / MCPRemoteProxies / VirtualMCPServers) live in mcp-workloads,
+# not toolhive-system — the latter only holds the operator + registry + cloud-UI.
+PROXYRUNNER_IMAGE=$(kubectl get deployment -n mcp-workloads -o json 2>/dev/null \
     | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
@@ -71,7 +75,7 @@ for d in data['items']:
             sys.exit()
 " || echo "")
 
-VMCP_IMAGE=$(kubectl get deployment -n toolhive-system -o json 2>/dev/null \
+VMCP_IMAGE=$(kubectl get deployment -n mcp-workloads -o json 2>/dev/null \
     | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
@@ -200,7 +204,7 @@ if $BUILD_PROXYRUNNER; then
     if [ -n "$PROXYRUNNER_IMAGE" ]; then
         echo -n "Restarting proxyrunner pods..."
         # Every deployment whose container image is the proxyrunner ref needs a roll.
-        for d in $(kubectl get deployment -n toolhive-system -o json \
+        for d in $(kubectl get deployment -n mcp-workloads -o json \
             | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
@@ -210,7 +214,7 @@ for d in data['items']:
             print(d['metadata']['name'])
             break
 "); do
-            run_quiet kubectl rollout restart deployment "$d" -n toolhive-system
+            run_quiet kubectl rollout restart deployment "$d" -n mcp-workloads
         done
         echo " ✓"
     fi
@@ -220,7 +224,7 @@ if $BUILD_VMCP; then
     build_and_load vmcp ghcr.io/stacklok/toolhive/vmcp "$VMCP_IMAGE"
     if [ -n "$VMCP_IMAGE" ]; then
         echo -n "Restarting vMCP pods..."
-        for d in $(kubectl get deployment -n toolhive-system -o json \
+        for d in $(kubectl get deployment -n mcp-workloads -o json \
             | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
@@ -230,7 +234,7 @@ for d in data['items']:
             print(d['metadata']['name'])
             break
 "); do
-            run_quiet kubectl rollout restart deployment "$d" -n toolhive-system
+            run_quiet kubectl rollout restart deployment "$d" -n mcp-workloads
         done
         echo " ✓"
     fi
