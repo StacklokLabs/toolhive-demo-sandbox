@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Server-side dry-run validation for ToolHive demo sandbox manifests.
-# Requires a running kind cluster (KUBECONFIG=./kubeconfig-toolhive-demo.yaml).
+# Requires a running kind cluster (KUBECONFIG points at the demo kubeconfig).
 #
 # Usage:
 #   validate.sh                 # validate all changed YAMLs since HEAD (+ untracked)
@@ -18,9 +18,19 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
 }
 cd "$REPO_ROOT"
 
+# Pull identity vars (KUBECONFIG_FILE, RELEASE_NAMESPACE, KC_REALM,
+# REGISTRY_RESOURCE_NAME) from versions.env rather than hardcoding them, so a
+# fork that renames the namespace / realm / kubeconfig only edits versions.env.
+# set -a exports each assignment for the envsubst pass below; the placeholder
+# version/hostname/secret exports further down intentionally override theirs.
+if [ -f "$REPO_ROOT/versions.env" ]; then
+    set -a; . "$REPO_ROOT/versions.env"; set +a
+fi
+
 # Point at the demo kubeconfig if it exists
-if [ -f "$REPO_ROOT/kubeconfig-toolhive-demo.yaml" ]; then
-    export KUBECONFIG="$REPO_ROOT/kubeconfig-toolhive-demo.yaml"
+KUBECONFIG_FILE="${KUBECONFIG_FILE:-kubeconfig-toolhive-demo.yaml}"
+if [ -f "$REPO_ROOT/$KUBECONFIG_FILE" ]; then
+    export KUBECONFIG="$REPO_ROOT/$KUBECONFIG_FILE"
 fi
 
 # Confirm cluster reachability up front
@@ -45,9 +55,7 @@ export KEYCLOAK_VERSION="0.0.0"
 export CLOUD_UI_VERSION="v0.0.0"
 export REGISTRY_SERVER_VERSION="v0.0.0"
 export EMBEDDING_IMAGE="ghcr.io/huggingface/text-embeddings-inference:cpu-latest"
-export RELEASE_NAMESPACE="toolhive-system"
-export KC_REALM="toolhive-demo"
-export REGISTRY_RESOURCE_NAME="toolhive-registry"
+# RELEASE_NAMESPACE, KC_REALM, REGISTRY_RESOURCE_NAME come from versions.env (sourced above).
 export OPENROUTER_API_KEY="placeholder-openrouter-key"
 export VMCP_OKTA_CLOUDFLARED_DOMAIN="vmcp.validate.local"
 export OKTA_ISSUER_URL="https://placeholder.okta.com/oauth2/placeholder"

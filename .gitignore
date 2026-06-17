@@ -1,5 +1,5 @@
 .env
-kubeconfig-toolhive-demo.yaml
+kubeconfig-*.yaml
 demo-endpoints.json
 traefik-ca.crt
 local-demos/*
