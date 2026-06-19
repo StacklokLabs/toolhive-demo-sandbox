@@ -1,0 +1,50 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Yarn cache (not the releases dir — that contains the Yarn binary)
+.yarn/cache
+.yarn/install-state.gz
+
+# Host node_modules — container rebuilds from scratch
+node_modules
+packages/*/node_modules
+plugins/*/node_modules
+
+# TypeScript build outputs
+packages/*/dist
+plugins/*/dist
+packages/*/dist-types
+plugins/*/dist-types
+tsconfig.tsbuildinfo
+packages/*/tsconfig.tsbuildinfo
+plugins/*/tsconfig.tsbuildinfo
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/coverage
+
+# Local override configs (contain secrets)
+*.local.yaml
+.env
+.env.*
+
+# Editor and OS artifacts
+.DS_Store
+.vscode
+.idea
+*.swp
+
+# CI/CD
+.github
+
+# Documentation
+docs/
+
+# K8s manifests (not needed in the image)
+k8s/

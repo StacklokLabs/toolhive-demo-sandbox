@@ -1,0 +1,1 @@
+export { RegistryPage } from './RegistryPage';

@@ -1,0 +1,286 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-from-registry
+  title: Deploy MCP Server from Registry
+  description: Select an MCP server from the ToolHive Registry and deploy it to the Kubernetes cluster
+  tags:
+    - mcp
+    - toolhive
+    - registry
+    - kubernetes
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: Select MCP Server
+      required:
+        - serverName
+      properties:
+        serverName:
+          title: MCP Server
+          type: string
+          description: Choose an MCP server from the ToolHive Registry
+          enum:
+            - 'io.github.stacklok/magic-mcp'
+            - 'io.github.stacklok/agentql-mcp'
+            - 'io.github.stacklok/adb-mysql-mcp-server'
+            - 'io.github.stacklok/apollo-mcp-server'
+            - 'io.github.stacklok/phoenix'
+            - 'io.github.stacklok/arxiv-mcp-server'
+            - 'io.github.stacklok/atlassian'
+            - 'io.github.stacklok/atlassian-remote'
+            - 'io.github.stacklok/aws-api'
+            - 'io.github.stacklok/aws-diagram'
+            - 'io.github.stacklok/aws-documentation'
+            - 'io.github.stacklok/aws-knowledge'
+            - 'io.github.stacklok/aws-pricing'
+            - 'io.github.stacklok/azure'
+            - 'io.github.stacklok/mcp-server-box'
+            - 'io.github.stacklok/brightdata-mcp'
+            - 'io.github.stacklok/browserbase'
+            - 'io.github.stacklok/buildkite'
+            - 'io.github.stacklok/canva'
+            - 'io.github.stacklok/chroma-mcp'
+            - 'io.github.stacklok/chrome-devtools-mcp'
+            - 'io.github.stacklok/mcp-server-circleci'
+            - 'io.github.stacklok/mcp-clickhouse'
+            - 'io.github.stacklok/cloudflare-remote'
+            - 'io.github.stacklok/context7'
+            - 'io.github.stacklok/context7-remote'
+            - 'io.github.stacklok/crowdstrike-falcon'
+            - 'io.github.stacklok/database-toolbox'
+            - 'io.github.stacklok/datadog-remote'
+            - 'io.github.stacklok/astra-db-mcp'
+            - 'io.github.stacklok/dolt'
+            - 'io.github.stacklok/elasticsearch'
+            - 'io.github.stacklok/everything'
+            - 'io.github.stacklok/excalidraw'
+            - 'io.github.stacklok/excalidraw-remote'
+            - 'io.github.stacklok/fetch'
+            - 'io.github.stacklok/filesystem'
+            - 'io.github.stacklok/firecrawl'
+            - 'io.github.stacklok/genai-toolbox'
+            - 'io.github.stacklok/git'
+            - 'io.github.stacklok/github'
+            - 'io.github.stacklok/github-remote'
+            - 'io.github.stacklok/gitlab'
+            - 'io.github.stacklok/gitlab-remote'
+            - 'io.github.stacklok/cloud-run'
+            - 'io.github.stacklok/google-maps-remote'
+            - 'io.github.stacklok/grafana'
+            - 'io.github.stacklok/granola'
+            - 'io.github.stacklok/graphlit'
+            - 'io.github.stacklok/heroku'
+            - 'io.github.stacklok/hass-mcp'
+            - 'io.github.stacklok/hubspot-remote'
+            - 'io.github.stacklok/huggingface'
+            - 'io.github.stacklok/ida-pro-mcp'
+            - 'io.github.stacklok/jam'
+            - 'io.github.stacklok/mcp-jetbrains'
+            - 'io.github.stacklok/kion'
+            - 'io.github.stacklok/kiwi'
+            - 'io.github.stacklok/k8s'
+            - 'io.github.stacklok/kyverno'
+            - 'io.github.stacklok/launchdarkly'
+            - 'io.github.stacklok/linear'
+            - 'io.github.stacklok/mcp-optimizer'
+            - 'io.github.stacklok/mcp-spec'
+            - 'io.github.stacklok/memory'
+            - 'io.github.stacklok/mermaid'
+            - 'io.github.stacklok/monday'
+            - 'io.github.stacklok/mongodb'
+            - 'io.github.stacklok/mcp-neo4j-aura-manager'
+            - 'io.github.stacklok/mcp-neo4j-cypher'
+            - 'io.github.stacklok/mcp-neo4j-memory'
+            - 'io.github.stacklok/mcp-server-neon'
+            - 'io.github.stacklok/neon'
+            - 'io.github.stacklok/netbird'
+            - 'io.github.stacklok/notion'
+            - 'io.github.stacklok/notion-remote'
+            - 'io.github.stacklok/oci-registry'
+            - 'io.github.stacklok/onchain-mcp'
+            - 'io.github.stacklok/osv'
+            - 'io.github.stacklok/pagerduty'
+            - 'io.github.stacklok/paypal'
+            - 'io.github.stacklok/perplexity-ask'
+            - 'io.github.stacklok/playwright'
+            - 'io.github.stacklok/plotting'
+            - 'io.github.stacklok/postgres-mcp-pro'
+            - 'io.github.stacklok/prometheus'
+            - 'io.github.stacklok/redhat-linux'
+            - 'io.github.stacklok/mcp-redfish'
+            - 'io.github.stacklok/redis'
+            - 'io.github.stacklok/replicate'
+            - 'io.github.stacklok/semgrep'
+            - 'io.github.stacklok/semgrep-remote'
+            - 'io.github.stacklok/sentry'
+            - 'io.github.stacklok/sentry-remote'
+            - 'io.github.stacklok/sequentialthinking'
+            - 'io.github.stacklok/slack-mcp-server'
+            - 'io.github.stacklok/slack-remote'
+            - 'io.github.stacklok/sonarqube'
+            - 'io.github.stacklok/sqlite'
+            - 'io.github.stacklok/square'
+            - 'io.github.stacklok/stripe'
+            - 'io.github.stacklok/stripe-remote'
+            - 'io.github.stacklok/supabase'
+            - 'io.github.stacklok/suse-multi-linux-manager'
+            - 'io.github.stacklok/tavily-mcp'
+            - 'io.github.stacklok/terraform'
+            - 'io.github.stacklok/time'
+            - 'io.github.stacklok/toolhive-doc-mcp'
+            - 'io.github.stacklok/toolhive-doc-mcp-remote'
+            - 'io.github.stacklok/uyuni'
+            - 'io.github.stacklok/vercel'
+            - 'io.github.stacklok/wix'
+          enumNames:
+            - '21st.dev Magic'
+            - 'AgentQL'
+            - 'AnalyticDB for MySQL'
+            - 'Apollo GraphQL'
+            - 'Arize Phoenix'
+            - 'arXiv'
+            - 'Atlassian'
+            - 'Atlassian (Remote)'
+            - 'AWS API'
+            - 'AWS Diagrams'
+            - 'AWS Documentation'
+            - 'AWS Knowledge Bases'
+            - 'AWS Pricing'
+            - 'Azure'
+            - 'Box'
+            - 'Bright Data'
+            - 'Browserbase'
+            - 'Buildkite'
+            - 'Canva'
+            - 'ChromaDB'
+            - 'Chrome DevTools'
+            - 'CircleCI'
+            - 'ClickHouse'
+            - 'Cloudflare API (Remote)'
+            - 'Context7'
+            - 'Context7 (Remote)'
+            - 'CrowdStrike Falcon'
+            - 'Database Toolbox'
+            - 'Datadog (Remote)'
+            - 'DataStax Astra DB'
+            - 'Dolt'
+            - 'Elasticsearch'
+            - 'Everything'
+            - 'Excalidraw'
+            - 'Excalidraw (Remote)'
+            - 'Fetch'
+            - 'Filesystem'
+            - 'Firecrawl'
+            - 'GenAI Toolbox (Deprecated)'
+            - 'Git'
+            - 'GitHub'
+            - 'GitHub (Remote)'
+            - 'GitLab'
+            - 'GitLab (Remote)'
+            - 'Google Cloud Run'
+            - 'Google Maps Grounding Lite (Remote)'
+            - 'Grafana'
+            - 'Granola (Remote)'
+            - 'Graphlit'
+            - 'Heroku'
+            - 'Home Assistant'
+            - 'HubSpot (Remote)'
+            - 'Hugging Face'
+            - 'IDA Pro'
+            - 'Jam'
+            - 'JetBrains'
+            - 'Kion'
+            - 'Kiwi.com Flights'
+            - 'Kubernetes'
+            - 'Kyverno'
+            - 'LaunchDarkly'
+            - 'Linear'
+            - 'MCP Optimizer'
+            - 'MCP Specification'
+            - 'Memory'
+            - 'Mermaid'
+            - 'Monday.com'
+            - 'MongoDB'
+            - 'Neo4j Aura Manager'
+            - 'Neo4j Cypher'
+            - 'Neo4j Memory'
+            - 'Neon'
+            - 'Neon (Remote)'
+            - 'NetBird'
+            - 'Notion'
+            - 'Notion (Remote)'
+            - 'OCI Registry'
+            - 'Onchain (Bankless)'
+            - 'OSV'
+            - 'PagerDuty'
+            - 'PayPal'
+            - 'Perplexity'
+            - 'Playwright'
+            - 'Plotting'
+            - 'PostgreSQL Pro'
+            - 'Prometheus'
+            - 'Red Hat Linux'
+            - 'Redfish'
+            - 'Redis'
+            - 'Replicate'
+            - 'Semgrep'
+            - 'Semgrep (Remote)'
+            - 'Sentry'
+            - 'Sentry (Remote)'
+            - 'Sequential Thinking'
+            - 'Slack'
+            - 'Slack (Remote)'
+            - 'SonarQube'
+            - 'SQLite'
+            - 'Square'
+            - 'Stripe'
+            - 'Stripe (Remote)'
+            - 'Supabase'
+            - 'SUSE Multi-Linux Manager'
+            - 'Tavily'
+            - 'Terraform'
+            - 'Time'
+            - 'ToolHive Docs'
+            - 'ToolHive Docs (Remote)'
+            - 'Uyuni'
+            - 'Vercel'
+            - 'Wix'
+        namespace:
+          title: Namespace
+          type: string
+          default: default
+          description: Kubernetes namespace to deploy into
+    - title: Environment Variables (optional)
+      description: >-
+        Provide values for any environment variables required by the server.
+        Check the registry page at /toolhive/registry for which variables are needed.
+      properties:
+        envVars:
+          title: Environment Variables
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - value
+            properties:
+              name:
+                title: Name
+                type: string
+              value:
+                title: Value
+                type: string
+  steps:
+    - id: deploy
+      name: Deploy from Registry
+      action: toolhive:registry:deploy
+      input:
+        serverName: ${{ parameters.serverName }}
+        namespace: ${{ parameters.namespace }}
+        env: ${{ parameters.envVars }}
+  output:
+    links:
+      - title: View in MCP Server Dashboard
+        url: /toolhive/${{ steps.deploy.output.namespace }}/${{ steps.deploy.output.serverName }}

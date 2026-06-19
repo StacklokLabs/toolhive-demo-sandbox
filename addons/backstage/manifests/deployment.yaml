@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+  namespace: backstage
+  labels:
+    app: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+    spec:
+      serviceAccountName: backstage
+      containers:
+        - name: backstage
+          image: $BACKSTAGE_IMAGE
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 7007
+              name: http
+          command: ['node', 'packages/backend', '--config', '/app/app-config.yaml']
+          volumeMounts:
+            - name: app-config
+              mountPath: /app/app-config.yaml
+              subPath: app-config.yaml
+              readOnly: true
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 7007
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 7007
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: app-config
+          configMap:
+            name: backstage-app-config
