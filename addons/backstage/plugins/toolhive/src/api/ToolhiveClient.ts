@@ -6,7 +6,6 @@ import {
 import {
   MCPServer,
   MCPServerListResponse,
-  CreateMCPServerRequest,
   RegistryServerEntry,
   RegistryServersResponse,
 } from './types';
@@ -17,7 +16,6 @@ import {
 export interface ToolhiveApi {
   listServers(namespace?: string): Promise<MCPServer[]>;
   getServer(namespace: string, name: string): Promise<MCPServer>;
-  createServer(request: CreateMCPServerRequest): Promise<MCPServer>;
   deleteServer(namespace: string, name: string): Promise<void>;
   listRegistryServers(search?: string, latestOnly?: boolean): Promise<RegistryServerEntry[]>;
 }
@@ -71,23 +69,6 @@ export class ToolhiveClient implements ToolhiveApi {
     if (!response.ok) {
       throw new Error(
         `Failed to get MCP server '${name}': ${response.status} ${response.statusText}`,
-      );
-    }
-
-    return await response.json();
-  }
-
-  async createServer(request: CreateMCPServerRequest): Promise<MCPServer> {
-    const baseUrl = await this.getBaseUrl();
-    const response = await this.fetchApi.fetch(`${baseUrl}/servers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to create MCP server: ${response.status} ${response.statusText}`,
       );
     }
 

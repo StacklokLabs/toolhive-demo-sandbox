@@ -4,5 +4,4 @@ export type {
   MCPServerSpec,
   MCPServerStatus,
   MCPServerList,
-  CreateMCPServerRequest,
 } from './types';

@@ -6,7 +6,6 @@ export type {
   MCPServerStatus,
   MCPServerCondition,
   MCPServerListResponse,
-  CreateMCPServerRequest,
   RegistryServerEntry,
   RegistryPackage,
   RegistryEnvironmentVariable,

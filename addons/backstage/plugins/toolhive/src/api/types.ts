@@ -65,17 +65,6 @@ export interface MCPServerListResponse {
   items: MCPServer[];
 }
 
-export interface CreateMCPServerRequest {
-  name: string;
-  namespace?: string;
-  image: string;
-  transport?: 'stdio' | 'streamable-http' | 'sse';
-  port?: number;
-  env?: Array<{ name: string; value: string }>;
-  args?: string[];
-  replicas?: number;
-}
-
 /**
  * Types for the ToolHive Registry Server API responses.
  */

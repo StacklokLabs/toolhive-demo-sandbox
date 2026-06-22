@@ -11,6 +11,5 @@ export type {
   MCPServer,
   MCPServerSpec,
   MCPServerStatus,
-  CreateMCPServerRequest,
 } from './api';
 export { rootRouteRef, serverDetailRouteRef, registryRouteRef } from './routes';

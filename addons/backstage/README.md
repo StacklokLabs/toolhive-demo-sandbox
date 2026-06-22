@@ -78,7 +78,7 @@ Removes the HTTPRoute, Deployment, Service, ConfigMap, RBAC, and namespace.
 | `manifests/clusterrole.yaml` | RBAC — full CRUD on `MCPServers`, read-only on other ToolHive CRDs |
 | `templates/` | Backstage software templates (YAML) |
 | `plugins/toolhive/` | Frontend plugin — MCP server list, detail, and registry pages |
-| `plugins/toolhive-backend/` | Backend plugin — K8s API proxy for MCPServer CRUD |
+| `plugins/toolhive-backend/` | Backend plugin — K8s API proxy for listing/viewing/deleting MCPServers and a registry passthrough (creation is handled by the scaffolder templates) |
 | `preload.js` | Node.js `--require` preload that replaces `node-fetch` 2.x with native fetch to avoid `ERR_STREAM_PREMATURE_CLOSE` on Node 22 |
 
 ### Custom image tag

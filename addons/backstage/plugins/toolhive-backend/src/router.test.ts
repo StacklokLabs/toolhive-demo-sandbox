@@ -10,7 +10,6 @@ jest.mock('@kubernetes/client-node', () => {
   const mockListNamespacedCustomObject = jest.fn();
   const mockListClusterCustomObject = jest.fn();
   const mockGetNamespacedCustomObject = jest.fn();
-  const mockCreateNamespacedCustomObject = jest.fn();
   const mockDeleteNamespacedCustomObject = jest.fn();
 
   return {
@@ -20,7 +19,6 @@ jest.mock('@kubernetes/client-node', () => {
         listNamespacedCustomObject: mockListNamespacedCustomObject,
         listClusterCustomObject: mockListClusterCustomObject,
         getNamespacedCustomObject: mockGetNamespacedCustomObject,
-        createNamespacedCustomObject: mockCreateNamespacedCustomObject,
         deleteNamespacedCustomObject: mockDeleteNamespacedCustomObject,
       }),
     })),
@@ -30,7 +28,6 @@ jest.mock('@kubernetes/client-node', () => {
       listNamespacedCustomObject: mockListNamespacedCustomObject,
       listClusterCustomObject: mockListClusterCustomObject,
       getNamespacedCustomObject: mockGetNamespacedCustomObject,
-      createNamespacedCustomObject: mockCreateNamespacedCustomObject,
       deleteNamespacedCustomObject: mockDeleteNamespacedCustomObject,
     },
   };
@@ -96,34 +93,6 @@ describe('createRouter', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.metadata.name).toBe('test-server');
-    });
-  });
-
-  describe('POST /servers', () => {
-    it('should create a new server', async () => {
-      const createdServer = {
-        apiVersion: 'toolhive.stacklok.dev/v1beta1',
-        kind: 'MCPServer',
-        metadata: { name: 'new-server', namespace: 'default' },
-        spec: { image: 'mcp/fetch:latest' },
-      };
-      k8sMocks.createNamespacedCustomObject.mockResolvedValue(createdServer);
-
-      const response = await request(app).post('/servers').send({
-        name: 'new-server',
-        image: 'mcp/fetch:latest',
-      });
-
-      expect(response.status).toBe(201);
-      expect(response.body.metadata.name).toBe('new-server');
-    });
-
-    it('should reject invalid input', async () => {
-      const response = await request(app).post('/servers').send({
-        name: '',
-      });
-
-      expect(response.status).toBe(400);
     });
   });
 

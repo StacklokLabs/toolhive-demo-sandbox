@@ -3,8 +3,7 @@ import {
   LoggerService,
 } from '@backstage/backend-plugin-api';
 import { Config } from '@backstage/config';
-import { InputError, NotFoundError } from '@backstage/errors';
-import { z } from 'zod/v3';
+import { NotFoundError } from '@backstage/errors';
 import express from 'express';
 import Router from 'express-promise-router';
 import { MCPServerService } from './service/MCPServerService';
@@ -19,23 +18,11 @@ export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const { logger, httpAuth } = options;
-  const mcpServerService = new MCPServerService(logger);
+  const mcpHostname = options.config.getOptionalString('toolhive.mcpHostname');
+  const mcpServerService = new MCPServerService(logger, mcpHostname);
 
   const router = Router();
   router.use(express.json());
-
-  const createServerSchema = z.object({
-    name: z.string().min(1),
-    namespace: z.string().optional(),
-    image: z.string().min(1),
-    transport: z.enum(['stdio', 'streamable-http', 'sse']).optional(),
-    port: z.number().int().positive().optional(),
-    env: z
-      .array(z.object({ name: z.string(), value: z.string() }))
-      .optional(),
-    args: z.array(z.string()).optional(),
-    replicas: z.number().int().positive().optional(),
-  });
 
   // GET /servers - List all MCPServer CRs
   router.get('/servers', async (req, res) => {
@@ -74,25 +61,6 @@ export async function createRouter(
       }
       logger.error('Failed to get MCPServer', { error: String(error) });
       res.status(statusCode).json({ error: 'Failed to get MCPServer' });
-    }
-  });
-
-  // POST /servers - Create MCPServer CR
-  router.post('/servers', async (req, res) => {
-    await httpAuth.credentials(req, { allow: ['user'], allowLimitedAccess: true }).catch(() => {});
-
-    const parsed = createServerSchema.safeParse(req.body);
-    if (!parsed.success) {
-      throw new InputError(parsed.error.toString());
-    }
-
-    try {
-      const server = await mcpServerService.create(parsed.data);
-      res.status(201).json(server);
-    } catch (error) {
-      const statusCode = getK8sErrorStatus(error);
-      logger.error('Failed to create MCPServer', { error: String(error) });
-      res.status(statusCode).json({ error: 'Failed to create MCPServer' });
     }
   });
 
