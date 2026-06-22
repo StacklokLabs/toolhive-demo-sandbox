@@ -17,12 +17,8 @@ image:
 	docker build -t $(IMAGE) .
 
 # Load the image into the kind cluster.
-# Uses `ctr` via docker exec because `kind load docker-image` is broken with
-# kind v0.29 + containerd v2.3 (config version mismatch).
 load:
-	docker save $(IMAGE) \
-	  | docker exec -i $(CLUSTER_NAME)-control-plane \
-	    ctr -n k8s.io images import -
+	kind load docker-image $(IMAGE) --name $(CLUSTER_NAME)
 
 # Rebuild everything and roll the deployment — shortcut for iterating on code.
 reload: build image load

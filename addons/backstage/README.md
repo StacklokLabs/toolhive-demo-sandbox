@@ -44,16 +44,11 @@ Subsequent builds reuse Docker layer cache and are much faster (~1–2 min).
 ### Loading into kind
 
 Because the demo cluster uses kind, Docker Hub is not reachable for locally-tagged
-images. Use the helper below to push the image directly into the cluster:
+images. Load the image directly into the cluster:
 
 ```bash
-docker save backstage-toolhive-demo:latest \
-  | docker exec -i toolhive-demo-sandbox-control-plane \
-    ctr -n k8s.io images import -
+kind load docker-image backstage-toolhive-demo:latest --name toolhive-demo-sandbox
 ```
-
-> **Why not `kind load docker-image`?** kind v0.29 + containerd v2.3 have a config
-> version mismatch that causes `kind load` to fail. The `ctr` pipe above bypasses it.
 
 ## Deploy
 
@@ -112,7 +107,7 @@ Or run the steps individually:
 ```bash
 make build    # yarn install && yarn build:backend
 make image    # docker build
-make load     # docker save | ctr import into kind
+make load     # kind load docker-image into cluster
 kubectl rollout restart deployment/backstage -n backstage
 ```
 
