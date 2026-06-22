@@ -7,6 +7,7 @@ addon_resolve_traefik
 export BACKSTAGE_HOSTNAME="backstage-${TRAEFIK_HOSTNAME_BASE}"
 export BACKSTAGE_IMAGE="${BACKSTAGE_IMAGE:-backstage-toolhive-demo:latest}"
 export REGISTRY_HOSTNAME="registry-${TRAEFIK_HOSTNAME_BASE}"
+export MCP_HOSTNAME="mcp-${TRAEFIK_HOSTNAME_BASE}"
 export GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
 # Discover the registry API service in the release namespace by label.

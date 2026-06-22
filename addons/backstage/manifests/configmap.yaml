@@ -45,6 +45,7 @@ data:
     # The public registry at /registry/public requires no authentication
     toolhive:
       registryUrl: '$REGISTRY_SVC_URL'
+      mcpHostname: 'http://$MCP_HOSTNAME'
       registryName: 'public'
 
     kubernetes:

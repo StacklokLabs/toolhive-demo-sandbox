@@ -8,43 +8,14 @@ const PLURAL = 'mcpservers';
 const GATEWAY_API_GROUP = 'gateway.networking.k8s.io';
 const GATEWAY_API_VERSION = 'v1';
 const HTTPROUTE_PLURAL = 'httproutes';
-const GATEWAY_PLURAL = 'gateways';
 const DEFAULT_GATEWAY_NAME = 'traefik-gateway';
 const DEFAULT_GATEWAY_NAMESPACE = 'traefik';
-
-/**
- * Fetch the Traefik gateway's external IP and convert it into the
- * corresponding traefik.me hostname (e.g. `172.20.0.3` →
- * `mcp-172-20-0-3.traefik.me`). Returns undefined if the gateway has no
- * address yet.
- */
-async function resolveTraefikHostname(
-  customObjectsApi: k8s.CustomObjectsApi,
-): Promise<string | undefined> {
-  try {
-    const gateway = (await customObjectsApi.getNamespacedCustomObject({
-      group: GATEWAY_API_GROUP,
-      version: GATEWAY_API_VERSION,
-      namespace: DEFAULT_GATEWAY_NAMESPACE,
-      plural: GATEWAY_PLURAL,
-      name: DEFAULT_GATEWAY_NAME,
-    })) as unknown as {
-      status?: { addresses?: Array<{ value?: string }> };
-    };
-
-    const ip = gateway?.status?.addresses?.[0]?.value;
-    if (!ip) return undefined;
-    return `mcp-${ip.replace(/\./g, '-')}.traefik.me`;
-  } catch {
-    return undefined;
-  }
-}
 
 /**
  * Creates a scaffolder action that deploys an MCPServer CR
  * via the ToolHive Operator.
  */
-export function createDeployMCPServerAction() {
+export function createDeployMCPServerAction(options?: { mcpHostname?: string }) {
   return createTemplateAction({
     id: 'toolhive:deploy:mcpserver',
     description: 'Deploy an MCP Server via ToolHive Operator',
@@ -153,10 +124,10 @@ export function createDeployMCPServerAction() {
         ? rawPath.startsWith('/') ? rawPath : `/${rawPath}`
         : undefined;
 
-      let traefikHostname: string | undefined;
-      if (needsIngress) {
-        traefikHostname = await resolveTraefikHostname(customObjectsApi);
-      }
+      // mcpHostname is injected at deploy time from the cluster's sslip.io
+      // base hostname (e.g. "http://mcp-172-19-0-3.sslip.io"). It can't be
+      // resolved from inside the cluster at runtime.
+      const mcpHostname = options?.mcpHostname;
 
       // Build registry annotations when requested
       const annotations: Record<string, string> = {};
@@ -171,9 +142,9 @@ export function createDeployMCPServerAction() {
         if (registryAuthzClaims) {
           annotations['toolhive.stacklok.dev/authz-claims'] = registryAuthzClaims;
         }
-        if (resolvedIngressPath && traefikHostname) {
+        if (resolvedIngressPath && mcpHostname) {
           annotations['toolhive.stacklok.dev/registry-url'] =
-            `http://${traefikHostname}${resolvedIngressPath}/mcp`;
+            `${mcpHostname}${resolvedIngressPath}/mcp`;
         }
       }
 
@@ -348,16 +319,12 @@ export function createDeployMCPServerAction() {
             body: httpRoute,
           });
 
-          if (traefikHostname) {
-            const ingressUrl = `http://${traefikHostname}${resolvedIngressPath}/mcp`;
+          if (mcpHostname) {
+            const ingressUrl = `${mcpHostname}${resolvedIngressPath}/mcp`;
             ctx.logger.info(
               `MCPServer "${name}" is reachable at ${ingressUrl}`,
             );
             ctx.output('ingressUrl', ingressUrl);
-          } else {
-            ctx.logger.warn(
-              `HTTPRoute "${name}-mcp-route" created, but could not resolve Traefik gateway hostname — check "kubectl get gateway -n traefik traefik-gateway".`,
-            );
           }
         } catch (error: unknown) {
           const message =
