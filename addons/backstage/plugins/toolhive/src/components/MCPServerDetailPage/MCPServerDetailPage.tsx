@@ -125,9 +125,9 @@ export const MCPServerDetailPage = () => {
     Transport: server.spec.transport ?? 'stdio',
     'Proxy Mode': server.spec.proxyMode ?? 'streamable-http',
     'Proxy Port': server.spec.proxyPort ?? 8080,
-    ...(server.spec.mcpPort != null ? { 'MCP Port': server.spec.mcpPort } : {}),
-    ...(server.spec.replicas != null ? { Replicas: server.spec.replicas } : {}),
-    ...(server.spec.backendReplicas != null
+    ...(server.spec.mcpPort !== undefined ? { 'MCP Port': server.spec.mcpPort } : {}),
+    ...(server.spec.replicas !== undefined ? { Replicas: server.spec.replicas } : {}),
+    ...(server.spec.backendReplicas !== undefined
       ? { 'Backend Replicas': server.spec.backendReplicas }
       : {}),
     ...(server.spec.args && server.spec.args.length > 0
@@ -157,7 +157,7 @@ export const MCPServerDetailPage = () => {
 
   const statusMetadata: Record<string, React.ReactNode> = {
     Phase: <PhaseStatus phase={server.status?.phase} />,
-    ...(server.status?.url != null
+    ...(server.status?.url !== undefined
       ? {
           URL:
             server.status.phase === 'Ready' ? (
@@ -174,7 +174,7 @@ export const MCPServerDetailPage = () => {
         }
       : {}),
     ...(server.status?.message ? { Message: server.status.message } : {}),
-    ...(server.status?.readyReplicas != null
+    ...(server.status?.readyReplicas !== undefined
       ? { 'Ready Replicas': server.status.readyReplicas }
       : {}),
   };
