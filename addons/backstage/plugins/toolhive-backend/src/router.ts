@@ -126,12 +126,15 @@ export async function createRouter(
       const registryName =
         options.config.getOptionalString('toolhive.registryName') || 'default';
       const limit = req.query.limit || '100';
+      const version = req.query.version
+        ? `&version=${encodeURIComponent(req.query.version as string)}`
+        : '';
       const search = req.query.search
         ? `&search=${encodeURIComponent(req.query.search as string)}`
         : '';
 
       const response = await fetch(
-        `${registryUrl}/registry/${registryName}/v0.1/servers?limit=${limit}&version=latest${search}`,
+        `${registryUrl}/registry/${registryName}/v0.1/servers?limit=${limit}${version}${search}`,
       );
 
       if (!response.ok) {

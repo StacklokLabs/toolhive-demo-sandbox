@@ -19,7 +19,7 @@ export interface ToolhiveApi {
   getServer(namespace: string, name: string): Promise<MCPServer>;
   createServer(request: CreateMCPServerRequest): Promise<MCPServer>;
   deleteServer(namespace: string, name: string): Promise<void>;
-  listRegistryServers(search?: string): Promise<RegistryServerEntry[]>;
+  listRegistryServers(search?: string, latestOnly?: boolean): Promise<RegistryServerEntry[]>;
 }
 
 /**
@@ -110,11 +110,15 @@ export class ToolhiveClient implements ToolhiveApi {
 
   async listRegistryServers(
     search?: string,
+    latestOnly: boolean = true,
   ): Promise<RegistryServerEntry[]> {
     const baseUrl = await this.getBaseUrl();
     const params = new URLSearchParams({ limit: '200' });
     if (search) {
       params.set('search', search);
+    }
+    if (latestOnly) {
+      params.set('version', 'latest');
     }
     const response = await this.fetchApi.fetch(
       `${baseUrl}/registry/servers?${params.toString()}`,

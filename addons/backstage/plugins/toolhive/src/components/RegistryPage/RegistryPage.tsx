@@ -15,6 +15,8 @@ import { RegistryServerEntry } from '../../api/types';
 import Chip from '@material-ui/core/Chip';
 import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Checkbox from '@material-ui/core/Checkbox';
 import SearchIcon from '@material-ui/icons/Search';
 
 /** Row shape for the registry table. */
@@ -100,12 +102,14 @@ export const RegistryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
   const [search, setSearch] = useState('');
+  const [latestOnly, setLatestOnly] = useState(true);
 
   const fetchEntries = useCallback(async () => {
     try {
       setLoading(true);
       const result = await api.listRegistryServers(
         search || undefined,
+        latestOnly,
       );
       setEntries(result);
       setError(undefined);
@@ -118,7 +122,7 @@ export const RegistryPage = () => {
 
   useEffect(() => {
     fetchEntries();
-  }, [fetchEntries]);
+  }, [fetchEntries, latestOnly]);
 
   const columns: TableColumn<RegistryRow>[] = [
     {
@@ -194,7 +198,7 @@ export const RegistryPage = () => {
         subtitle="Browse and deploy MCP servers from the ToolHive Registry"
       />
       <Content>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <TextField
             placeholder="Search servers..."
             variant="outlined"
@@ -209,6 +213,16 @@ export const RegistryPage = () => {
               ),
             }}
             style={{ minWidth: 300 }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={latestOnly}
+                onChange={e => setLatestOnly(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Latest versions only"
           />
         </div>
         {loading && <Progress />}
