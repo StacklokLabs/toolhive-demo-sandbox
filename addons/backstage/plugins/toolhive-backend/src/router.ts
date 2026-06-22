@@ -131,7 +131,7 @@ export async function createRouter(
         : '';
 
       const response = await fetch(
-        `${registryUrl}/registry/${registryName}/v0.1/servers?limit=${limit}${search}`,
+        `${registryUrl}/registry/${registryName}/v0.1/servers?limit=${limit}&version=latest${search}`,
       );
 
       if (!response.ok) {

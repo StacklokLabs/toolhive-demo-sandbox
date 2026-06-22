@@ -81,7 +81,7 @@ function toRows(entries: RegistryServerEntry[]): RegistryRow[] {
 
     return {
       name: s.name,
-      title: s.title ?? s.name.split('/').pop() ?? s.name,
+      title: s.title ?? s.name,
       description: s.description ?? '',
       image,
       transport,
