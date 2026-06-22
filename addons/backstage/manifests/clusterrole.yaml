@@ -13,6 +13,10 @@ rules:
   - apiGroups: ['toolhive.stacklok.dev']
     resources: ['mcpgroups', 'virtualmcpservers', 'mcpregistries', 'mcpremoteproxies', 'mcpserverentries']
     verbs: ['get', 'list', 'watch']
+  # Gateway API — HTTPRoutes created alongside MCPServer workloads
+  - apiGroups: ['gateway.networking.k8s.io']
+    resources: ['httproutes']
+    verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   # Core resources — read-only for dashboard visibility
   - apiGroups: ['']
     resources: ['pods', 'services', 'configmaps']
