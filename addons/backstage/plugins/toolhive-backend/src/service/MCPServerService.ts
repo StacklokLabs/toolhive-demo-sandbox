@@ -210,6 +210,34 @@ export class MCPServerService {
       });
       throw error;
     }
+
+    // Best-effort: delete any HTTPRoutes labeled with this MCPServer's name.
+    try {
+      const routes = (await this.customObjectsApi.listNamespacedCustomObject({
+        group: GATEWAY_API_GROUP,
+        version: GATEWAY_API_VERSION,
+        namespace,
+        plural: HTTPROUTE_PLURAL,
+        labelSelector: `${MCPSERVER_LABEL}=${name}`,
+      })) as unknown as { items: Array<{ metadata: { name: string } }> };
+
+      for (const route of routes.items ?? []) {
+        await this.customObjectsApi.deleteNamespacedCustomObject({
+          group: GATEWAY_API_GROUP,
+          version: GATEWAY_API_VERSION,
+          namespace,
+          plural: HTTPROUTE_PLURAL,
+          name: route.metadata.name,
+        });
+        this.logger.info('Deleted HTTPRoute', { name: route.metadata.name, namespace });
+      }
+    } catch (error) {
+      this.logger.warn('Failed to clean up HTTPRoutes for MCPServer', {
+        error: String(error),
+        name,
+        namespace,
+      });
+    }
   }
 
   async getStatus(name: string, namespace: string = DEFAULT_NAMESPACE): Promise<MCPServer> {
