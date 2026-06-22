@@ -20,11 +20,13 @@ export const scaffolderModuleToolhive = createBackendModule({
       },
       async init({ scaffolderActions, config }) {
         const registryUrl = config.getOptionalString('toolhive.registryUrl');
+        const registryName = config.getOptionalString('toolhive.registryName');
         const mcpHostname = config.getOptionalString('toolhive.mcpHostname');
         scaffolderActions.addActions(
           createDeployMCPServerAction({ mcpHostname: mcpHostname || undefined }),
           createDeployFromRegistryAction({
             registryUrl: registryUrl || undefined,
+            registryName: registryName || undefined,
           }),
         );
       },

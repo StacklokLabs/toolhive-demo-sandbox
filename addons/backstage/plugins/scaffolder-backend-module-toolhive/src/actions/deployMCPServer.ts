@@ -1,9 +1,11 @@
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
-import * as k8s from '@kubernetes/client-node';
-
-const API_GROUP = 'toolhive.stacklok.dev';
-const API_VERSION = 'v1beta1';
-const PLURAL = 'mcpservers';
+import {
+  API_GROUP,
+  API_VERSION,
+  createCustomObjectsApi,
+  createMCPServer,
+  waitForServerUrl,
+} from './mcpServer';
 
 const GATEWAY_API_GROUP = 'gateway.networking.k8s.io';
 const GATEWAY_API_VERSION = 'v1';
@@ -112,17 +114,16 @@ export function createDeployMCPServerAction(options?: { mcpHostname?: string }) 
       );
 
       // Connect to Kubernetes
-      const kc = new k8s.KubeConfig();
-      kc.loadFromDefault();
-      const customObjectsApi = kc.makeApiClient(k8s.CustomObjectsApi);
+      const customObjectsApi = createCustomObjectsApi();
 
       // An HTTPRoute is needed when explicitly requested OR when registering in
       // the registry (a catalog URL is meaningless without an accessible route).
       const needsIngress = exposeViaIngress || registerInRegistry;
       const rawPath = ingressPath || `/${name}`;
-      const resolvedIngressPath = needsIngress
-        ? rawPath.startsWith('/') ? rawPath : `/${rawPath}`
-        : undefined;
+      let resolvedIngressPath: string | undefined;
+      if (needsIngress) {
+        resolvedIngressPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+      }
 
       // mcpHostname is injected at deploy time from the cluster's sslip.io
       // base hostname (e.g. "http://mcp-172-19-0-3.sslip.io"). It can't be
@@ -165,87 +166,14 @@ export function createDeployMCPServerAction(options?: { mcpHostname?: string }) 
         },
       };
 
-      // Apply the MCPServer CR
-      ctx.logger.info(
-        `Creating MCPServer CR "${name}" in namespace "${namespace}"`,
+      // Apply the MCPServer CR and wait for it to report a status URL.
+      await createMCPServer(customObjectsApi, manifest, name, namespace, ctx.logger);
+      const serverUrl = await waitForServerUrl(
+        customObjectsApi,
+        name,
+        namespace,
+        ctx.logger,
       );
-      try {
-        await customObjectsApi.createNamespacedCustomObject({
-          group: API_GROUP,
-          version: API_VERSION,
-          namespace,
-          plural: PLURAL,
-          body: manifest,
-        });
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : String(error);
-        ctx.logger.error(`Failed to create MCPServer: ${message}`);
-        throw new Error(`Failed to create MCPServer "${name}": ${message}`);
-      }
-
-      ctx.logger.info(
-        `MCPServer CR "${name}" created, waiting for status...`,
-      );
-
-      // Poll for the status URL (up to 30 seconds)
-      let serverUrl = '';
-      const pollInterval = 2000;
-      const maxAttempts = 15;
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        try {
-          const response =
-            (await customObjectsApi.getNamespacedCustomObject({
-              group: API_GROUP,
-              version: API_VERSION,
-              namespace,
-              plural: PLURAL,
-              name,
-            })) as {
-              status?: { phase?: string; url?: string };
-            };
-
-          const status = response?.status;
-          if (status?.url) {
-            serverUrl = status.url;
-            ctx.logger.info(
-              `MCPServer "${name}" is ready at ${serverUrl}`,
-            );
-            break;
-          }
-
-          const phase = status?.phase || 'Unknown';
-          ctx.logger.info(
-            `MCPServer "${name}" phase: ${phase} (attempt ${attempt + 1}/${maxAttempts})`,
-          );
-
-          if (phase === 'Failed') {
-            throw new Error(
-              `MCPServer "${name}" entered Failed phase`,
-            );
-          }
-        } catch (error: unknown) {
-          if (
-            error instanceof Error &&
-            error.message.includes('Failed phase')
-          ) {
-            throw error;
-          }
-          ctx.logger.warn(
-            `Failed to get MCPServer status (attempt ${attempt + 1}): ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
-
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-      }
-
-      if (!serverUrl) {
-        ctx.logger.warn(
-          `MCPServer "${name}" did not become ready within the polling window. It may still be starting up.`,
-        );
-        serverUrl = `http://${name}-proxy-svc.${namespace}.svc.cluster.local:8080`;
-      }
 
       // Optionally create an HTTPRoute so the server is reachable through the
       // shared Traefik gateway at `/<path>/mcp`. The ToolHive operator creates

@@ -1,9 +1,11 @@
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
-import * as k8s from '@kubernetes/client-node';
-
-const API_GROUP = 'toolhive.stacklok.dev';
-const API_VERSION = 'v1beta1';
-const PLURAL = 'mcpservers';
+import {
+  API_GROUP,
+  API_VERSION,
+  createCustomObjectsApi,
+  createMCPServer,
+  waitForServerUrl,
+} from './mcpServer';
 
 interface RegistryPackage {
   identifier: string;
@@ -35,6 +37,7 @@ interface RegistryResponse {
  */
 export function createDeployFromRegistryAction(options?: {
   registryUrl?: string;
+  registryName?: string;
 }) {
   return createTemplateAction({
     id: 'toolhive:registry:deploy',
@@ -56,7 +59,10 @@ export function createDeployFromRegistryAction(options?: {
               'Kubernetes resource name override (derived from serverName if omitted)',
             ),
         namespace: z =>
-          z.string().default('default').describe('Kubernetes namespace'),
+          z
+            .string()
+            .default('mcp-workloads')
+            .describe('Kubernetes namespace'),
         env: z =>
           z
             .array(z.object({ name: z.string(), value: z.string() }))
@@ -82,13 +88,14 @@ export function createDeployFromRegistryAction(options?: {
       const registryUrl =
         options?.registryUrl ||
         'http://toolhive-registry-api.toolhive-system.svc.cluster.local:8080';
+      const registryName = options?.registryName || 'public';
 
       // Step 1: Look up the server in the registry
       ctx.logger.info(
-        `Looking up "${serverName}" in ToolHive Registry at ${registryUrl}`,
+        `Looking up "${serverName}" in ToolHive Registry "${registryName}" at ${registryUrl}`,
       );
 
-      const searchUrl = `${registryUrl}/registry/default/v0.1/servers?search=${encodeURIComponent(serverName)}&limit=50`;
+      const searchUrl = `${registryUrl}/registry/${registryName}/v0.1/servers?search=${encodeURIComponent(serverName)}&limit=50`;
       const registryResponse = await fetch(searchUrl);
 
       if (!registryResponse.ok) {
@@ -161,92 +168,15 @@ export function createDeployFromRegistryAction(options?: {
         },
       };
 
-      // Step 4: Apply the MCPServer CR
-      const kc = new k8s.KubeConfig();
-      kc.loadFromDefault();
-      const customObjectsApi = kc.makeApiClient(k8s.CustomObjectsApi);
-
-      ctx.logger.info(
-        `Creating MCPServer CR "${name}" in namespace "${namespace}"`,
+      // Step 4: Apply the MCPServer CR and wait for it to report a status URL.
+      const customObjectsApi = createCustomObjectsApi();
+      await createMCPServer(customObjectsApi, manifest, name, namespace, ctx.logger);
+      const serverUrl = await waitForServerUrl(
+        customObjectsApi,
+        name,
+        namespace,
+        ctx.logger,
       );
-
-      try {
-        await customObjectsApi.createNamespacedCustomObject({
-          group: API_GROUP,
-          version: API_VERSION,
-          namespace,
-          plural: PLURAL,
-          body: manifest,
-        });
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : String(error);
-        ctx.logger.error(`Failed to create MCPServer: ${message}`);
-        throw new Error(`Failed to create MCPServer "${name}": ${message}`);
-      }
-
-      // Step 5: Poll for status URL
-      ctx.logger.info(
-        `MCPServer CR "${name}" created, waiting for status...`,
-      );
-
-      let serverUrl = '';
-      const pollInterval = 2000;
-      const maxAttempts = 15;
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        try {
-          const response =
-            (await customObjectsApi.getNamespacedCustomObject({
-              group: API_GROUP,
-              version: API_VERSION,
-              namespace,
-              plural: PLURAL,
-              name,
-            })) as {
-              status?: { phase?: string; url?: string };
-            };
-
-          const status = response?.status;
-          if (status?.url) {
-            serverUrl = status.url;
-            ctx.logger.info(
-              `MCPServer "${name}" is ready at ${serverUrl}`,
-            );
-            break;
-          }
-
-          const phase = status?.phase || 'Unknown';
-          ctx.logger.info(
-            `MCPServer "${name}" phase: ${phase} (attempt ${attempt + 1}/${maxAttempts})`,
-          );
-
-          if (phase === 'Failed') {
-            throw new Error(
-              `MCPServer "${name}" entered Failed phase`,
-            );
-          }
-        } catch (error: unknown) {
-          if (
-            error instanceof Error &&
-            error.message.includes('Failed phase')
-          ) {
-            throw error;
-          }
-          ctx.logger.warn(
-            `Failed to get MCPServer status (attempt ${attempt + 1}): ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
-
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-      }
-
-      if (!serverUrl) {
-        ctx.logger.warn(
-          `MCPServer "${name}" did not become ready within the polling window. It may still be starting up.`,
-        );
-        serverUrl = `http://${name}-proxy-svc.${namespace}.svc.cluster.local:8080`;
-      }
 
       ctx.output('serverName', name);
       ctx.output('namespace', namespace);
