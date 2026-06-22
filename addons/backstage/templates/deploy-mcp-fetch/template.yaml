@@ -1,0 +1,43 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-mcp-fetch
+  title: Deploy Fetch MCP Server
+  description: Deploy a Fetch (web) MCP server for fetching web content, powered by ToolHive Operator
+  tags:
+    - mcp
+    - toolhive
+    - kubernetes
+    - fetch
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: Fetch MCP Server Configuration
+      required:
+        - name
+      properties:
+        name:
+          title: Server Name
+          type: string
+          description: Name for the Fetch MCP server (lowercase, hyphens only)
+          default: fetch
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+        namespace:
+          title: Namespace
+          type: string
+          default: mcp-workloads
+          description: Kubernetes namespace to deploy into
+  steps:
+    - id: deploy
+      name: Deploy Fetch MCP Server
+      action: toolhive:deploy:mcpserver
+      input:
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+        image: ghcr.io/stackloklabs/gofetch/server:1.0.3
+        transport: stdio
+  output:
+    links:
+      - title: View in MCP Server Dashboard
+        url: /toolhive/${{ parameters.namespace }}/${{ parameters.name }}

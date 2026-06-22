@@ -1,0 +1,52 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-mcp-github
+  title: Deploy GitHub MCP Server
+  description: Deploy a GitHub MCP server for interacting with the GitHub API, powered by ToolHive Operator
+  tags:
+    - mcp
+    - toolhive
+    - kubernetes
+    - github
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: GitHub MCP Server Configuration
+      required:
+        - name
+        - githubToken
+      properties:
+        name:
+          title: Server Name
+          type: string
+          description: Name for the GitHub MCP server (lowercase, hyphens only)
+          default: github
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+        namespace:
+          title: Namespace
+          type: string
+          default: mcp-workloads
+          description: Kubernetes namespace to deploy into
+        githubToken:
+          title: GitHub Token
+          type: string
+          description: GitHub personal access token for API authentication
+          ui:widget: password
+  steps:
+    - id: deploy
+      name: Deploy GitHub MCP Server
+      action: toolhive:deploy:mcpserver
+      input:
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+        image: ghcr.io/github/github-mcp-server:latest
+        transport: stdio
+        env:
+          - name: GITHUB_TOKEN
+            value: ${{ parameters.githubToken }}
+  output:
+    links:
+      - title: View in MCP Server Dashboard
+        url: /toolhive/${{ parameters.namespace }}/${{ parameters.name }}

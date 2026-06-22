@@ -1,0 +1,128 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-mcp-server
+  title: Deploy MCP Server
+  description: Deploy an MCP server to the Kubernetes cluster via ToolHive Operator
+  tags:
+    - mcp
+    - toolhive
+    - kubernetes
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: MCP Server Configuration
+      required:
+        - name
+        - image
+      properties:
+        name:
+          title: Server Name
+          type: string
+          description: Name for the MCP server (lowercase, hyphens only)
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+        namespace:
+          title: Namespace
+          type: string
+          default: mcp-workloads
+          description: Kubernetes namespace to deploy into
+        image:
+          title: Container Image
+          type: string
+          description: Container image for the MCP server
+        transport:
+          title: Transport Protocol
+          type: string
+          enum:
+            - stdio
+            - sse
+            - streamable-http
+          default: stdio
+          description: MCP transport protocol
+    - title: Advanced Configuration
+      properties:
+        port:
+          title: Port
+          type: integer
+          description: Port the MCP server listens on (optional)
+        envVars:
+          title: Environment Variables
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - value
+            properties:
+              name:
+                title: Name
+                type: string
+              value:
+                title: Value
+                type: string
+    - title: Ingress
+      properties:
+        exposeViaIngress:
+          title: Expose via Traefik ingress
+          type: boolean
+          default: false
+          description: >-
+            Create an HTTPRoute on the shared Traefik gateway so the server is
+            reachable at mcp-<IP>.traefik.me/<path>/mcp.
+        ingressPath:
+          title: Ingress Path Prefix
+          type: string
+          description: >-
+            Path prefix for the HTTPRoute (defaults to /<server name>). Only
+            used when "Expose via Traefik ingress" is enabled.
+    - title: Registry
+      properties:
+        registerInRegistry:
+          title: Publish to ToolHive Registry
+          type: boolean
+          default: false
+          description: >-
+            Add registry annotations so this server appears in the ToolHive
+            catalog. Requires "Expose via Traefik ingress" to set the registry
+            URL automatically.
+        registryTitle:
+          title: Display Title
+          type: string
+          description: >-
+            Human-readable name shown in the registry. Pre-filled when deploying
+            from the registry page.
+        registryDescription:
+          title: Description
+          type: string
+          description: >-
+            Short description shown in the registry. Pre-filled when deploying
+            from the registry page.
+        registryAuthzClaims:
+          title: Authorization Claims
+          type: string
+          default: '{"groups": "everyone"}'
+          description: >-
+            JSON group claims controlling registry visibility,
+            e.g. {"groups": "engineering"}. Leave blank for public visibility.
+  steps:
+    - id: deploy
+      name: Deploy MCP Server
+      action: toolhive:deploy:mcpserver
+      input:
+        name: ${{ parameters.name }}
+        namespace: ${{ parameters.namespace }}
+        image: ${{ parameters.image }}
+        transport: ${{ parameters.transport }}
+        port: ${{ parameters.port }}
+        env: ${{ parameters.envVars }}
+        exposeViaIngress: ${{ parameters.exposeViaIngress }}
+        ingressPath: ${{ parameters.ingressPath }}
+        registerInRegistry: ${{ parameters.registerInRegistry }}
+        registryTitle: ${{ parameters.registryTitle }}
+        registryDescription: ${{ parameters.registryDescription }}
+        registryAuthzClaims: ${{ parameters.registryAuthzClaims }}
+  output:
+    links:
+      - title: View in MCP Server Dashboard
+        url: /toolhive/${{ parameters.namespace }}/${{ parameters.name }}
