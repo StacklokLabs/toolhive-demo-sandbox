@@ -118,11 +118,11 @@ export const RegistryPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, search]);
+  }, [api, search, latestOnly]);
 
   useEffect(() => {
     fetchEntries();
-  }, [fetchEntries, latestOnly]);
+  }, [fetchEntries]);
 
   const columns: TableColumn<RegistryRow>[] = [
     {
