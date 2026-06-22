@@ -101,6 +101,7 @@ spec:
         registryAuthzClaims:
           title: Authorization Claims
           type: string
+          default: '{"groups": "everyone"}'
           description: >-
             JSON group claims controlling registry visibility,
             e.g. {"groups": "engineering"}. Leave blank for public visibility.
