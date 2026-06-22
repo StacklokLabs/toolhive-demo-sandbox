@@ -81,7 +81,7 @@ export function createDeployFromRegistryAction(options?: {
 
       const registryUrl =
         options?.registryUrl ||
-        'http://toolhive-registry-server.toolhive-system.svc.cluster.local:8080';
+        'http://toolhive-registry-api.toolhive-system.svc.cluster.local:8080';
 
       // Step 1: Look up the server in the registry
       ctx.logger.info(

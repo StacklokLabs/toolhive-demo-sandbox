@@ -44,7 +44,7 @@ data:
     # ToolHive Registry Server — uses the sandbox's in-cluster service
     # The public registry at /registry/public requires no authentication
     toolhive:
-      registryUrl: 'http://toolhive-registry-api.toolhive-system.svc.cluster.local:8080'
+      registryUrl: '$REGISTRY_SVC_URL'
       registryName: 'public'
 
     kubernetes:

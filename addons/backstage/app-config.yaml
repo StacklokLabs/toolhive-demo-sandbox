@@ -156,7 +156,7 @@ catalog:
     #     - allow: [User, Group]
 
 toolhive:
-  registryUrl: 'http://toolhive-registry-server.toolhive-system.svc.cluster.local:8080'
+  registryUrl: 'http://toolhive-registry-api.toolhive-system.svc.cluster.local:8080'
 
 kubernetes:
   serviceLocatorMethod:
