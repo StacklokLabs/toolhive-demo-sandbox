@@ -27,7 +27,7 @@ spec:
         namespace:
           title: Namespace
           type: string
-          default: default
+          default: mcp-workloads
           description: Kubernetes namespace to deploy into
         githubToken:
           title: GitHub Token

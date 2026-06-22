@@ -52,7 +52,7 @@ export function createDeployMCPServerAction() {
       input: {
         name: z => z.string().describe('MCPServer resource name'),
         namespace: z =>
-          z.string().default('default').describe('Kubernetes namespace'),
+          z.string().default('mcp-workloads').describe('Kubernetes namespace'),
         image: z =>
           z.string().describe('Container image for the MCP server'),
         transport: z =>
@@ -84,6 +84,20 @@ export function createDeployMCPServerAction() {
             .describe(
               'Path prefix for the HTTPRoute (defaults to /<server name>). Only used when exposeViaIngress is true.',
             ),
+        registerInRegistry: z =>
+          z
+            .boolean()
+            .default(false)
+            .describe('Add registry annotations to publish this server in the ToolHive catalog'),
+        registryTitle: z =>
+          z.string().optional().describe('Human-readable title shown in the registry'),
+        registryDescription: z =>
+          z.string().optional().describe('Description shown in the registry'),
+        registryAuthzClaims: z =>
+          z
+            .string()
+            .optional()
+            .describe('JSON group claims controlling registry visibility, e.g. {"groups": "engineering"}'),
       },
       output: {
         serverName: z =>
@@ -116,11 +130,52 @@ export function createDeployMCPServerAction() {
         env,
         exposeViaIngress,
         ingressPath,
+        registerInRegistry,
+        registryTitle,
+        registryDescription,
+        registryAuthzClaims,
       } = ctx.input;
 
       ctx.logger.info(
         `Deploying MCPServer "${name}" in namespace "${namespace}" with image "${image}"`,
       );
+
+      // Connect to Kubernetes
+      const kc = new k8s.KubeConfig();
+      kc.loadFromDefault();
+      const customObjectsApi = kc.makeApiClient(k8s.CustomObjectsApi);
+
+      // An HTTPRoute is needed when explicitly requested OR when registering in
+      // the registry (a catalog URL is meaningless without an accessible route).
+      const needsIngress = exposeViaIngress || registerInRegistry;
+      const rawPath = ingressPath || `/${name}`;
+      const resolvedIngressPath = needsIngress
+        ? rawPath.startsWith('/') ? rawPath : `/${rawPath}`
+        : undefined;
+
+      let traefikHostname: string | undefined;
+      if (needsIngress) {
+        traefikHostname = await resolveTraefikHostname(customObjectsApi);
+      }
+
+      // Build registry annotations when requested
+      const annotations: Record<string, string> = {};
+      if (registerInRegistry) {
+        annotations['toolhive.stacklok.dev/registry-export'] = 'true';
+        if (registryTitle) {
+          annotations['toolhive.stacklok.dev/registry-title'] = registryTitle;
+        }
+        if (registryDescription) {
+          annotations['toolhive.stacklok.dev/registry-description'] = registryDescription;
+        }
+        if (registryAuthzClaims) {
+          annotations['toolhive.stacklok.dev/authz-claims'] = registryAuthzClaims;
+        }
+        if (resolvedIngressPath && traefikHostname) {
+          annotations['toolhive.stacklok.dev/registry-url'] =
+            `http://${traefikHostname}${resolvedIngressPath}/mcp`;
+        }
+      }
 
       // Build the MCPServer manifest
       const manifest = {
@@ -129,6 +184,7 @@ export function createDeployMCPServerAction() {
         metadata: {
           name,
           namespace,
+          ...(Object.keys(annotations).length > 0 && { annotations }),
         },
         spec: {
           image,
@@ -137,11 +193,6 @@ export function createDeployMCPServerAction() {
           ...(env && env.length > 0 && { env }),
         },
       };
-
-      // Connect to Kubernetes
-      const kc = new k8s.KubeConfig();
-      kc.loadFromDefault();
-      const customObjectsApi = kc.makeApiClient(k8s.CustomObjectsApi);
 
       // Apply the MCPServer CR
       ctx.logger.info(
@@ -229,10 +280,7 @@ export function createDeployMCPServerAction() {
       // shared Traefik gateway at `/<path>/mcp`. The ToolHive operator creates
       // a Service named `mcp-<name>-proxy` on port 8080 for each MCPServer, so
       // the route mirrors the pattern used by existing demo manifests.
-      let resolvedIngressPath: string | undefined;
-      if (exposeViaIngress) {
-        const rawPath = ingressPath || `/${name}`;
-        resolvedIngressPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+      if (needsIngress && resolvedIngressPath) {
         const httpRoute = {
           apiVersion: `${GATEWAY_API_GROUP}/${GATEWAY_API_VERSION}`,
           kind: 'HTTPRoute',
@@ -300,11 +348,8 @@ export function createDeployMCPServerAction() {
             body: httpRoute,
           });
 
-          // Resolve the Traefik gateway IP so the log prints the URL the user
-          // will actually hit from outside the cluster.
-          const hostname = await resolveTraefikHostname(customObjectsApi);
-          if (hostname) {
-            const ingressUrl = `http://${hostname}${resolvedIngressPath}/mcp`;
+          if (traefikHostname) {
+            const ingressUrl = `http://${traefikHostname}${resolvedIngressPath}/mcp`;
             ctx.logger.info(
               `MCPServer "${name}" is reachable at ${ingressUrl}`,
             );

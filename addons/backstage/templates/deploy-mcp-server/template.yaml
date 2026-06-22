@@ -25,7 +25,7 @@ spec:
         namespace:
           title: Namespace
           type: string
-          default: default
+          default: mcp-workloads
           description: Kubernetes namespace to deploy into
         image:
           title: Container Image
@@ -76,6 +76,34 @@ spec:
           description: >-
             Path prefix for the HTTPRoute (defaults to /<server name>). Only
             used when "Expose via Traefik ingress" is enabled.
+    - title: Registry
+      properties:
+        registerInRegistry:
+          title: Publish to ToolHive Registry
+          type: boolean
+          default: false
+          description: >-
+            Add registry annotations so this server appears in the ToolHive
+            catalog. Requires "Expose via Traefik ingress" to set the registry
+            URL automatically.
+        registryTitle:
+          title: Display Title
+          type: string
+          description: >-
+            Human-readable name shown in the registry. Pre-filled when deploying
+            from the registry page.
+        registryDescription:
+          title: Description
+          type: string
+          description: >-
+            Short description shown in the registry. Pre-filled when deploying
+            from the registry page.
+        registryAuthzClaims:
+          title: Authorization Claims
+          type: string
+          description: >-
+            JSON group claims controlling registry visibility,
+            e.g. {"groups": "engineering"}. Leave blank for public visibility.
   steps:
     - id: deploy
       name: Deploy MCP Server
@@ -89,6 +117,10 @@ spec:
         env: ${{ parameters.envVars }}
         exposeViaIngress: ${{ parameters.exposeViaIngress }}
         ingressPath: ${{ parameters.ingressPath }}
+        registerInRegistry: ${{ parameters.registerInRegistry }}
+        registryTitle: ${{ parameters.registryTitle }}
+        registryDescription: ${{ parameters.registryDescription }}
+        registryAuthzClaims: ${{ parameters.registryAuthzClaims }}
   output:
     links:
       - title: View in MCP Server Dashboard

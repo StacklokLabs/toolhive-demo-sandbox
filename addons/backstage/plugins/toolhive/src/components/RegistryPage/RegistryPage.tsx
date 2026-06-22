@@ -78,7 +78,9 @@ function toRows(entries: RegistryServerEntry[]): RegistryRow[] {
       name: shortName,
       image,
       transport,
-      namespace: 'default',
+      namespace: 'mcp-workloads',
+      registryTitle: s.title ?? '',
+      registryDescription: s.description ?? '',
     }));
 
     return {
