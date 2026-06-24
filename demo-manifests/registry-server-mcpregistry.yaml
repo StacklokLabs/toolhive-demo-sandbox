@@ -152,6 +152,9 @@ spec:
         enabled: true
         sampling: 1.0
 
+    audit:
+      enabled: true
+
     # CNPG PostgreSQL database configuration (password supplied via pgpassSecretRef).
     database:
       host: registry-db-rw
