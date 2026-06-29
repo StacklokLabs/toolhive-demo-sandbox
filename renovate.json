@@ -45,6 +45,10 @@
         "!/^stacklok//"
       ],
       "groupName": "demo infrastructure dependencies"
+    },
+    {
+      "matchFileNames": ["addons/backstage/**"],
+      "groupName": "Backstage addon dependencies"
     }
   ],
   "customManagers": [
