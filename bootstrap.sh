@@ -192,6 +192,19 @@ if [ -n "$PREVIOUS_BASE" ] && [ "$PREVIOUS_BASE" != "$TRAEFIK_HOSTNAME_BASE" ]; 
 fi
 run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
+# Wait for the realm to finish importing — the pod readiness probe passes as
+# soon as Keycloak is listening, but the --import-realm startup task runs
+# asynchronously. Without this, a fast-following helm install (e.g. the
+# registry server) finishes before the realm is ready and the token-based
+# registry validation fails.
+_kc_deadline=$(($(date +%s) + 120))
+until curl -sk --max-time 5 -X POST \
+    "https://${AUTH_HOSTNAME}/realms/${KC_REALM}/protocol/openid-connect/token" \
+    -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
+    2>/dev/null | grep -q '"access_token"'; do
+    [ "$(date +%s)" -lt "$_kc_deadline" ] || { echo " ⚠ (Keycloak realm not ready after 120s — continuing)"; break; }
+    sleep 5
+done
 # Stamp the bootstrap state so the next re-bootstrap can detect IP drift.
 run_quiet sh -c "kubectl create configmap keycloak-bootstrap-state -n keycloak \
     --from-literal=traefikHostnameBase='$TRAEFIK_HOSTNAME_BASE' \
