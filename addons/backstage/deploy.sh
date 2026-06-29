@@ -19,14 +19,11 @@ if ! docker exec "${CLUSTER_NAME}-control-plane" crictl images --no-trunc 2>/dev
   Build and load it first — see addons/backstage/README.md for instructions."
 fi
 
-# Discover the registry API service in the release namespace by label.
-# Override via REGISTRY_SVC_URL in addons/backstage/.env if needed.
+# Resolve the registry API service URL.
+# The Helm chart uses fullnameOverride: registry-server, so the service is always
+# named "registry-server". Override via REGISTRY_SVC_URL in addons/backstage/.env if needed.
 if [ -z "$REGISTRY_SVC_URL" ]; then
-    _reg_svc=$(kubectl get svc -n "$RELEASE_NAMESPACE" \
-        -l "app.kubernetes.io/component=registry-api" \
-        -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    [ -n "$_reg_svc" ] || die "Could not find registry-api service in namespace $RELEASE_NAMESPACE"
-    export REGISTRY_SVC_URL="http://${_reg_svc}.${RELEASE_NAMESPACE}.svc.cluster.local:8080"
+    export REGISTRY_SVC_URL="http://registry-server.${RELEASE_NAMESPACE}.svc.cluster.local:8080"
 fi
 
 # --- Namespace + RBAC ---

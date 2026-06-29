@@ -87,7 +87,7 @@ export function createDeployFromRegistryAction(options?: {
 
       const registryUrl =
         options?.registryUrl ||
-        'http://toolhive-registry-api.toolhive-system.svc.cluster.local:8080';
+        'http://registry-server.toolhive-system.svc.cluster.local:8080';
       const registryName = options?.registryName || 'public';
 
       // Step 1: Look up the server in the registry

@@ -251,14 +251,13 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f 
 run_quiet sh -c "envsubst < demo-manifests/vmcp-platform.yaml | kubectl apply -f -" || die "Failed to apply vmcp-platform"
 echo " ✓"
 
-# Clean up any prior Helm-managed Registry Server release — the operator-managed
-# MCPRegistry below replaces it. No-op on fresh clusters or clusters already
-# migrated.
-run_quiet sh -c "helm -n $RELEASE_NAMESPACE uninstall registry-server 2>/dev/null || true"
+# Clean up any prior MCPRegistry CR — the Helm chart replaces it.
+# No-op on fresh clusters or clusters already migrated.
+run_quiet sh -c "kubectl -n $RELEASE_NAMESPACE delete mcpregistry --all 2>/dev/null || true"
 
-echo -n "Applying MCPRegistry (registry server)..."
-run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION \$RELEASE_NAMESPACE \$KC_REALM \$REGISTRY_RESOURCE_NAME' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
-run_quiet kubectl -n "$RELEASE_NAMESPACE" wait --for=condition=Ready --timeout=5m mcpregistry/"$REGISTRY_RESOURCE_NAME" || die "MCPRegistry failed to become ready"
+echo -n "Installing Registry Server..."
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$KC_REALM \$RELEASE_NAMESPACE' < demo-manifests/registry-server-helm-values.yaml | helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version $REGISTRY_SERVER_CHART_VERSION --namespace $RELEASE_NAMESPACE --values - --wait" || die "Failed to install Registry Server"
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$RELEASE_NAMESPACE' < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
 echo " ✓"
 
 # Migrate clusters created before Cloud UI moved to its Helm chart: the old

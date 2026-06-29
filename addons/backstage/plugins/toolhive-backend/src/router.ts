@@ -90,7 +90,7 @@ export async function createRouter(
     try {
       const registryUrl =
         options.config.getOptionalString('toolhive.registryUrl') ||
-        'http://toolhive-registry-api.toolhive-system.svc.cluster.local:8080';
+        'http://registry-server.toolhive-system.svc.cluster.local:8080';
       const registryName =
         options.config.getOptionalString('toolhive.registryName') || 'default';
       const limit = req.query.limit || '100';
