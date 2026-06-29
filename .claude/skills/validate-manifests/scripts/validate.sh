@@ -18,9 +18,9 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
 }
 cd "$REPO_ROOT"
 
-# Pull identity vars (KUBECONFIG_FILE, RELEASE_NAMESPACE, KC_REALM,
-# REGISTRY_RESOURCE_NAME) from versions.env rather than hardcoding them, so a
-# fork that renames the namespace / realm / kubeconfig only edits versions.env.
+# Pull identity vars (KUBECONFIG_FILE, RELEASE_NAMESPACE, KC_REALM) from
+# versions.env rather than hardcoding them, so a fork that renames the namespace
+# / realm / kubeconfig only edits versions.env.
 # set -a exports each assignment for the envsubst pass below; the placeholder
 # version/hostname/secret exports further down intentionally override theirs.
 if [ -f "$REPO_ROOT/versions.env" ]; then
@@ -53,9 +53,8 @@ export GRAFANA_HOSTNAME="grafana.validate.local"
 export LIBRECHAT_HOSTNAME="chat.validate.local"
 export KEYCLOAK_VERSION="0.0.0"
 export CLOUD_UI_VERSION="v0.0.0"
-export REGISTRY_SERVER_VERSION="v0.0.0"
 export EMBEDDING_IMAGE="ghcr.io/huggingface/text-embeddings-inference:cpu-latest"
-# RELEASE_NAMESPACE, KC_REALM, REGISTRY_RESOURCE_NAME come from versions.env (sourced above).
+# RELEASE_NAMESPACE and KC_REALM come from versions.env (sourced above).
 export OPENROUTER_API_KEY="placeholder-openrouter-key"
 export VMCP_OKTA_CLOUDFLARED_DOMAIN="vmcp.validate.local"
 export OKTA_ISSUER_URL="https://placeholder.okta.com/oauth2/placeholder"

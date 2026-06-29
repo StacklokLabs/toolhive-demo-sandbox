@@ -192,6 +192,19 @@ if [ -n "$PREVIOUS_BASE" ] && [ "$PREVIOUS_BASE" != "$TRAEFIK_HOSTNAME_BASE" ]; 
 fi
 run_quiet sh -c "envsubst '\$KEYCLOAK_VERSION \$UI_HOSTNAME \$AUTH_HOSTNAME' < infra/keycloak.yaml | kubectl apply -f -" || die "Failed to install Keycloak"
 run_quiet wait_for_pods_ready keycloak 300 || die "Keycloak failed to become ready"
+# Wait for the realm to finish importing — the pod readiness probe passes as
+# soon as Keycloak is listening, but the --import-realm startup task runs
+# asynchronously. Without this, a fast-following helm install (e.g. the
+# registry server) finishes before the realm is ready and the token-based
+# registry validation fails.
+_kc_deadline=$(($(date +%s) + 120))
+until curl -sk --max-time 5 -X POST \
+    "https://${AUTH_HOSTNAME}/realms/${KC_REALM}/protocol/openid-connect/token" \
+    -d "grant_type=password&client_id=toolhive-cloud-ui&client_secret=cloud-ui-secret-change-in-production&username=demo&password=demo&scope=openid" \
+    2>/dev/null | grep -q '"access_token"'; do
+    [ "$(date +%s)" -lt "$_kc_deadline" ] || { echo " ⚠ (Keycloak realm not ready after 120s — continuing)"; break; }
+    sleep 5
+done
 # Stamp the bootstrap state so the next re-bootstrap can detect IP drift.
 run_quiet sh -c "kubectl create configmap keycloak-bootstrap-state -n keycloak \
     --from-literal=traefikHostnameBase='$TRAEFIK_HOSTNAME_BASE' \
@@ -251,14 +264,13 @@ run_quiet sh -c "envsubst < demo-manifests/vmcp-finance.yaml | kubectl apply -f 
 run_quiet sh -c "envsubst < demo-manifests/vmcp-platform.yaml | kubectl apply -f -" || die "Failed to apply vmcp-platform"
 echo " ✓"
 
-# Clean up any prior Helm-managed Registry Server release — the operator-managed
-# MCPRegistry below replaces it. No-op on fresh clusters or clusters already
-# migrated.
-run_quiet sh -c "helm -n $RELEASE_NAMESPACE uninstall registry-server 2>/dev/null || true"
+# Clean up any prior MCPRegistry CR — the Helm chart replaces it.
+# No-op on fresh clusters or clusters already migrated.
+run_quiet sh -c "kubectl -n $RELEASE_NAMESPACE delete mcpregistry --all 2>/dev/null || true"
 
-echo -n "Applying MCPRegistry (registry server)..."
-run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$REGISTRY_SERVER_VERSION \$RELEASE_NAMESPACE \$KC_REALM \$REGISTRY_RESOURCE_NAME' < demo-manifests/registry-server-mcpregistry.yaml | kubectl apply -f -" || die "Failed to apply MCPRegistry"
-run_quiet kubectl -n "$RELEASE_NAMESPACE" wait --for=condition=Ready --timeout=5m mcpregistry/"$REGISTRY_RESOURCE_NAME" || die "MCPRegistry failed to become ready"
+echo -n "Installing Registry Server..."
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$AUTH_HOSTNAME \$KC_REALM \$RELEASE_NAMESPACE' < demo-manifests/registry-server-helm-values.yaml | helm upgrade --install registry-server oci://ghcr.io/stacklok/toolhive-registry-server --version $REGISTRY_SERVER_CHART_VERSION --namespace $RELEASE_NAMESPACE --values - --wait" || die "Failed to install Registry Server"
+run_quiet sh -c "envsubst '\$REGISTRY_HOSTNAME \$RELEASE_NAMESPACE' < demo-manifests/registry-server-httproute.yaml | kubectl apply -f -" || die "Failed to apply Registry Server HTTPRoute"
 echo " ✓"
 
 # Migrate clusters created before Cloud UI moved to its Helm chart: the old

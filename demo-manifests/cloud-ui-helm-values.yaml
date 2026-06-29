@@ -12,7 +12,7 @@ fullnameOverride: cloud-ui
 # security context; only the app config differs.
 env:
   - name: API_BASE_URL
-    value: http://${REGISTRY_RESOURCE_NAME}-api.${RELEASE_NAMESPACE}:8080
+    value: http://registry-server.${RELEASE_NAMESPACE}:8080
   # Better Auth configuration
   - name: BETTER_AUTH_SECRET
     value: demo-secret-change-in-production
