@@ -31,7 +31,7 @@
     "@backstage/core-plugin-api": "^1.12.5",
     "@backstage/frontend-plugin-api": "^0.16.0",
     "@mui/material": "^5.0.0",
-    "@material-ui/icons": "^4.9.1",
+    "@mui/icons-material": "^5.0.0",
     "react-use": "^17.3.2"
   },
   "peerDependencies": {
