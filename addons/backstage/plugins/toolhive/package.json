@@ -30,8 +30,8 @@
     "@backstage/core-components": "^0.18.9",
     "@backstage/core-plugin-api": "^1.12.5",
     "@backstage/frontend-plugin-api": "^0.17.0",
-    "@mui/material": "^5.0.0",
     "@mui/icons-material": "^5.0.0",
+    "@mui/material": "^5.0.0",
     "react-use": "^17.3.2"
   },
   "peerDependencies": {
