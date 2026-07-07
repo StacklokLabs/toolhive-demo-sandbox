@@ -97,7 +97,7 @@ Then test with the ToolHive CLI as two different users. Use distinct workload na
 thv run --name vmcp-infra-okta-eng --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
 # Sign in as a user in the Engineering Okta group; expect all 33 tools in tools/list.
 
-# Support-tier user (any other directory user)
+# Support-tier user
 thv run --name vmcp-infra-okta-support --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
 # Sign in as a user in the Support Okta group; expect only ~15 grafana_* tools.
 ```
