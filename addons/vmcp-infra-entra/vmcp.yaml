@@ -45,7 +45,7 @@ spec:
             name: vmcp-infra-entra-client-secret
             key: client-secret
           scopes:
-            - 'api://${VMCP_ENTRA_CLIENT_ID}/mcp.access'
+            - "api://${VMCP_ENTRA_CLIENT_ID}/mcp.access"
             - openid
             - email
             - profile
@@ -83,7 +83,7 @@ spec:
               action == Action::"call_tool",
               resource
             );
-          # Baseline tier: callers assigned the `mcp-finance` app role
+          # Support tier: callers assigned the `mcp-support` app role
           # see the curated Grafana dashboard layer (search, view,
           # query Prometheus and Loki through Grafana). Raw Prometheus,
           # OSV, OCI, and MKP stay platform-internal. tools/list
@@ -92,12 +92,12 @@ spec:
           #
           # The readOnlyHint guard belt-and-suspenders the prefix
           # match: if Grafana ever ships a mutating tool, the
-          # baseline tier won't accidentally include it. The `has`
+          # Support tier won't accidentally include it. The `has`
           # check defaults-deny tools that omit the annotation,
           # avoiding a Cedar evaluation error.
           - |
             permit(
-              principal in THVGroup::"mcp-finance",
+              principal in THVGroup::"mcp-support",
               action == Action::"call_tool",
               resource
             ) when {

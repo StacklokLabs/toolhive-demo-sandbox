@@ -67,7 +67,7 @@ spec:
     type: oidc
     oidcConfigRef:
       name: vmcp-infra-okta-oidc
-      audience: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
+      audience: api://toolhive-vmcp-demo
       resourceUrl: https://${VMCP_OKTA_CLOUDFLARED_DOMAIN}/mcp
     # Cedar policy: tiered RBAC driven by Okta group claims.
     # primaryUpstreamProvider tells the Cedar authorizer to read claims
@@ -92,22 +92,21 @@ spec:
               action == Action::"call_tool",
               resource
             );
-          # Baseline tier: anyone in the directory sees the curated
-          # Grafana dashboard layer (search, view, query Prometheus
-          # and Loki through Grafana). Raw Prometheus, OSV, OCI, and
-          # MKP stay platform-internal. "Everyone" is Okta's built-in
-          # all-users group, so this works in any tenant without
-          # extra group setup. tools/list narrows automatically
-          # because per-item filtering reuses this call_tool policy.
+          # Support tier: curated Grafana dashboard layer only (search,
+          # view, query Prometheus and Loki through Grafana). Raw
+          # Prometheus, OSV, OCI, and MKP stay platform-internal.
+          # Requires a "Support" group in the Okta directory. tools/list
+          # narrows automatically because per-item filtering reuses this
+          # call_tool policy.
           #
           # The readOnlyHint guard belt-and-suspenders the prefix
           # match: if Grafana ever ships a mutating tool, the
-          # baseline tier won't accidentally include it. The `has`
+          # Support tier won't accidentally include it. The `has`
           # check defaults-deny tools that omit the annotation,
           # avoiding a Cedar evaluation error.
           - |
             permit(
-              principal in THVGroup::"Everyone",
+              principal in THVGroup::"Support",
               action == Action::"call_tool",
               resource
             ) when {
