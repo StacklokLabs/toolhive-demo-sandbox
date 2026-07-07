@@ -46,11 +46,16 @@
     "jsdom": "^27.1.0",
     "node-gyp": "^10.0.0",
     "prettier": "^2.3.2",
-    "typescript": "~5.8.0"
+    "typescript": "~5.9.0"
   },
   "resolutions": {
     "@types/react": "^18",
     "@types/react-dom": "^18"
+  },
+  "dependenciesMeta": {
+    "better-sqlite3": {
+      "built": true
+    }
   },
   "prettier": "@backstage/cli/config/prettier",
   "lint-staged": {
@@ -62,5 +67,5 @@
       "prettier --write"
     ]
   },
-  "packageManager": "yarn@4.4.1"
+  "packageManager": "yarn@4.17.0"
 }
