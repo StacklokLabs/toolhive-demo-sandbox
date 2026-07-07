@@ -15,14 +15,14 @@ Sits **alongside** the existing unauthenticated `vmcp-infra` for a clean compare
 
 The shipped Cedar policy (`spec.incomingAuth.authzConfig` in [vmcp.yaml](vmcp.yaml)) defines two tiers:
 
-| Tier | Okta group | Tools visible |
-|---|---|---|
-| **Engineering** | `Engineering` (you create this in Okta) | All 33 aggregated tools, including raw Prometheus queries, OSV vulnerability lookups, OCI registry inspection, and the mutating MKP (Kubernetes) tools |
-| **Baseline** | `Everyone` (built-in, every Okta tenant has it) | Only the curated Grafana dashboard layer (`grafana_*`) |
+| Tier            | Okta group    | Tools visible                                                                                                                                          |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Engineering** | `Engineering` | All 33 aggregated tools, including raw Prometheus queries, OSV vulnerability lookups, OCI registry inspection, and the mutating MKP (Kubernetes) tools |
+| **Support**     | `Support`     | Only the curated Grafana dashboard layer (`grafana_*`)                                                                                                 |
 
-Because Cedar filters `tools/list` responses through the same `call_tool` policy used for invocation, **users only see the tools they're allowed to call** in the first place. Baseline users don't see `prometheus_*`, `mkp_*`, etc. at all. A direct call to a tool outside your tier returns 403.
+Because Cedar filters `tools/list` responses through the same `call_tool` policy used for invocation, **users only see the tools they're allowed to call** in the first place. Support-tier users don't see `prometheus_*`, `mkp_*`, etc. at all. A direct call to a tool outside your tier returns 403.
 
-If your Okta tenant has no `Engineering` group, the policy degrades gracefully — everyone gets the dashboard baseline. Add an `Engineering` group and assign users to elevate them.
+A user in neither group gets no tools at all — both tiers require explicit group membership. Create `Engineering` and `Support` groups in Okta and assign your demo users to one each.
 
 ## Prerequisites
 
@@ -36,13 +36,13 @@ In the [Okta admin console](https://integrator-9462356-admin.okta.com/):
 
 1. **Authorization Server** — Security → API → Authorization Servers → Add:
    - **Name**: e.g. `vMCP Infra Auth`
-   - **Audience**: `https://<your-subdomain>.stacklok-demo.com/mcp` (must match the Cloudflare tunnel hostname)
+   - **Audience**: a generic, stable value, e.g. `api://toolhive-vmcp-demo` (doesn't need to match your tunnel hostname — ToolHive never validates it)
 
 2. **Groups claim on the access token** — required so Cedar can evaluate group membership. On the authorization server you just created, open the **Claims** tab → **Add Claim**:
    - **Name**: `groups`
    - **Include in token type**: Access Token (request)
    - **Value type**: Groups
-   - **Filter**: `Matches regex` `.*` (or restrict to specific group names if you prefer)
+   - **Filter**: `Matches regex` `^(Engineering|Support)$` (both tiers require explicit membership, so there's no need to admit every group into the token)
    - **Include in**: Any scope
 
    Use the **Token Preview** tab to verify the resulting access token carries the `groups` claim before deploying.
@@ -97,12 +97,12 @@ Then test with the ToolHive CLI as two different users. Use distinct workload na
 thv run --name vmcp-infra-okta-eng --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
 # Sign in as a user in the Engineering Okta group; expect all 33 tools in tools/list.
 
-# Baseline user (any other directory user)
-thv run --name vmcp-infra-okta-baseline --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
-# Sign in as a non-Engineering user; expect only ~15 grafana_* tools.
+# Support-tier user (any other directory user)
+thv run --name vmcp-infra-okta-support --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
+# Sign in as a user in the Support Okta group; expect only ~15 grafana_* tools.
 ```
 
-Direct calls to non-permitted tools (e.g. `mkp_apply_resource` as a baseline user) return 403. Cedar deny decisions land in the vMCP pod logs and the workflow audit log.
+Direct calls to non-permitted tools (e.g. `mkp_apply_resource` as a Support-tier user) return 403. Cedar deny decisions land in the vMCP pod logs and the workflow audit log.
 
 ## Configuration
 
@@ -115,7 +115,6 @@ The Cedar policies live inline in `vmcp.yaml` under `spec.incomingAuth.authzConf
 
 - **Add more tiers**: a new permit rule keyed on a different `THVGroup::"..."` value (e.g. `Security` → `osv_*` and `oci-registry_*` only).
 - **Rename groups**: Cedar entity IDs are case-sensitive — `THVGroup::"Engineering"` matches the Okta group named exactly `Engineering`.
-- **Change the baseline tool set**: edit the `like "grafana_*"` pattern. Cedar's `like` supports `*` as a wildcard. To match multiple prefixes, use multiple permit rules.
-- **Tighten the claim filter in Okta**: if you don't want built-in groups like `Everyone` flowing into tokens for hygiene reasons, change the Okta claim filter to `Matches regex ^(Engineering|Security|...)$` and adjust the Cedar baseline to gate on a specific group instead of `Everyone`.
+- **Change the Support tool set**: edit the `like "grafana_*"` pattern. Cedar's `like` supports `*` as a wildcard. To match multiple prefixes, use multiple permit rules.
 
 After editing, re-apply `vmcp.yaml` — the operator rolls the vMCP pod and the new policy takes effect on the next request.
