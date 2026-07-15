@@ -144,7 +144,7 @@ config:
 
     # Auto-discover MCP servers in the current Kubernetes cluster.
     # Per-server visibility is controlled by authz-claims annotations on each MCPServer.
-    - name: k8s
+    - name: kubernetes
       kubernetes: {}
       claims:
         groups: everyone
@@ -158,7 +158,7 @@ config:
         - toolhive-engineering
         - toolhive-finance
         - official-engineering
-        - k8s
+        - kubernetes
 
     # Unauthenticated registry for CLI access (thv, curl, etc.)
     - name: public
@@ -167,7 +167,7 @@ config:
         - toolhive-engineering
         - toolhive-finance
         - official-engineering
-        - k8s
+        - kubernetes
 
   auth:
     mode: oauth
