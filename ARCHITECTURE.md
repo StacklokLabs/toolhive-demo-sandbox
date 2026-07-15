@@ -139,7 +139,7 @@ graph TB
     s2["toolhive-engineering<br/>filter: aws-doc, filesystem, playwright<br/>claims: engineering"]
     s3["toolhive-finance<br/>filter: stripe-remote<br/>claims: finance"]
     s4["toolhive-public<br/>filter: union of the above<br/>no claims"]
-    s5["official-engineering<br/>filter: figma, gitlab, postman<br/>claims: engineering"]
+    s5["community-registry<br/>filter: figma, gitlab, postman<br/>claims: engineering"]
     s6["kubernetes<br/>discovers MCPServer / MCPRemoteProxy /<br/>VirtualMCPServer with registry-export=true<br/>per-entry claims from authz-claims annotation"]
   end
 

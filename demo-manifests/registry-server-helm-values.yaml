@@ -126,8 +126,8 @@ config:
       claims:
         groups: finance
 
-    # Official registry — engineering tools
-    - name: official-engineering
+    # Official community registry — engineering tools
+    - name: community-registry
       format: upstream
       api:
         endpoint: https://registry.modelcontextprotocol.io
@@ -157,7 +157,7 @@ config:
         - toolhive-shared
         - toolhive-engineering
         - toolhive-finance
-        - official-engineering
+        - community-registry
         - kubernetes
 
     # Unauthenticated registry for CLI access (thv, curl, etc.)
@@ -166,7 +166,7 @@ config:
         - toolhive-shared
         - toolhive-engineering
         - toolhive-finance
-        - official-engineering
+        - community-registry
         - kubernetes
 
   auth:
