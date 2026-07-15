@@ -211,7 +211,7 @@ data:
           "enabled": true,
           "emailVerified": true,
           "email": "demo@example.com",
-          "firstName": "Demo",
+          "firstName": "Admin",
           "lastName": "User",
           "credentials": [
             { "type": "password", "value": "demo", "temporary": false }
