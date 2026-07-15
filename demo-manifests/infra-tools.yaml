@@ -54,6 +54,8 @@ spec:
   args:
     - --transport
     - streamable-http
+    - --allowed-hosts
+    - "*"
   env:
     - name: GRAFANA_URL
       value: http://grafana.observability.svc.cluster.local
