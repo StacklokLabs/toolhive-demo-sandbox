@@ -139,8 +139,8 @@ graph TB
     s2["toolhive-engineering<br/>filter: aws-doc, filesystem, playwright<br/>claims: engineering"]
     s3["toolhive-finance<br/>filter: stripe-remote<br/>claims: finance"]
     s4["toolhive-public<br/>filter: union of the above<br/>no claims"]
-    s5["official-engineering<br/>filter: figma, gitlab, postman<br/>claims: engineering"]
-    s6["k8s<br/>discovers MCPServer / MCPRemoteProxy /<br/>VirtualMCPServer with registry-export=true<br/>per-entry claims from authz-claims annotation"]
+    s5["community-registry<br/>filter: figma, gitlab, postman<br/>claims: engineering"]
+    s6["kubernetes<br/>discovers MCPServer / MCPRemoteProxy /<br/>VirtualMCPServer with registry-export=true<br/>per-entry claims from authz-claims annotation"]
   end
 
   subgraph registries["Registries exposed by the server"]
@@ -168,7 +168,7 @@ graph TB
   cli([thv CLI / anonymous]) -.-> pubReg
 ```
 
-**Per-entry filtering on the K8s source** is why `alice` and `bob` see different things in the same `demo-registry`: every MCPServer / MCPRemoteProxy / VirtualMCPServer carries an `authz-claims` annotation that the server matches against the user's group claim from Keycloak. `demo` is a `superAdmin` in the registry's authz config so they see everything regardless. The `public` registry reuses the same `k8s` source but is queried unauthenticated, so claim-based filtering doesn't apply there — every `registry-export=true` K8s resource is visible.
+**Per-entry filtering on the K8s source** is why `alice` and `bob` see different things in the same `demo-registry`: every MCPServer / MCPRemoteProxy / VirtualMCPServer carries an `authz-claims` annotation that the server matches against the user's group claim from Keycloak. `demo` is a `superAdmin` in the registry's authz config so they see everything regardless. The `public` registry reuses the same `kubernetes` source but is queried unauthenticated, so claim-based filtering doesn't apply there — every `registry-export=true` K8s resource is visible.
 
 **Notable non-source:** the standalone `mkp` workload has its own HTTPRoute at `/mkp/mcp` and is *also* in `infra-tools`, so it shows up twice — once as a direct standalone entry, once inside `vmcp-infra`'s aggregated tool list.
 

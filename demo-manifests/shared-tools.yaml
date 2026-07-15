@@ -61,7 +61,7 @@ metadata:
   annotations:
     toolhive.stacklok.dev/registry-export: "true"
     toolhive.stacklok.dev/registry-url: "https://toolhive-doc-mcp.stacklok.com/mcp"
-    toolhive.stacklok.dev/registry-title: "ToolHive Docs (Remote via Proxy)"
+    toolhive.stacklok.dev/registry-title: "ToolHive Docs (Remote)"
     toolhive.stacklok.dev/authz-claims: '{"groups": "everyone"}'
     toolhive.stacklok.dev/registry-description: |
       Hosted ToolHive documentation MCP, fronted by an in-cluster MCPRemoteProxy. Also aggregated into the vmcp-docs gateway.

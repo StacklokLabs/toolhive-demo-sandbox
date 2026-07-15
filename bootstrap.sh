@@ -223,7 +223,7 @@ echo " ✓"
 
 # MCP/vMCP/MCPGroup workloads live in their own namespace so the operator
 # and registry server (in $RELEASE_NAMESPACE) stay decoupled from user
-# workloads. The operator watches cluster-wide and the registry's K8s
+# workloads. The operator watches cluster-wide and the registry's kubernetes
 # source defaults to all namespaces, so this split needs no further config.
 echo -n "Creating mcp-workloads namespace..."
 if ! namespace_exists mcp-workloads; then
