@@ -3,7 +3,7 @@
   "description": "",
   "instructions": "",
   "provider": "OpenRouter",
-  "model": "anthropic/claude-sonnet-4.6",
+  "model": "~anthropic/claude-sonnet-latest",
   "artifacts": "",
   "tools": [
     "sys__server__sys_mcp_toolhive-infra",
@@ -54,6 +54,6 @@
   "category": "it",
   "support_contact": { "name": "", "email": "" },
   "is_promoted": false,
-  "mcpServerNames": ["toolhive-infra", "toolhive-docs"],
+  "mcpServerNames": ["toolhive-infra", "toolhive-docs", "toolhive-platform"],
   "tool_options": {}
 }
