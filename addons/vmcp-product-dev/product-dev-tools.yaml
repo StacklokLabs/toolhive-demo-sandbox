@@ -1,0 +1,38 @@
+# Product development MCP group and its backends. The addon owns its group:
+# the vMCP in vmcp.yaml aggregates every MCPServer / MCPServerEntry whose
+# spec.groupRef.name matches product-dev-tools.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPGroup
+metadata:
+  name: product-dev-tools
+  namespace: mcp-workloads
+spec:
+  description: Product development stack (GitLab) behind the vmcp-product-dev gateway
+---
+# gitlab: GitLab's official remote MCP server. Zero-infrastructure: no pod;
+# the vMCP proxies directly to gitlab.com/api/v4/mcp and injects each user's
+# GitLab OAuth token (obtained via the embedded auth server's "gitlab"
+# upstream provider in vmcp.yaml) into outbound requests.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPServerEntry
+metadata:
+  name: gitlab
+  namespace: mcp-workloads
+spec:
+  remoteUrl: https://gitlab.com/api/v4/mcp
+  transport: streamable-http
+  groupRef:
+    name: product-dev-tools
+  # Auth wiring is on the vMCP side via vmcp-product-dev.spec.outgoingAuth
+  # .backends.gitlab -> gitlab-upstream-inject (see vmcp.yaml), keeping the
+  # backend-to-provider mapping in one place as backends are added.
+---
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPExternalAuthConfig
+metadata:
+  name: gitlab-upstream-inject
+  namespace: mcp-workloads
+spec:
+  type: upstreamInject
+  upstreamInject:
+    providerName: gitlab
