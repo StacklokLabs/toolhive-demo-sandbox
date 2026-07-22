@@ -19,21 +19,24 @@ librechat:
           baseURL: "https://openrouter.ai/api/v1"
           models:
             default:
-              - "anthropic/claude-sonnet-4.6"
-              - "anthropic/claude-opus-4.6"
-              - "anthropic/claude-haiku-4"
-              - "openai/gpt-5.4"
-              - "openai/gpt-5.4-mini"
-              - "google/gemini-2.5-flash"
+              - "~anthropic/claude-sonnet-latest"
+              - "~anthropic/claude-opus-latest"
+              - "~anthropic/claude-haiku-latest"
+              - "openai/gpt-5.6-sol"
+              - "openai/gpt-5.6-terra"
+              - "openai/gpt-5.6-luna"
+              - "~google/gemini-flash-latest"
+              - "~google/gemini-pro-latest"
             fetch: false
           titleConvo: true
-          titleModel: "anthropic/claude-sonnet-4.6"
+          titleModel: "~anthropic/claude-sonnet-latest"
           modelDisplayLabel: "OpenRouter"
 
     mcpSettings:
       allowedDomains:
         - "vmcp-vmcp-infra.mcp-workloads.svc.cluster.local"
         - "vmcp-vmcp-docs.mcp-workloads.svc.cluster.local"
+        - "vmcp-vmcp-platform.mcp-workloads.svc.cluster.local"
 
     mcpServers:
       toolhive-infra:
@@ -42,6 +45,9 @@ librechat:
       toolhive-docs:
         type: streamable-http
         url: http://vmcp-vmcp-docs.mcp-workloads.svc.cluster.local:4483/mcp
+      toolhive-platform:
+        type: streamable-http
+        url: http://vmcp-vmcp-platform.mcp-workloads.svc.cluster.local:4483/mcp
 
   imageVolume:
     enabled: false
