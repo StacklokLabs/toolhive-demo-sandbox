@@ -1,0 +1,115 @@
+# Product development vMCP gateway. Fronted by ToolHive's embedded OAuth
+# authorization server: Entra ID is the identity provider (first upstream
+# provider), and GitLab is a second token-acquisition leg whose client is
+# obtained at runtime via RFC 7591 Dynamic Client Registration. Exposed
+# externally via a Cloudflare tunnel (see cloudflared.yaml), no Traefik
+# HTTPRoute.
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: MCPOIDCConfig
+metadata:
+  name: vmcp-product-dev-oidc
+  namespace: mcp-workloads
+spec:
+  type: inline
+  inline:
+    issuer: https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}
+---
+apiVersion: toolhive.stacklok.dev/v1beta1
+kind: VirtualMCPServer
+metadata:
+  name: vmcp-product-dev
+  namespace: mcp-workloads
+  annotations:
+    toolhive.stacklok.dev/registry-export: "true"
+    toolhive.stacklok.dev/registry-url: "https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}/mcp"
+    toolhive.stacklok.dev/registry-title: "Product Dev vMCP Gateway (Entra ID auth)"
+    toolhive.stacklok.dev/authz-claims: '{"groups": "engineering"}'
+    toolhive.stacklok.dev/registry-description: |
+      Product development gateway aggregating GitLab's official remote MCP server (issues, merge requests, pipelines, work items, search). Entra ID-authenticated via an embedded OAuth authorization server; GitLab access is per-user via Dynamic Client Registration.
+    toolhive.stacklok.dev/tool-definitions: '[{"name":"gitlab_attach_scan_profile","description":"Attach a given security scan profile to the given groups and projects."},{"name":"gitlab_create_issue","description":"Create an issue"},{"name":"gitlab_create_merge_request","description":"Create a merge request"},{"name":"gitlab_create_merge_request_note","description":"Add a new comment or reply to an existing discussion on a GitLab merge request as the authenticated user. To reply within a thread, pass the discussion_id returned by get_merge_request_notes."},{"name":"gitlab_create_workitem_note","description":"Create a new note (comment) on a GitLab work item"},{"name":"gitlab_get_issue","description":"Retrieve a project issue"},{"name":"gitlab_get_job_log","description":"Get a trace of a specific job of a project"},{"name":"gitlab_get_mcp_server_version","description":"Get the current version of MCP server."},{"name":"gitlab_get_merge_request","description":"Retrieve a merge request"},{"name":"gitlab_get_merge_request_commits","description":"Retrieve merge request commits"},{"name":"gitlab_get_merge_request_conflicts","description":"Get merge conflict content for a merge request that cannot be merged. Returns raw git conflict markers (<<<<<<, =======, >>>>>>>) exactly as they appear in conflicted files."},{"name":"gitlab_get_merge_request_diffs","description":"List all merge request diffs"},{"name":"gitlab_get_merge_request_notes","description":"Get the notes (comments and system notes) for a specific merge request."},{"name":"gitlab_get_merge_request_pipelines","description":"List all merge request pipelines"},{"name":"gitlab_get_pipeline_jobs","description":"List all jobs by pipeline"},{"name":"gitlab_get_saved_view_work_items","description":"Fetch a saved view and its work items list from a namespace"},{"name":"gitlab_get_work_item_types","description":"List the work item types available in a namespace (group or project), including system-defined types (Issue, Epic, Task, etc.) and custom types. Each returned type includes its global ID, name, icon, and the widget types enabled on it so the agent can avoid setting fields the type does not support."},{"name":"gitlab_get_workitem_notes","description":"Get all comments (notes) for a specific work item"},{"name":"gitlab_link_work_items","description":"Link a work item to other work items with a relationship type (relates_to, blocks, blocked_by)"},{"name":"gitlab_manage_pipeline","description":"Manage CI/CD pipelines in GitLab projects.\n\nExamples:\n- Use List to show pipelines, get pipeline status, or see what pipelines exist\n- Use Create to run a pipeline, trigger a build, or start CI on a branch\n- Use Update to rename a pipeline or update pipeline metadata\n- Use Retry to run a pipeline again, rerun, or retry a failed build\n- Use Cancel to stop a pipeline, abort a build, or kill a running job\n- Use Delete to remove a pipeline record"},{"name":"gitlab_search","description":"Search across GitLab with automatic selection of the best available search method.\n\n**Capabilities:** basic (keywords, file filters), advanced (boolean operators), exact code (exact match, regex, symbols)\n\n**Syntax Examples:**\n- Basic: \"bug fix\", \"filename:*.rb\", \"extension:js\"\n- Advanced: \"bug AND critical\", \"display | banner\", \"#23456\"\n- Exact code: \"class User\", \"foo lang:ruby\", \"sym:initialize\""},{"name":"gitlab_search_labels","description":"Search labels in a GitLab project or group"},{"name":"gitlab_semantic_code_search","description":"Search project code using natural language"}]'
+spec:
+  # Embedded authorization server. Issues its own JWTs; users authenticate
+  # through every upstream provider below in order during a single
+  # authorization: Entra ID first (the identity leg), then GitLab (a
+  # token-acquisition leg whose token is upstream-injected into the gitlab
+  # backend).
+  authServerConfig:
+    issuer: https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}
+    tokenLifespans:
+      accessTokenLifespan: 1h
+      refreshTokenLifespan: 168h
+      authCodeLifespan: 10m
+    upstreamProviders:
+      - name: entra
+        type: oidc
+        oidcConfig:
+          issuerUrl: ${ENTRA_ISSUER_URL}
+          redirectUri: https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}/oauth/callback
+          clientId: ${VMCP_ENTRA_CLIENT_ID}
+          clientSecretRef:
+            name: vmcp-product-dev-client-secret
+            key: client-secret
+          scopes:
+            - "api://${VMCP_ENTRA_CLIENT_ID}/mcp.access"
+            - openid
+            - email
+            - profile
+            - offline_access
+      # GitLab supports RFC 7591 Dynamic Client Registration, so no
+      # pre-registered OAuth app is needed: the auth server registers its
+      # client against gitlab.com at startup via the discovery document.
+      # No storage backend is configured (demo pattern), so the DCR
+      # registration lives in memory and a pod restart registers a fresh
+      # client (the old one is orphaned on gitlab.com) and forces re-auth.
+      #
+      # scopes must stay explicit: DCR would otherwise register the client
+      # with GitLab's entire scopes_supported list while the /authorize
+      # request goes out with an empty scope parameter. "mcp" is the only
+      # scope the GitLab MCP endpoint requires (per its protected-resource
+      # metadata).
+      #
+      # No userInfo / identityFromToken: identity comes from the Entra leg;
+      # this provider runs in identity-synthesis mode (expect a one-time
+      # WARN in the vmcp logs).
+      - name: gitlab
+        type: oauth2
+        oauth2Config:
+          redirectUri: https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}/oauth/callback
+          authorizationEndpoint: https://gitlab.com/oauth/authorize
+          tokenEndpoint: https://gitlab.com/oauth/token
+          dcrConfig:
+            discoveryUrl: https://gitlab.com/.well-known/oauth-authorization-server
+          scopes:
+            - mcp
+
+  # Validate tokens issued by the embedded auth server
+  incomingAuth:
+    type: oidc
+    oidcConfigRef:
+      name: vmcp-product-dev-oidc
+      audience: https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}/mcp
+      resourceUrl: https://${VMCP_PRODUCT_CLOUDFLARED_DOMAIN}/mcp
+
+  outgoingAuth:
+    source: inline
+    backends:
+      gitlab:
+        type: externalAuthConfigRef
+        externalAuthConfigRef:
+          name: gitlab-upstream-inject
+
+  groupRef:
+    name: product-dev-tools
+  telemetryConfigRef:
+    name: shared-otel
+    serviceName: vmcp-product-dev-server
+  config:
+    audit:
+      enabled: true
+      includeRequestData: true
+      includeResponseData: true
+    aggregation:
+      conflictResolution: prefix
+      conflictResolutionConfig:
+        prefixFormat: "{workload}_"
+  serviceType: ClusterIP
