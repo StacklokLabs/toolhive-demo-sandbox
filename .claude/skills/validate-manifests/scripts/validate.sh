@@ -66,6 +66,8 @@ export ENTRA_ISSUER_URL="https://login.microsoftonline.com/placeholder-tenant-id
 export VMCP_ENTRA_CLIENT_ID="placeholder-client-id"
 export VMCP_ENTRA_CLIENT_SECRET="placeholder-client-secret"
 export VMCP_ENTRA_CLOUDFLARED_TUNNEL_TOKEN="placeholder-tunnel-token"
+export VMCP_PRODUCT_CLOUDFLARED_DOMAIN="vmcp.validate.local"
+export VMCP_PRODUCT_CLOUDFLARED_TUNNEL_TOKEN="placeholder-tunnel-token"
 
 # Collect files to validate.
 files=()
