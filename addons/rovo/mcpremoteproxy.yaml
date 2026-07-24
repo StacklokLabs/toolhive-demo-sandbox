@@ -46,6 +46,8 @@ spec:
     # Issuer must match the external URL where MCP clients reach the proxy's
     # auth endpoints (/.well-known/openid-configuration, /oauth/*, etc.)
     issuer: https://$ROVO_MCP_HOSTNAME
+    cimd:
+      enabled: true
     upstreamProviders:
       - name: atlassian
         type: oauth2

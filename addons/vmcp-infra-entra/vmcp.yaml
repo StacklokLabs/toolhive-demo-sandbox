@@ -34,6 +34,8 @@ spec:
       accessTokenLifespan: 1h
       refreshTokenLifespan: 168h
       authCodeLifespan: 10m
+    cimd:
+      enabled: true
     upstreamProviders:
       - name: entra
         type: oidc
