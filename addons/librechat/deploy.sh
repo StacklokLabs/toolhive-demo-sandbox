@@ -86,6 +86,87 @@ run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m \
     vmcp/vmcp-chat -n mcp-workloads
 echo " done"
 
+# Pre-seed the "Infra Agent" so a fresh install doesn't land on an empty agent
+# list. LibreChat agents are per-author database objects with no declarative
+# config, so they can only be created through the API — and with Keycloak-only
+# auth there is no local account to create one under (personas are provisioned
+# on first OIDC login, which hasn't happened yet at deploy time). So: insert a
+# login-less ADMIN service account, mint a JWT for it with the instance's
+# JWT_SECRET (exactly what LibreChat's own jwtStrategy validates), create the
+# agent, and share it publicly so every persona sees it.
+SEED_EMAIL="librechat-seed@toolhive.local"
+echo -n "Creating agent seed service account..."
+SEED_USER_ID=$(kubectl exec -n librechat librechat-mongodb-0 -- \
+    mongosh --quiet LibreChat --eval "
+      const existing = db.users.findOne({ email: '$SEED_EMAIL' });
+      if (existing) {
+        print(existing._id.toString());
+      } else {
+        // No password field — this account exists only to own seeded objects
+        // and cannot be logged into (ALLOW_EMAIL_LOGIN is false regardless).
+        print(db.users.insertOne({
+          name: 'ToolHive Seeder',
+          username: 'toolhive-seed',
+          email: '$SEED_EMAIL',
+          emailVerified: true,
+          role: 'ADMIN',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }).insertedId.toString());
+      }
+    " | tr -d '\r')
+[ -n "$SEED_USER_ID" ] || die "Failed to create the LibreChat seed service account"
+echo " done"
+
+# Runs inside the LibreChat pod: it already has node, jsonwebtoken, and
+# JWT_SECRET in its environment, which avoids both a curl sidecar (the image
+# ships no curl) and passing the signing secret around.
+echo -n "Seeding Infra Agent..."
+kubectl exec -i -n librechat deployment/librechat -- \
+    env "SEED_USER_ID=$SEED_USER_ID" node -e '
+      const jwt = require("jsonwebtoken");
+      const payload = JSON.parse(require("fs").readFileSync(0, "utf8"));
+      const token = jwt.sign({ id: process.env.SEED_USER_ID }, process.env.JWT_SECRET, {
+        expiresIn: "5m",
+      });
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        // LibreChat pipes these routes through uaParser, which rejects
+        // non-browser user agents.
+        "User-Agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+      };
+      const call = async (method, path, body) => {
+        const res = await fetch(`http://localhost:3080${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(`${method} ${path} -> ${res.status} ${text}`);
+        }
+        return text ? JSON.parse(text) : null;
+      };
+      (async () => {
+        const list = await call("GET", "/api/agents");
+        const existing = (list?.data ?? []).find((a) => a.name === payload.name);
+        const agent = existing ?? (await call("POST", "/api/agents", payload));
+        // Agents are author-scoped: without a public grant only the seed
+        // account would see it, and nobody ever logs in as that account.
+        await call("PUT", `/api/permissions/agent/${agent._id}`, {
+          public: true,
+          publicAccessRoleId: "agent_viewer",
+        });
+      })().catch((err) => {
+        console.error(err.message);
+        process.exit(1);
+      });
+    ' < "$ADDON_DIR/infra-agent.json" > /dev/null \
+    || die "Failed to seed the Infra Agent"
+echo " done"
+
 echo ""
 echo "LibreChat is ready!"
 echo "  URL:    https://$LIBRECHAT_HOSTNAME (self-signed cert, expect a browser warning)"

@@ -13,6 +13,8 @@ Deploys [LibreChat](https://www.librechat.ai/) as a chat UI connected to the dem
   logged-in user's access token on every MCP call
 - Also connects to `vmcp-docs` (anonymous, shared docs tools)
 - Routes through OpenRouter for LLM inference (multi-model)
+- Pre-seeds a publicly shared "Infra Agent" wired to the vMCPs, so every
+  persona has a ready-to-chat agent on first login
 
 ## Prerequisites
 
@@ -50,6 +52,7 @@ Removes all resources including the Helm release, namespace, and persistent volu
 - [vmcp-chat.yaml](vmcp-chat.yaml) — authenticated VirtualMCPServer over `infra-tools`
 - [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) — Cedar policies gating `tools/list` + `tools/call` by the user's Keycloak `groups` claim
 - [httproute.yaml](httproute.yaml) — Gateway API route (the chart uses Ingress which we replace with HTTPRoute)
+- [infra-agent.json](infra-agent.json) — payload for the pre-seeded "Infra Agent" (POSTed to `/api/agents` on deploy if not already present)
 
 The deploy script injects the per-cluster `OPENID_ISSUER`, mirrors the Traefik
 CA into the `librechat` namespace (so the Node runtime trusts the self-signed
@@ -99,6 +102,34 @@ converter gaps in the VirtualMCPServer rendering path:
 Once #4918 ships in the operator chart, no manifest changes are needed for
 authn to work. For authz, swap the inline block for the commented-out
 ConfigMap reference.
+
+## Pre-seeded agent
+
+The deploy script creates an "Infra Agent" (category `it`) wired to the
+`toolhive-chat`, `toolhive-docs`, and `toolhive-platform` MCP servers.
+
+Because auth is Keycloak-only, there is no local account to own the agent at
+deploy time: personas are provisioned on their first OIDC login, which hasn't
+happened yet. The script therefore creates a login-less ADMIN service account
+(`librechat-seed@toolhive.local`, no password, unusable for sign-in), mints a
+short-lived JWT for it with the instance's `JWT_SECRET`, POSTs the agent, then
+grants public (`agent_viewer`) access via `PUT /api/permissions/agent/<id>`.
+The public grant is what makes the agent visible to `demo`, `alice`, and `bob` —
+agents are otherwise scoped to their author.
+
+Re-running `deploy.sh` is idempotent: an agent with the same name is reused, and
+only the public grant is re-applied.
+
+The `tools` array in `infra-agent.json` is a frozen snapshot of the vMCP toolset
+at the time it was captured — LibreChat does not auto-sync agent tools when the
+underlying MCP server's toolset changes. It currently mirrors the `vmcp-chat`
+aggregation filter in [vmcp-chat.yaml](vmcp-chat.yaml) (prometheus, grafana, and
+osv only — no `mkp` or `oci-registry`). If you change that filter, rename an MCP
+server in `values.yaml`, or add backends to `infra-tools` or `shared-tools`,
+regenerate the snapshot to keep the agent in sync.
+
+Note that Cedar authz still applies at call time: `bob` sees the agent but its
+non-finance tools will be denied by `vmcp-chat`.
 
 To connect to a different vMCP gateway, edit the `mcpServers` and
 `mcpSettings.allowedDomains` entries in `values.yaml` under `configYamlContent`.
