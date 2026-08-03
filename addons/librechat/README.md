@@ -79,29 +79,13 @@ that matches the `librechat` client declared in `infra/keycloak.yaml`.
      listing, metric listing, vulnerability queries)
    - anything else: default-deny
 
-### Known issues — blocked on operator fixes
-
-Step 4 currently fails on ToolHive operator **v0.21.0** due to two sibling
-converter gaps in the VirtualMCPServer rendering path:
-
-1. [stacklok/toolhive#4918](https://github.com/stacklok/toolhive/issues/4918)
-   — `MCPOIDCConfig.caBundleRef` is auto-mounted into the vMCP pod but
-   never passed through to the vMCP binary, so OIDC discovery against the
-   self-signed `sslip.io` cert errors with `x509: certificate signed by
-   unknown authority`.
-2. [stacklok/toolhive#4919](https://github.com/stacklok/toolhive/issues/4919)
-   — `authzConfig.type: configMap` is passed through the operator without
-   resolving the referenced ConfigMap, so the vMCP binary rejects the
-   config at startup (`incomingAuth.authz: type must be one of: cedar, none`).
-   Worked around by inlining the same policy set under
-   `authzConfig.type: inline` in [vmcp-chat.yaml](vmcp-chat.yaml); the
-   ConfigMap in [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) is still
-   applied and shows the intended final shape — switch the commented
-   `authzConfig` block when the fix ships.
-
-Once #4918 ships in the operator chart, no manifest changes are needed for
-authn to work. For authz, swap the inline block for the commented-out
-ConfigMap reference.
+Step 4 requires ToolHive operator **0.41.0 or newer** (the version pinned in
+`versions.env`). Two converter gaps in the VirtualMCPServer rendering path used
+to break it, both since fixed: `MCPOIDCConfig.caBundleRef` was mounted into the
+vMCP pod but never passed to the binary
+([#4918](https://github.com/stacklok/toolhive/issues/4918), operator 0.41.0),
+and `authzConfig.type: configMap` was passed through unresolved
+([#4919](https://github.com/stacklok/toolhive/issues/4919), operator 0.28.3).
 
 ## Pre-seeded agent
 
