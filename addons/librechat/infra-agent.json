@@ -45,7 +45,9 @@
     "context7_resolve-library-id_mcp_toolhive-docs",
     "fetch_fetch_internal_docs_mcp_toolhive-docs",
     "toolhive-docs_get_chunk_mcp_toolhive-docs",
-    "toolhive-docs_query_docs_mcp_toolhive-docs"
+    "toolhive-docs_query_docs_mcp_toolhive-docs",
+    "audit_image_supply_chain_mcp_toolhive-platform",
+    "mcp_server_pulse_mcp_toolhive-platform"
   ],
   "tool_kwargs": [],
   "agent_ids": [],
