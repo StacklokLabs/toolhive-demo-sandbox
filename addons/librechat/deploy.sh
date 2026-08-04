@@ -155,9 +155,14 @@ kubectl exec -i -n librechat deployment/librechat -- \
         const agent = existing ?? (await call("POST", "/api/agents", payload));
         // Agents are author-scoped: without a public grant only the seed
         // account would see it, and nobody ever logs in as that account.
+        // agent_editor (VIEW|EDIT) rather than agent_viewer (VIEW) so the
+        // personas can open the agent in the builder and inspect or tweak
+        // its config live, which is the point of the demo. Granting to one
+        // persona instead is not possible here: personas do not exist in
+        // LibreChat until their first OIDC login, well after deploy.
         await call("PUT", `/api/permissions/agent/${agent._id}`, {
           public: true,
-          publicAccessRoleId: "agent_viewer",
+          publicAccessRoleId: "agent_editor",
         });
       })().catch((err) => {
         console.error(err.message);

@@ -97,9 +97,15 @@ deploy time: personas are provisioned on their first OIDC login, which hasn't
 happened yet. The script therefore creates a login-less ADMIN service account
 (`librechat-seed@toolhive.local`, no password, unusable for sign-in), mints a
 short-lived JWT for it with the instance's `JWT_SECRET`, POSTs the agent, then
-grants public (`agent_viewer`) access via `PUT /api/permissions/agent/<id>`.
-The public grant is what makes the agent visible to `demo`, `alice`, and `bob` —
-agents are otherwise scoped to their author.
+grants public access via `PUT /api/permissions/agent/<id>`. The public grant is
+what makes the agent visible to `demo`, `alice`, and `bob` — agents are
+otherwise scoped to their author.
+
+The grant is `agent_editor` (VIEW + EDIT), not `agent_viewer` (VIEW), so any
+persona can open the agent in the builder to inspect or tweak its config rather
+than only chat with it. Deleting and re-sharing stay with the owner. Scoping the
+grant to one persona is not possible at deploy time, since personas don't exist
+in LibreChat until their first OIDC login.
 
 Re-running `deploy.sh` is idempotent: an agent with the same name is reused, and
 only the public grant is re-applied.
