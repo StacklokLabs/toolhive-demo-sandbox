@@ -6,6 +6,38 @@ global:
 librechat:
   configEnv:
     MONGO_URI: "mongodb://librechat-mongodb.librechat.svc.cluster.local:27017/LibreChat"
+    # Keycloak OIDC — Keycloak serves HTTPS via Traefik using a self-signed CA
+    # (sslip.io). NODE_EXTRA_CA_CERTS below makes the openid-client trust it.
+    # OPENID_ISSUER is injected per-cluster via `--set` in deploy.sh.
+    OPENID_CLIENT_ID: "librechat"
+    OPENID_CALLBACK_URL: "/oauth/openid/callback"
+    OPENID_SCOPE: "openid profile email groups offline_access"
+    OPENID_USERNAME_CLAIM: "preferred_username"
+    OPENID_NAME_CLAIM: "name"
+    OPENID_EMAIL_CLAIM: "email"
+    OPENID_BUTTON_LABEL: "Sign in with Keycloak"
+    OPENID_AUTO_REDIRECT: "true"
+    OPENID_USE_END_SESSION_ENDPOINT: "true"
+    # Required for MCP token forwarding: when true, LibreChat keeps the
+    # Keycloak access/id tokens on the user object (user.federatedTokens)
+    # so {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholders in mcpServers[*].headers
+    # resolve on outbound MCP calls. Without this flag LibreChat issues its
+    # own JWT and the placeholder silently resolves to an empty string.
+    OPENID_REUSE_TOKENS: "true"
+    NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/traefik-ca.crt"
+    # Keycloak-only auth — disable built-in email/password paths.
+    ALLOW_EMAIL_LOGIN: "false"
+    ALLOW_REGISTRATION: "false"
+    ALLOW_SOCIAL_LOGIN: "true"
+    ALLOW_SOCIAL_REGISTRATION: "true"
+    # Demo usage pattern: presenters sign in and out repeatedly as demo /
+    # alice / bob, which blows through LibreChat's conservative defaults
+    # (LOGIN_MAX=7, REGISTER_MAX=5). Raise the ceilings so the "Too many
+    # login attempts" lockout doesn't derail live walkthroughs.
+    LOGIN_MAX: "100"
+    LOGIN_WINDOW: "5"
+    REGISTER_MAX: "100"
+    REGISTER_WINDOW: "60"
   existingSecretName: "librechat-credentials"
 
   configYamlContent: |
@@ -34,30 +66,41 @@ librechat:
 
     mcpSettings:
       allowedDomains:
-        - "vmcp-vmcp-infra.mcp-workloads.svc.cluster.local"
+        - "vmcp-vmcp-chat.mcp-workloads.svc.cluster.local"
         - "vmcp-vmcp-docs.mcp-workloads.svc.cluster.local"
-        - "vmcp-vmcp-platform.mcp-workloads.svc.cluster.local"
 
     mcpServers:
-      toolhive-infra:
+      # Authenticated infra gateway — LibreChat forwards the logged-in
+      # user's Keycloak access token as a Bearer. The vmcp-chat
+      # VirtualMCPServer (addons/librechat/vmcp-chat.yaml) validates the
+      # token and its toolhive-vmcp-chat audience before aggregating
+      # infra-tools backends, including the two composite tools it shares
+      # with vmcp-platform. Cedar policies on the vMCP filter the visible
+      # tools by the user's groups claim.
+      toolhive-chat:
         type: streamable-http
-        url: http://vmcp-vmcp-infra.mcp-workloads.svc.cluster.local:4483/mcp
+        url: http://vmcp-vmcp-chat.mcp-workloads.svc.cluster.local:4483/mcp
+        headers:
+          Authorization: "Bearer {{LIBRECHAT_OPENID_ACCESS_TOKEN}}"
       toolhive-docs:
         type: streamable-http
         url: http://vmcp-vmcp-docs.mcp-workloads.svc.cluster.local:4483/mcp
-      toolhive-platform:
-        type: streamable-http
-        url: http://vmcp-vmcp-platform.mcp-workloads.svc.cluster.local:4483/mcp
 
   imageVolume:
     enabled: false
 
-fullnameOverride: "librechat"
+# Mount the Traefik CA so LibreChat's Node runtime trusts the Keycloak issuer.
+volumes:
+  - name: traefik-ca
+    configMap:
+      name: traefik-ca
+volumeMounts:
+  - name: traefik-ca
+    mountPath: /etc/ssl/certs/traefik-ca.crt
+    subPath: ca.crt
+    readOnly: true
 
-image:
-  repository: danny-avila/librechat
-  registry: ghcr.io
-  tag: "v0.8.7"
+fullnameOverride: "librechat"
 
 ingress:
   enabled: false

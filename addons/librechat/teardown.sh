@@ -1,6 +1,14 @@
 #!/bin/bash
 . "$(dirname "$0")/../_lib.sh"
 
+echo -n "Removing vmcp-chat VirtualMCPServer..."
+# traefik-ca is mirrored into mcp-workloads by deploy.sh for the vMCP's
+# MCPOIDCConfig caBundleRef; bootstrap.sh's own copy lives in the platform
+# namespace and is left alone.
+kubectl delete -n mcp-workloads vmcp/vmcp-chat mcpoidcconfig/vmcp-chat-oidc \
+    configmap/vmcp-chat-authz configmap/traefik-ca --ignore-not-found > /dev/null 2>&1 || true
+echo " done"
+
 echo -n "Removing HTTPRoute..."
 kubectl delete -f "$ADDON_DIR/httproute.yaml" --ignore-not-found > /dev/null 2>&1 || true
 echo " done"

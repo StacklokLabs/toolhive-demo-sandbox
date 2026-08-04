@@ -56,7 +56,27 @@ data:
               }
             }
           ],
-          "defaultClientScopes": ["openid", "email", "profile", "roles", "groups", "web-origins"],
+          "defaultClientScopes": ["basic", "openid", "email", "profile", "roles", "groups", "web-origins"],
+          "optionalClientScopes": ["offline_access", "mcp-access"]
+        },
+        {
+          "clientId": "librechat",
+          "name": "LibreChat",
+          "description": "LibreChat chat UI (OIDC login)",
+          "enabled": true,
+          "secret": "librechat-secret-change-in-production",
+          "redirectUris": [
+            "https://$CHAT_HOSTNAME/oauth/openid/callback"
+          ],
+          "webOrigins": ["+"],
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "publicClient": false,
+          "attributes": {
+            "post.logout.redirect.uris": "https://$CHAT_HOSTNAME/login",
+            "backchannel.logout.session.required": "true"
+          },
+          "defaultClientScopes": ["basic", "openid", "email", "profile", "roles", "groups", "web-origins", "mcp-chat"],
           "optionalClientScopes": ["offline_access", "mcp-access"]
         },
         {
@@ -75,7 +95,7 @@ data:
             "backchannel.logout.session.required": "true",
             "oauth2.device.authorization.grant.enabled": "true"
           },
-          "defaultClientScopes": ["openid", "email", "profile", "roles", "web-origins"],
+          "defaultClientScopes": ["basic", "openid", "email", "profile", "roles", "web-origins"],
           "optionalClientScopes": ["offline_access", "mcp-access"]
         }
       ],
@@ -84,6 +104,38 @@ data:
           "name": "openid",
           "protocol": "openid-connect",
           "attributes": { "include.in.token.scope": "false", "display.on.consent.screen": "false" }
+        },
+        {
+          "name": "basic",
+          "description": "Mirrors Keycloak's built-in basic scope (sub + auth_time mappers). Declaring clientScopes in a realm import replaces the built-in set, so without this no client emits a sub claim and token consumers that require one reject the token.",
+          "protocol": "openid-connect",
+          "attributes": { "include.in.token.scope": "false", "display.on.consent.screen": "false" },
+          "protocolMappers": [
+            {
+              "name": "sub",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-sub-mapper",
+              "consentRequired": false,
+              "config": {
+                "introspection.token.claim": "true",
+                "access.token.claim": "true"
+              }
+            },
+            {
+              "name": "auth_time",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usersessionmodel-note-mapper",
+              "consentRequired": false,
+              "config": {
+                "user.session.note": "AUTH_TIME",
+                "id.token.claim": "true",
+                "introspection.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "auth_time",
+                "jsonType.label": "long"
+              }
+            }
+          ]
         },
         {
           "name": "email",
@@ -181,6 +233,28 @@ data:
           }
         },
         {
+          "name": "mcp-chat",
+          "description": "Access to the LibreChat-facing vMCP gateway",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "false",
+            "display.on.consent.screen": "false"
+          },
+          "protocolMappers": [
+            {
+              "name": "vmcp-chat-audience",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.custom.audience": "toolhive-vmcp-chat",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
           "name": "groups",
           "description": "Group membership claims",
           "protocol": "openid-connect",
@@ -217,7 +291,7 @@ data:
             { "type": "password", "value": "demo", "temporary": false }
           ],
           "realmRoles": ["default-roles-toolhive-demo"],
-          "groups": ["/everyone", "/engineering", "/finance"]
+          "groups": ["/everyone", "/engineering", "/finance", "/support"]
         },
         {
           "username": "alice",
@@ -243,13 +317,14 @@ data:
             { "type": "password", "value": "bob", "temporary": false }
           ],
           "realmRoles": ["default-roles-toolhive-demo"],
-          "groups": ["/everyone", "/finance"]
+          "groups": ["/everyone", "/finance", "/support"]
         }
       ],
       "groups": [
         { "name": "everyone",    "path": "/everyone"    },
         { "name": "engineering", "path": "/engineering" },
-        { "name": "finance",     "path": "/finance"     }
+        { "name": "finance",     "path": "/finance"     },
+        { "name": "support",     "path": "/support"     }
       ]
     }
 ---
