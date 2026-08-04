@@ -1,13 +1,18 @@
 #!/bin/bash
 . "$(dirname "$0")/../_lib.sh"
 
+LIBRECHAT_CHART_VERSION="2.0.7" # renovate: datasource=docker depName=ghcr.io/danny-avila/librechat-chart/librechat
+
 addon_load_env
 addon_require_env OPENROUTER_API_KEY
 addon_resolve_traefik
 
 export LIBRECHAT_HOSTNAME="chat-${TRAEFIK_HOSTNAME_BASE}"
-# Exported for envsubst when applying vmcp-chat.yaml.
+# Both exported for envsubst when applying vmcp-chat.yaml. KC_REALM comes from
+# versions.env via _lib.sh, which sources without set -a, so re-export it or
+# envsubst renders it empty.
 export AUTH_HOSTNAME="auth-${TRAEFIK_HOSTNAME_BASE}"
+export KC_REALM
 # Must match the secret configured for the "librechat" client in
 # infra/keycloak.yaml. Keep them in sync.
 KEYCLOAK_CLIENT_SECRET="librechat-secret-change-in-production"
@@ -57,9 +62,10 @@ echo " done"
 
 echo -n "Installing LibreChat (Helm)..."
 LIBRECHAT_URL="https://$LIBRECHAT_HOSTNAME"
-OPENID_ISSUER="https://$AUTH_HOSTNAME/realms/toolhive-demo"
+OPENID_ISSUER="https://$AUTH_HOSTNAME/realms/$KC_REALM"
 run_quiet helm upgrade --install librechat \
     oci://ghcr.io/danny-avila/librechat-chart/librechat \
+    --version "$LIBRECHAT_CHART_VERSION" \
     --namespace librechat \
     --values "$ADDON_DIR/values.yaml" \
     --set "librechat.configEnv.DOMAIN_CLIENT=$LIBRECHAT_URL" \

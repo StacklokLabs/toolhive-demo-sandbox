@@ -13,7 +13,7 @@ metadata:
 spec:
   type: inline
   inline:
-    issuer: https://$AUTH_HOSTNAME/realms/toolhive-demo
+    issuer: https://$AUTH_HOSTNAME/realms/$KC_REALM
     # Traefik serves the Keycloak hostname with a self-signed cert; mount the
     # CA so the vMCP pod can verify the issuer's TLS.
     caBundleRef:
