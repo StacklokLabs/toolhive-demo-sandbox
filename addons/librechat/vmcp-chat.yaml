@@ -45,35 +45,45 @@ spec:
       conflictResolution: prefix
       conflictResolutionConfig:
         prefixFormat: "{workload}_"
+      # Trim the Grafana tools down to only the components present in the demo stack.
       tools:
-        - workload: prometheus
-          filter:
-            - "execute_query"
-            - "execute_range_query"
-            - "list_metrics"
-            - "get_metric_metadata"
-            - "get_targets"
         - workload: grafana
           filter:
-            - "search_dashboards"
+            - "alerting_manage_routing"
+            - "alerting_manage_rules"
+            - "analyze_loki_labels"
+            - "check_datasources_health"
+            - "create_folder"
+            - "find_error_pattern_logs"
+            - "generate_deeplink"
+            - "get_alert_group"
             - "get_dashboard_by_uid"
             - "get_dashboard_panel_queries"
             - "get_dashboard_property"
             - "get_dashboard_summary"
-            - "list_datasources"
             - "get_datasource"
-            - "query_prometheus"
-            - "list_prometheus_metric_names"
-            - "list_prometheus_label_names"
-            - "list_prometheus_label_values"
-            - "query_loki_stats"
-            - "query_loki_logs"
+            - "grafana_api_request"
+            - "list_alert_groups"
+            - "list_datasources"
             - "list_loki_label_names"
             - "list_loki_label_values"
-        - workload: osv
-          filter:
-            - "get_vulnerability"
-            - "query_vulnerability"
+            - "list_prometheus_label_names"
+            - "list_prometheus_label_values"
+            - "list_prometheus_metric_metadata"
+            - "list_prometheus_metric_names"
+            - "query_loki_logs"
+            - "query_loki_patterns"
+            - "query_loki_stats"
+            - "query_prometheus"
+            - "query_prometheus_histogram"
+            - "search_dashboards"
+            - "search_folders"
+            - "update_dashboard"
+            - "update_datasource"
+    # Shared with vmcp-platform.
+    compositeToolRefs:
+      - name: composite-tool-audit-image-supply-chain
+      - name: composite-tool-mcp-server-pulse
   incomingAuth:
     type: oidc
     oidcConfigRef:

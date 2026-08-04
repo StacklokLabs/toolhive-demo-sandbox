@@ -68,15 +68,15 @@ librechat:
       allowedDomains:
         - "vmcp-vmcp-chat.mcp-workloads.svc.cluster.local"
         - "vmcp-vmcp-docs.mcp-workloads.svc.cluster.local"
-        - "vmcp-vmcp-platform.mcp-workloads.svc.cluster.local"
 
     mcpServers:
       # Authenticated infra gateway — LibreChat forwards the logged-in
       # user's Keycloak access token as a Bearer. The vmcp-chat
       # VirtualMCPServer (addons/librechat/vmcp-chat.yaml) validates the
       # token and its toolhive-vmcp-chat audience before aggregating
-      # infra-tools backends. Cedar policies on the vMCP filter the
-      # visible tools by the user's groups claim.
+      # infra-tools backends, including the two composite tools it shares
+      # with vmcp-platform. Cedar policies on the vMCP filter the visible
+      # tools by the user's groups claim.
       toolhive-chat:
         type: streamable-http
         url: http://vmcp-vmcp-chat.mcp-workloads.svc.cluster.local:4483/mcp
@@ -85,9 +85,6 @@ librechat:
       toolhive-docs:
         type: streamable-http
         url: http://vmcp-vmcp-docs.mcp-workloads.svc.cluster.local:4483/mcp
-      toolhive-platform:
-        type: streamable-http
-        url: http://vmcp-vmcp-platform.mcp-workloads.svc.cluster.local:4483/mcp
 
   imageVolume:
     enabled: false

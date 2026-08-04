@@ -3,12 +3,31 @@
 # Requests arrive with a Keycloak access token carrying a `groups` claim.
 # ToolHive's Cedar authorizer builds THVGroup entities from those group names
 # so policies can write `principal in THVGroup::"<name>"`. `tools/list`
-# responses are filtered per-caller against the `call_tool` policies here —
-# so each persona sees a different tool list in LibreChat:
+# responses are filtered per-caller against the `call_tool` policies here, so
+# each persona sees a different tool list in LibreChat.
 #
-# - engineering (alice, demo): every aggregated tool
-# - finance (bob):              a narrow read-only slice
-# - unknown groups:             nothing (default-deny)
+# - engineering (alice, demo): the full catalog, mutations included
+# - finance (bob, the "support" persona): observability only, and read-only
+#   within it — Grafana, Prometheus, and OSV, but no Kubernetes and no OCI
+#   registry
+# - unknown groups: nothing (default-deny)
+#
+# Two dimensions, deliberately: scope via the `like` prefix match, capability
+# via readOnlyHint. The hint is what keeps grafana_update_dashboard and
+# grafana_alerting_manage_rules out of the support tier without naming them, and
+# the `has` guard denies a tool that ships no annotation rather than assuming it
+# is safe. Same shape as addons/vmcp-infra-entra.
+#
+# Support keeps mcp_server_pulse even though it has no Kubernetes access:
+# composite steps route through the aggregated routing table rather than the
+# authorization seam, which is only consulted for List/Lookup, so the composite
+# is the sanctioned path to a read of the cluster that the tier cannot perform
+# directly. That cuts both ways — anything a composite chains through is
+# effectively granted to every caller who can invoke it, so treat composites as
+# a deliberate hole in the policy.
+#
+# audit_image_supply_chain stays engineering-only: it is a supply-chain workflow
+# over the OCI registry tools the support tier has no scope for.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -22,12 +41,8 @@ data:
       "cedar": {
         "policies": [
           "permit(principal in THVGroup::\"engineering\", action == Action::\"call_tool\", resource);",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"grafana_search_dashboards\");",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"grafana_get_dashboard_summary\");",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"grafana_list_datasources\");",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"prometheus_list_metrics\");",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"osv_query_vulnerability\");",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"osv_get_vulnerability\");"
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource) when { resource has readOnlyHint && resource.readOnlyHint == true && (resource.name like \"grafana_*\" || resource.name like \"prometheus_*\" || resource.name like \"osv_*\") };",
+          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"mcp_server_pulse\");"
         ],
         "entities_json": "[]"
       }
