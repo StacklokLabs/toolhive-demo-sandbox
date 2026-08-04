@@ -291,7 +291,7 @@ data:
             { "type": "password", "value": "demo", "temporary": false }
           ],
           "realmRoles": ["default-roles-toolhive-demo"],
-          "groups": ["/everyone", "/engineering", "/finance"]
+          "groups": ["/everyone", "/engineering", "/finance", "/support"]
         },
         {
           "username": "alice",
@@ -317,13 +317,14 @@ data:
             { "type": "password", "value": "bob", "temporary": false }
           ],
           "realmRoles": ["default-roles-toolhive-demo"],
-          "groups": ["/everyone", "/finance"]
+          "groups": ["/everyone", "/finance", "/support"]
         }
       ],
       "groups": [
         { "name": "everyone",    "path": "/everyone"    },
         { "name": "engineering", "path": "/engineering" },
-        { "name": "finance",     "path": "/finance"     }
+        { "name": "finance",     "path": "/finance"     },
+        { "name": "support",     "path": "/support"     }
       ]
     }
 ---

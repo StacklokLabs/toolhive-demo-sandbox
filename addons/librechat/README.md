@@ -55,7 +55,7 @@ Removes all resources including the Helm release, namespace, and persistent volu
 
 - [values.yaml](values.yaml) — Helm values (LibreChat config, models, MCP endpoints, allowed domains, OIDC env)
 - [vmcp-chat.yaml](vmcp-chat.yaml) — authenticated VirtualMCPServer over `infra-tools`
-- [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) — Cedar policies gating `tools/list` + `tools/call` by the Keycloak `groups` claim (engineering: full access; finance/support: read-only observability, scoped by prefix + `readOnlyHint`)
+- [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) — Cedar policies gating `tools/list` + `tools/call` by the Keycloak `groups` claim (`engineering`: full access; `support`: read-only observability, scoped by prefix + `readOnlyHint`)
 - [httproute.yaml](httproute.yaml) — Gateway API route (the chart uses Ingress which we replace with HTTPRoute)
 - [infra-agent.json](infra-agent.json) — payload for the pre-seeded "Infra Agent" (POSTed to `/api/agents` on deploy if not already present)
 
@@ -81,20 +81,22 @@ that matches the `librechat` client declared in `infra/keycloak.yaml`.
    a different set of tools in LibreChat:
    - `alice` / `demo` (engineering): the full catalog (53 tools), mutations
      included
-   - `bob` (finance, the "support" persona): observability only and read-only
-     within it (35 tools) — Grafana, Prometheus, and OSV, but no Kubernetes and
-     no OCI registry. Everything else is absent from `tools/list` and rejected
-     with a 403 if called directly
+   - `bob` (support): observability only and read-only within it (35 tools) —
+     Grafana, Prometheus, and OSV, but no Kubernetes and no OCI registry.
+     Everything else is absent from `tools/list` and rejected with a 403 if
+     called directly
    - anything else: default-deny
 
 The `aggregation` filter in [vmcp-chat.yaml](vmcp-chat.yaml) trims Grafana to the
 components this stack actually runs (the backend publishes 65 tools), but it is
 about relevance, not access: both personas are offered the same catalog and only
-these policies separate them. Support is scoped along two dimensions, and
-neither is a maintained tool list —
+these policies separate them. `support` is its own realm group, not a reuse of
+`finance` — bob is in both, and `finance` stays scoped to the finance gateway and
+catalog entries. Support access is scoped along two dimensions, neither of them a
+maintained tool list —
 
 ```
-permit(principal in THVGroup::"finance", action == Action::"call_tool", resource)
+permit(principal in THVGroup::"support", action == Action::"call_tool", resource)
 when { resource has readOnlyHint && resource.readOnlyHint == true
        && (resource.name like "grafana_*" || resource.name like "prometheus_*"
            || resource.name like "osv_*") };

@@ -7,10 +7,13 @@
 # each persona sees a different tool list in LibreChat.
 #
 # - engineering (alice, demo): the full catalog, mutations included
-# - finance (bob, the "support" persona): observability only, and read-only
-#   within it — Grafana, Prometheus, and OSV, but no Kubernetes and no OCI
-#   registry
+# - support (bob, demo): observability only, and read-only within it — Grafana,
+#   Prometheus, and OSV, but no Kubernetes and no OCI registry
 # - unknown groups: nothing (default-deny)
+#
+# The support group is its own realm group (infra/keycloak.yaml) rather than a
+# reuse of finance, which stays scoped to the finance tools and catalog entries.
+# The Entra and Okta addons key off dedicated roles the same way.
 #
 # Two dimensions, deliberately: scope via the `like` prefix match, capability
 # via readOnlyHint. The hint is what keeps grafana_update_dashboard and
@@ -41,8 +44,8 @@ data:
       "cedar": {
         "policies": [
           "permit(principal in THVGroup::\"engineering\", action == Action::\"call_tool\", resource);",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource) when { resource has readOnlyHint && resource.readOnlyHint == true && (resource.name like \"grafana_*\" || resource.name like \"prometheus_*\" || resource.name like \"osv_*\") };",
-          "permit(principal in THVGroup::\"finance\", action == Action::\"call_tool\", resource == Tool::\"mcp_server_pulse\");"
+          "permit(principal in THVGroup::\"support\", action == Action::\"call_tool\", resource) when { resource has readOnlyHint && resource.readOnlyHint == true && (resource.name like \"grafana_*\" || resource.name like \"prometheus_*\" || resource.name like \"osv_*\") };",
+          "permit(principal in THVGroup::\"support\", action == Action::\"call_tool\", resource == Tool::\"mcp_server_pulse\");"
         ],
         "entities_json": "[]"
       }

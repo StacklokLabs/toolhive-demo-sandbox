@@ -87,11 +87,11 @@ The demo uses Keycloak for OpenID Connect authentication:
 
 - **Demo Users** (realm: `toolhive-demo`, client: `toolhive-cloud-ui`):
 
-  | User    | Password | Groups                         | Gateways they can reach                                                        |
-  | ------- | -------- | ------------------------------ | ------------------------------------------------------------------------------ |
-  | `demo`  | `demo`   | everyone, engineering, finance | All gateways + registry superAdmin                                             |
-  | `alice` | `alice`  | everyone, engineering          | **vMCP Infra** (Prometheus/Grafana/OSV/OCI/MKP), vMCP Docs, vMCP Research, MKP |
-  | `bob`   | `bob`    | everyone, finance              | **vMCP Finance** (stub), vMCP Docs, vMCP Research                              |
+  | User    | Password | Groups                                  | Gateways they can reach                                                        |
+  | ------- | -------- | --------------------------------------- | ------------------------------------------------------------------------------ |
+  | `demo`  | `demo`   | everyone, engineering, finance, support | All gateways + registry superAdmin                                             |
+  | `alice` | `alice`  | everyone, engineering                   | **vMCP Infra** (Prometheus/Grafana/OSV/OCI/MKP), vMCP Docs, vMCP Research, MKP |
+  | `bob`   | `bob`    | everyone, finance, support              | **vMCP Finance** (stub), vMCP Docs, vMCP Research                              |
 
   All users also see shared catalog entries (Notion, Time, ToolHive docs). Alice additionally sees engineering-only catalog entries (AWS docs, Playwright, GitLab, Figma, Postman). Bob sees finance-only catalog entries (Stripe remote).
 
@@ -207,7 +207,7 @@ Bootstrap complete! Access your demo services at the following URLs:
    Demo Users:
      demo  / demo   — Admin persona (registry superAdmin, sees all tools)
      alice / alice  — Engineering persona
-     bob   / bob    — Finance persona
+     bob   / bob    — Finance + support persona
      All users see shared tools and in-cluster MCP servers.
  - ToolHive Registry Server at http://registry-172-19-0-3.sslip.io/registry/demo-registry
    (Note: registry requires authentication — use the Cloud UI or a valid Keycloak Bearer token)
