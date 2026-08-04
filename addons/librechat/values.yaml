@@ -105,11 +105,6 @@ volumeMounts:
 
 fullnameOverride: "librechat"
 
-image:
-  repository: danny-avila/librechat
-  registry: ghcr.io
-  tag: "v0.8.7"
-
 ingress:
   enabled: false
 
