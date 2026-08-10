@@ -134,14 +134,6 @@ gets the raw tools. That cuts both ways: anything a composite chains through is
 effectively granted to every caller who can invoke it, so composites are a
 deliberate hole in the policy and want reviewing as such.
 
-Step 4 requires ToolHive operator **0.41.0 or newer** (the version pinned in
-`versions.env`). Two converter gaps in the VirtualMCPServer rendering path used
-to break it, both since fixed: `MCPOIDCConfig.caBundleRef` was mounted into the
-vMCP pod but never passed to the binary
-([#4918](https://github.com/stacklok/toolhive/issues/4918), operator 0.41.0),
-and `authzConfig.type: configMap` was passed through unresolved
-([#4919](https://github.com/stacklok/toolhive/issues/4919), operator 0.28.3).
-
 ## Pre-seeded agent
 
 The deploy script creates an "Infra Agent" (category `it`) wired to the
