@@ -87,7 +87,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum(increase(thv_reg_srv_http_requests_total{status_code=~\"4..|5..\"}[5m]))",
+          "expr": "sum(increase(stacklok_registry_http_requests_total{http_response_status_code=~\"4..|5..\"}[5m]))",
           "range": true,
           "refId": "A"
         }
@@ -130,7 +130,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum(thv_reg_srv_servers_total)",
+          "expr": "sum(stacklok_registry_servers)",
           "range": true,
           "refId": "A"
         }
@@ -172,7 +172,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum(thv_reg_srv_skills_total)",
+          "expr": "sum(stacklok_registry_skills)",
           "range": true,
           "refId": "A"
         }
@@ -214,7 +214,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum(rate(thv_reg_srv_http_requests_total[$__rate_interval]))",
+          "expr": "sum(rate(stacklok_registry_http_requests_total[$__rate_interval]))",
           "range": true,
           "refId": "A"
         }
@@ -256,7 +256,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum(increase(thv_reg_srv_http_requests_total[$__range]))",
+          "expr": "sum(increase(stacklok_registry_http_requests_total[$__range]))",
           "range": true,
           "refId": "A"
         }
@@ -320,8 +320,8 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum by (route) (rate(thv_reg_srv_http_requests_total[$__rate_interval]))",
-          "legendFormat": "{{route}}",
+          "expr": "sum by (http_route) (rate(stacklok_registry_http_requests_total[$__rate_interval]))",
+          "legendFormat": "{{http_route}}",
           "range": true,
           "refId": "A"
         }
@@ -378,7 +378,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(thv_reg_srv_http_request_duration_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_request_duration_seconds_bucket{exported_job=\"stacklok-registry-server\"}[$__rate_interval])))",
           "legendFormat": "p99",
           "range": true,
           "refId": "A"
@@ -386,7 +386,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(thv_reg_srv_http_request_duration_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{exported_job=\"stacklok-registry-server\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "range": true,
           "refId": "B"
@@ -394,7 +394,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(thv_reg_srv_http_request_duration_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_server_request_duration_seconds_bucket{exported_job=\"stacklok-registry-server\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "range": true,
           "refId": "C"
@@ -452,8 +452,8 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum by (status_code) (rate(thv_reg_srv_http_requests_total{status_code=~\"4..|5..\"}[$__rate_interval]))",
-          "legendFormat": "{{status_code}}",
+          "expr": "sum by (http_response_status_code) (rate(stacklok_registry_http_requests_total{http_response_status_code=~\"4..|5..\"}[$__rate_interval]))",
+          "legendFormat": "{{http_response_status_code}}",
           "range": true,
           "refId": "A"
         }
@@ -484,8 +484,8 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum by (status_code) (rate(thv_reg_srv_http_requests_total[$__rate_interval]))",
-          "legendFormat": "{{status_code}}",
+          "expr": "sum by (http_response_status_code) (rate(stacklok_registry_http_requests_total[$__rate_interval]))",
+          "legendFormat": "{{http_response_status_code}}",
           "range": true,
           "refId": "A"
         }
@@ -549,7 +549,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "thv_reg_srv_servers_total",
+          "expr": "stacklok_registry_servers",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"
@@ -607,16 +607,16 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (registry, le) (rate(thv_reg_srv_sync_duration_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "p95 {{registry}}",
+          "expr": "histogram_quantile(0.95, sum by (source, le) (rate(stacklok_registry_sync_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p95 {{source}}",
           "range": true,
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by (registry, le) (rate(thv_reg_srv_sync_duration_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "p50 {{registry}}",
+          "expr": "histogram_quantile(0.50, sum by (source, le) (rate(stacklok_registry_sync_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p50 {{source}}",
           "range": true,
           "refId": "B"
         }
@@ -673,7 +673,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "thv_reg_srv_skills_total",
+          "expr": "stacklok_registry_skills",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"
@@ -731,8 +731,8 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "editorMode": "code",
-          "expr": "sum by (registry, success) (increase(thv_reg_srv_sync_duration_seconds_count[5m]))",
-          "legendFormat": "{{registry}} ({{success}})",
+          "expr": "sum by (source, outcome) (increase(stacklok_registry_sync_duration_seconds_count[5m]))",
+          "legendFormat": "{{source}} ({{outcome}})",
           "range": true,
           "refId": "A"
         }
