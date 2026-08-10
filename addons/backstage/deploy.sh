@@ -20,10 +20,16 @@ if ! docker exec "${CLUSTER_NAME}-control-plane" crictl images --no-trunc 2>/dev
 fi
 
 # Resolve the registry API service URL.
-# The Helm chart uses fullnameOverride: registry-server, so the service is always
-# named "registry-server". Override via REGISTRY_SVC_URL in addons/backstage/.env if needed.
+# The Helm chart typically names the Service "registry-server", but downstream
+# forks can use a different fullnameOverride (e.g. "registry-api"). Probe for
+# whichever exists so this works without requiring a manual override.
 if [ -z "$REGISTRY_SVC_URL" ]; then
-    export REGISTRY_SVC_URL="http://registry-server.${RELEASE_NAMESPACE}.svc.cluster.local:8080"
+    _registry_svc="registry-server"
+    if ! kubectl get svc registry-server -n "$RELEASE_NAMESPACE" >/dev/null 2>&1 \
+            && kubectl get svc registry-api -n "$RELEASE_NAMESPACE" >/dev/null 2>&1; then
+        _registry_svc="registry-api"
+    fi
+    export REGISTRY_SVC_URL="http://${_registry_svc}.${RELEASE_NAMESPACE}.svc.cluster.local:8080"
 fi
 
 # --- Namespace + RBAC ---
