@@ -19,7 +19,7 @@ Deploys a custom [Backstage](https://backstage.io/) developer portal wired into 
 - Demo sandbox cluster running (`./bootstrap.sh` completed)
 - Docker (to build the image)
 - Yarn (`npm install -g yarn` or via your package manager)
-- Node.js 18+
+- Node.js 22 or 24
 
 > **Note:** This addon requires building a Docker image locally before deploying.
 > Unlike other addons, there is no pre-published image — the image includes

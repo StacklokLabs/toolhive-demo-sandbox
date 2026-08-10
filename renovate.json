@@ -49,6 +49,30 @@
     {
       "matchFileNames": ["addons/backstage/**"],
       "groupName": "Backstage addon dependencies"
+    },
+    {
+      "description": "Major bumps blocked: TypeScript 7 breaks fork-ts-checker-webpack-plugin, React 19 breaks @backstage/plugin-api-docs' bundled GraphiQL, Express 5 conflicts with express-promise-router's express@^4 peer requirement. Re-enable once the ecosystem catches up.",
+      "matchFileNames": ["addons/backstage/**"],
+      "matchPackageNames": [
+        "typescript",
+        "react",
+        "react-dom",
+        "react-router",
+        "react-router-dom",
+        "@types/react",
+        "@types/react-dom",
+        "@mui/material",
+        "@mui/icons-material",
+        "@testing-library/react",
+        "@testing-library/dom",
+        "@testing-library/jest-dom",
+        "express",
+        "@types/express",
+        "supertest",
+        "@types/supertest"
+      ],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ],
   "customManagers": [
