@@ -16,7 +16,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: ghcr.io/pab1it0/prometheus-mcp-server:1.6.1
+  image: ghcr.io/pab1it0/prometheus-mcp-server:1.6.2
   groupRef:
     name: infra-tools
   transport: streamable-http
@@ -45,7 +45,7 @@ metadata:
   labels:
     demo.toolhive.stacklok.dev/vmcp-backend: "true"
 spec:
-  image: docker.io/grafana/mcp-grafana:1.0.0
+  image: docker.io/grafana/mcp-grafana:1.1.0
   groupRef:
     name: infra-tools
   transport: streamable-http
