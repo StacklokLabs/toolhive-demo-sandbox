@@ -3,7 +3,7 @@
 # Create a minimal monorepo skeleton containing only package.json files.
 # This layer is cached independently of source code changes.
 # =============================================================================
-FROM node:22-bookworm-slim AS packages
+FROM node:24-bookworm-slim AS packages
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN find packages plugins -mindepth 2 -maxdepth 2 \! -name "package.json" \
 # Full build environment. Installs all deps, compiles TypeScript, and runs
 # the Backstage backend bundler.
 # =============================================================================
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -54,7 +54,7 @@ RUN yarn build:backend --config ../../app-config.yaml
 # Stage 3: runner
 # Minimal production image with only runtime dependencies.
 # =============================================================================
-FROM node:22-bookworm-slim AS runner
+FROM node:24-bookworm-slim AS runner
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
