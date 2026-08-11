@@ -24,6 +24,9 @@ librechat:
     # resolve on outbound MCP calls. Without this flag LibreChat issues its
     # own JWT and the placeholder silently resolves to an empty string.
     OPENID_REUSE_TOKENS: "true"
+    # Default session TTL (15min, non-rolling) is too short for MCP token
+    # forwarding to survive a live demo. 10h matches Keycloak's SSO max.
+    OPENID_REUSE_MAX_SESSION_AGE_MS: "36000000"
     NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/traefik-ca.crt"
     # Keycloak-only auth — disable built-in email/password paths.
     ALLOW_EMAIL_LOGIN: "false"
@@ -68,6 +71,9 @@ librechat:
       allowedDomains:
         - "vmcp-vmcp-chat.mcp-workloads.svc.cluster.local"
         - "vmcp-vmcp-docs.mcp-workloads.svc.cluster.local"
+        # Keycloak resolves to a private IP here; must be allowlisted once
+        # allowedDomains is non-empty, or LibreChat's SSRF guard blocks it.
+        - "$AUTH_HOSTNAME"
 
     mcpServers:
       # Authenticated infra gateway — LibreChat forwards the logged-in
@@ -80,6 +86,9 @@ librechat:
       toolhive-chat:
         type: streamable-http
         url: http://vmcp-vmcp-chat.mcp-workloads.svc.cluster.local:4483/mcp
+        # Forces the static header below instead of LibreChat's own OAuth
+        # auto-detection, which is cached per-pod and can permanently mis-fire.
+        requiresOAuth: false
         headers:
           Authorization: "Bearer {{LIBRECHAT_OPENID_ACCESS_TOKEN}}"
       toolhive-docs:

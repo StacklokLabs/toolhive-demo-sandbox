@@ -22,6 +22,8 @@ data:
       "accessTokenLifespan": 3600,
       "ssoSessionIdleTimeout": 7200,
       "ssoSessionMaxLifespan": 36000,
+      "defaultDefaultClientScopes": ["openid", "basic", "email", "profile", "roles", "web-origins", "groups"],
+      "defaultOptionalClientScopes": ["offline_access", "mcp-access"],
       "clients": [
         {
           "clientId": "toolhive-cloud-ui",

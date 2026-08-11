@@ -89,6 +89,10 @@ spec:
     oidcConfigRef:
       name: vmcp-chat-oidc
       audience: toolhive-vmcp-chat
+      # Without this, the vmcp binary reports the wrong Service name
+      # (vmcp-chat instead of vmcp-vmcp-chat) in its Protected Resource
+      # Metadata, which strict RFC 9728 clients reject.
+      resourceUrl: http://vmcp-vmcp-chat.mcp-workloads.svc.cluster.local:4483/mcp
     # Per-persona tool filtering via Cedar. Policies live in
     # vmcp-chat-authz.yaml, which is easier to read and edit than escaped
     # JSON inlined here. The default key is authz.json, so ours is explicit.
