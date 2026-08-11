@@ -34,6 +34,21 @@ for ns in librechat mcp-workloads; do
 done
 echo " done"
 
+# Applied before LibreChat installs: LibreChat probes vmcp-chat for OAuth
+# support on first boot and caches the result for the pod's lifetime. If
+# vmcp-chat doesn't exist yet, that caching can permanently break the
+# static Authorization header (values.yaml sets requiresOAuth: false to
+# guard against it regardless, but don't tempt the race).
+echo -n "Applying vmcp-chat authz policies..."
+run_quiet addon_apply "$ADDON_DIR/vmcp-chat-authz.yaml"
+echo " done"
+
+echo -n "Applying vmcp-chat VirtualMCPServer..."
+run_quiet addon_apply "$ADDON_DIR/vmcp-chat.yaml"
+run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m \
+    vmcp/vmcp-chat -n mcp-workloads
+echo " done"
+
 # Generate secrets
 echo -n "Creating secrets..."
 CREDS_KEY=$(openssl rand -hex 32)
@@ -63,33 +78,25 @@ echo " done"
 echo -n "Installing LibreChat (Helm)..."
 LIBRECHAT_URL="https://$LIBRECHAT_HOSTNAME"
 OPENID_ISSUER="https://$AUTH_HOSTNAME/realms/$KC_REALM"
+# Only $AUTH_HOSTNAME is substituted here — configYamlContent also contains
+# ${OPENROUTER_API_KEY} and {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholders
+# that LibreChat itself resolves at runtime and must survive untouched.
+RENDERED_VALUES=$(mktemp)
+envsubst '$AUTH_HOSTNAME' < "$ADDON_DIR/values.yaml" > "$RENDERED_VALUES"
 run_quiet helm upgrade --install librechat \
     oci://ghcr.io/danny-avila/librechat-chart/librechat \
     --version "$LIBRECHAT_CHART_VERSION" \
     --namespace librechat \
-    --values "$ADDON_DIR/values.yaml" \
+    --values "$RENDERED_VALUES" \
     --set "librechat.configEnv.DOMAIN_CLIENT=$LIBRECHAT_URL" \
     --set "librechat.configEnv.DOMAIN_SERVER=$LIBRECHAT_URL" \
     --set "librechat.configEnv.OPENID_ISSUER=$OPENID_ISSUER" \
     --wait --timeout 5m
+rm -f "$RENDERED_VALUES"
 echo " done"
 
 echo -n "Applying HTTPRoute..."
 run_quiet addon_apply "$ADDON_DIR/httproute.yaml"
-echo " done"
-
-# Authenticated in-cluster vMCP for LibreChat. Accepts Keycloak user tokens
-# bearing the toolhive-vmcp-chat audience; LibreChat forwards them via the
-# {{LIBRECHAT_OPENID_ACCESS_TOKEN}} placeholder configured in values.yaml.
-# Cedar authz ConfigMap must exist before the VirtualMCPServer references it.
-echo -n "Applying vmcp-chat authz policies..."
-run_quiet addon_apply "$ADDON_DIR/vmcp-chat-authz.yaml"
-echo " done"
-
-echo -n "Applying vmcp-chat VirtualMCPServer..."
-run_quiet addon_apply "$ADDON_DIR/vmcp-chat.yaml"
-run_quiet kubectl wait --for=jsonpath='{.status.phase}'=Ready --timeout=5m \
-    vmcp/vmcp-chat -n mcp-workloads
 echo " done"
 
 # Pre-seed the "Infra Agent" so a fresh install doesn't land on an empty agent
