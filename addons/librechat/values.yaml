@@ -100,6 +100,18 @@ volumeMounts:
     subPath: ca.crt
     readOnly: true
 
+# LibreChat only attempts OIDC discovery once at startup and never retries,
+# so a transient failure permanently breaks login until the pod restarts.
+# Unlike the chart's default /health, /oauth/openid reflects strategy state
+# (302 when registered, 500 when not), so a liveness probe on it self-heals.
+livenessProbe:
+  httpGet:
+    path: /oauth/openid
+    port: 3080
+  initialDelaySeconds: 15
+  periodSeconds: 30
+  failureThreshold: 3
+
 fullnameOverride: "librechat"
 
 ingress:
