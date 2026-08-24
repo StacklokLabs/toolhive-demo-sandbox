@@ -27,7 +27,7 @@
   "dependencies": {
     "@backstage/backend-plugin-api": "^1.9.0",
     "@backstage/plugin-scaffolder-node": "^0.13.2",
-    "@kubernetes/client-node": "^1.4.0",
+    "@kubernetes/client-node": "^2.0.0",
     "zod": "^3.25.76 || ^4.0.0"
   },
   "devDependencies": {
