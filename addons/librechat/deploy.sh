@@ -1,7 +1,7 @@
 #!/bin/bash
 . "$(dirname "$0")/../_lib.sh"
 
-LIBRECHAT_CHART_VERSION="2.0.7" # renovate: datasource=docker depName=ghcr.io/danny-avila/librechat-chart/librechat
+LIBRECHAT_CHART_VERSION="2.0.8" # renovate: datasource=docker depName=ghcr.io/danny-avila/librechat-chart/librechat
 
 addon_load_env
 addon_require_env OPENROUTER_API_KEY
