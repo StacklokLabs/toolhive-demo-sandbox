@@ -126,22 +126,6 @@ config:
       claims:
         groups: finance
 
-    # Official community registry — engineering tools
-    - name: community-registry
-      format: upstream
-      api:
-        endpoint: https://registry.modelcontextprotocol.io
-      syncPolicy:
-        interval: "1h"
-      filter:
-        names:
-          include:
-            - com.figma.mcp/mcp
-            - com.gitlab/mcp
-            - com.postman/postman-mcp-server
-      claims:
-        groups: engineering
-
     # Auto-discover MCP servers in the current Kubernetes cluster.
     # Per-server visibility is controlled by authz-claims annotations on each MCPServer.
     - name: kubernetes
@@ -157,7 +141,6 @@ config:
         - toolhive-shared
         - toolhive-engineering
         - toolhive-finance
-        - community-registry
         - kubernetes
 
     # Unauthenticated registry for CLI access (thv, curl, etc.)
@@ -166,7 +149,6 @@ config:
         - toolhive-shared
         - toolhive-engineering
         - toolhive-finance
-        - community-registry
         - kubernetes
 
   auth:

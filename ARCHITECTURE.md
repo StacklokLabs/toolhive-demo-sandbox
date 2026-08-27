@@ -6,7 +6,7 @@ This doc is here to help with that. It's organized as four diagrams, each zoomed
 
 1. **[Cluster at a glance](#1-cluster-at-a-glance)** — what's deployed where, and who talks to whom at runtime
 2. **[Persona, group, and gateway model](#2-persona-group-and-gateway-model)** — how users map to MCP gateways and backends
-3. **[How the registry gets its content](#3-how-the-registry-gets-its-content)** — the six sources that feed the two registries, and how group claims gate visibility
+3. **[How the registry gets its content](#3-how-the-registry-gets-its-content)** — the four sources that feed the two registries, and how group claims gate visibility
 4. **[OAuth flow for the Okta-authenticated addon](#4-oauth-flow-for-the-okta-authenticated-addon)** — a sequence diagram of the full embedded-auth-server dance
 
 For setup instructions, see [`README.md`](README.md). If you're modifying the demo, [`CLAUDE.md`](CLAUDE.md) captures the conventions and gotchas worth knowing.
@@ -120,27 +120,24 @@ Gating happens at two layers:
 
 ## 3. How the registry gets its content
 
-This is the trickiest mental model in the demo. The Registry Server pulls from **six configured sources**, combines them into **two named registries**, and applies per-source claims to decide who sees what. There's also a single standalone route (`/mkp/mcp`) that lives outside the registry entirely — available to anyone who knows the URL.
+This is the trickiest mental model in the demo. The Registry Server pulls from **four configured sources**, combines them into **two named registries**, and applies per-source claims to decide who sees what. There's also a single standalone route (`/mkp/mcp`) that lives outside the registry entirely — available to anyone who knows the URL.
 
 ```mermaid
 graph TB
   subgraph external[External sources]
     gitCat[Git: stacklok/toolhive-catalog<br/>pkg/catalog/.../registry-upstream.json]
-    mcpApi[API: registry.modelcontextprotocol.io]
   end
 
   subgraph inCluster[Live cluster state]
     k8sRes[K8s resources with<br/>registry-export: true]
   end
 
-  subgraph sources["Registry Server <i>sources</i> (6)"]
+  subgraph sources["Registry Server <i>sources</i> (4)"]
     direction TB
-    s1["toolhive-shared<br/>filter: notion, time, toolhive-doc<br/>claims: everyone"]
-    s2["toolhive-engineering<br/>filter: aws-doc, filesystem, playwright<br/>claims: engineering"]
-    s3["toolhive-finance<br/>filter: stripe-remote<br/>claims: finance"]
-    s4["toolhive-public<br/>filter: union of the above<br/>no claims"]
-    s5["community-registry<br/>filter: figma, gitlab, postman<br/>claims: engineering"]
-    s6["kubernetes<br/>discovers MCPServer / MCPRemoteProxy /<br/>VirtualMCPServer with registry-export=true<br/>per-entry claims from authz-claims annotation"]
+    s1["toolhive-shared<br/>filter: notion-remote, time + 3 skills<br/>claims: everyone"]
+    s2["toolhive-engineering<br/>filter: aws-documentation, filesystem,<br/>playwright + 5 skills<br/>claims: engineering"]
+    s3["toolhive-finance<br/>filter: paypal, stripe-remote + 2 skills<br/>claims: finance"]
+    s4["kubernetes<br/>discovers MCPServer / MCPRemoteProxy /<br/>VirtualMCPServer with registry-export=true<br/>per-entry claims from authz-claims annotation"]
   end
 
   subgraph registries["Registries exposed by the server"]
@@ -151,16 +148,16 @@ graph TB
   gitCat --> s1
   gitCat --> s2
   gitCat --> s3
-  gitCat --> s4
-  mcpApi --> s5
-  k8sRes --> s6
+  k8sRes --> s4
 
   s1 --> demoReg
   s2 --> demoReg
   s3 --> demoReg
-  s5 --> demoReg
-  s6 --> demoReg
-  s6 --> pubReg
+  s4 --> demoReg
+
+  s1 --> pubReg
+  s2 --> pubReg
+  s3 --> pubReg
   s4 --> pubReg
 
   alice([alice]) -->|Bearer| demoReg
@@ -168,7 +165,7 @@ graph TB
   cli([thv CLI / anonymous]) -.-> pubReg
 ```
 
-**Per-entry filtering on the K8s source** is why `alice` and `bob` see different things in the same `demo-registry`: every MCPServer / MCPRemoteProxy / VirtualMCPServer carries an `authz-claims` annotation that the server matches against the user's group claim from Keycloak. `demo` is a `superAdmin` in the registry's authz config so they see everything regardless. The `public` registry reuses the same `kubernetes` source but is queried unauthenticated, so claim-based filtering doesn't apply there — every `registry-export=true` K8s resource is visible.
+**Per-entry filtering on the K8s source** is why `alice` and `bob` see different things in the same `demo-registry`: every MCPServer / MCPRemoteProxy / VirtualMCPServer carries an `authz-claims` annotation that the server matches against the user's group claim from Keycloak. `demo` is a `superAdmin` in the registry's authz config so they see everything regardless. The `public` registry is built from the same four sources but is queried unauthenticated, so claim-based filtering doesn't apply there — every entry is visible, including the group-restricted git sources and every `registry-export=true` K8s resource.
 
 **Notable non-source:** the standalone `mkp` workload has its own HTTPRoute at `/mkp/mcp` and is *also* in `infra-tools`, so it shows up twice — once as a direct standalone entry, once inside `vmcp-infra`'s aggregated tool list.
 
