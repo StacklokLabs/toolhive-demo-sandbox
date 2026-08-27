@@ -75,7 +75,7 @@ It also works as a plain CLI, so the same entry point serves both demos and auto
 DRY_RUN=1 ./demo.sh up librechat     # echo external commands instead of running them
 ```
 
-The interactive menu requires [gum](https://github.com/charmbracelet/gum) (`brew install gum`); the subcommand mode works without it and is suitable for CI or scripts. The underlying `bootstrap.sh`, `cleanup.sh`, and `validate.sh` remain usable directly if you prefer.
+The interactive menu requires [gum](https://github.com/charmbracelet/gum) (`brew install gum`); the subcommand mode works without it and is suitable for CI or scripts. In the addon pickers, use `tab` or `x` to toggle a selection (gum v2 changed this from `space`), `enter` to confirm, and `esc` to go back. The underlying `bootstrap.sh`, `cleanup.sh`, and `validate.sh` remain usable directly if you prefer.
 
 ## Authentication
 

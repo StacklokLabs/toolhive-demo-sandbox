@@ -215,7 +215,7 @@ EOF
 pick_addons() {
   local title="$1"
   list_addons | gum choose --no-limit \
-    --header "$title"$'\n'"[space] toggle  [enter] confirm  [esc] back"$'\n' \
+    --header "$title"$'\n'"[tab] or [x] toggle  [enter] confirm  [esc] back"$'\n' \
     --cursor "> " \
     --cursor-prefix "[ ] " \
     --selected-prefix "[x] " \
@@ -230,7 +230,7 @@ interactive_no_cluster() {
   cmd_bootstrap
 
   local picks
-  picks="$(pick_addons "Optional: pick addons to deploy (space toggles, enter confirms)" || true)"
+  picks="$(pick_addons "Optional: pick addons to deploy (tab or x toggles, enter confirms)" || true)"
   if [[ -n "$picks" ]]; then
     # shellcheck disable=SC2086
     cmd_up $picks
