@@ -2,6 +2,18 @@
 
 # Common helper functions for the ToolHive demo sandbox scripts.
 
+# Default KUBECONFIG to the demo cluster's kubeconfig when unset, so scripts
+# that source this file work in a fresh shell without requiring the caller to
+# have exported it themselves (e.g. bootstrap.sh's own export only applies to
+# its own process, not to later invocations of these scripts).
+_HELPERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_HELPERS_REPO_ROOT="$(cd "$_HELPERS_DIR/.." && pwd)"
+# shellcheck source=versions.env
+. "$_HELPERS_REPO_ROOT/versions.env"
+if [ -z "${KUBECONFIG:-}" ] && [ -f "$_HELPERS_REPO_ROOT/${KUBECONFIG_FILE}" ]; then
+    export KUBECONFIG="$_HELPERS_REPO_ROOT/${KUBECONFIG_FILE}"
+fi
+
 # Enable debug mode with DEBUG=1 environment variable
 DEBUG=${DEBUG:-0}
 

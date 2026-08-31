@@ -5,6 +5,9 @@ set -euo pipefail
 # Useful when an external tool (browser, curl, container) needs to trust the
 # self-signed sslip.io endpoints fronted by Traefik.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/helpers.sh"
+
 OUTPUT_FILE="${1:-traefik-ca.crt}"
 SECRET_NAME="sslip-io-tls"
 SECRET_NAMESPACE="traefik"
