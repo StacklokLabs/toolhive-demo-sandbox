@@ -27,6 +27,7 @@ jobs:
           config: kind-config.yaml
           cluster_name: toolhive-demo-sandbox
           cloud_provider: true
+          version: v0.32.0
 
       - name: Verify cluster is running
         run: |
