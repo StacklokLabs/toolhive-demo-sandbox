@@ -38,9 +38,8 @@
       "groupName": "ToolHive dependencies"
     },
     {
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["kindest/node"],
-      "groupName": "kind node image"
+      "matchPackageNames": ["kindest/node", "helm/kind-action", "kubernetes-sigs/kind"],
+      "groupName": "kind"
     },
     {
       "matchManagers": ["custom.regex", "kubernetes"],
@@ -48,7 +47,8 @@
         "!/^ghcr.io/stacklok/",
         "!/^ghcr.io/stackloklabs/",
         "!/^stacklok//",
-        "!kindest/node"
+        "!kindest/node",
+        "!kubernetes-sigs/kind"
       ],
       "groupName": "demo infrastructure dependencies"
     },
@@ -87,6 +87,15 @@
       "managerFilePatterns": ["/^versions\\.env$/", "/^bootstrap\\.sh$/", "/^addons/.+/deploy\\.sh$/"],
       "matchStrings": [
         "[A-Z_]+=\"(?<currentValue>[^\"]+)\"\\s*#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)(?:\\s+depName=(?<depName>[^\\s]+))?(?:\\s+registryUrl=(?<registryUrl>[^\\s]+))?(?:\\s+versioning=(?<versioning>[^\\s]+))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+))?"
+      ],
+      "datasourceTemplate": "{{{datasource}}}",
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/test-demo-build\\.yml$/"],
+      "matchStrings": [
+        "version:\\s*(?<currentValue>v[0-9.]+)\\s*#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)(?:\\s+depName=(?<depName>[^\\s]+))?(?:\\s+registryUrl=(?<registryUrl>[^\\s]+))?(?:\\s+versioning=(?<versioning>[^\\s]+))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+))?"
       ],
       "datasourceTemplate": "{{{datasource}}}",
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
