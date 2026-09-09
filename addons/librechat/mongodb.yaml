@@ -36,6 +36,11 @@ spec:
       containers:
         - name: mongodb
           image: mongo:8
+          env:
+            # Works around SERVER-121912: mongod refuses to start on
+            # Linux kernels 6.19-7.0.13 (TCMalloc/kernel ABI mismatch).
+            - name: GLIBC_TUNABLES
+              value: glibc.pthread.rseq=1
           ports:
             - containerPort: 27017
           volumeMounts:
