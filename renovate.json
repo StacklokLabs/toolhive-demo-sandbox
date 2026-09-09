@@ -38,11 +38,17 @@
       "groupName": "ToolHive dependencies"
     },
     {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["kindest/node"],
+      "groupName": "kind node image"
+    },
+    {
       "matchManagers": ["custom.regex", "kubernetes"],
       "matchPackageNames": [
         "!/^ghcr.io/stacklok/",
         "!/^ghcr.io/stackloklabs/",
-        "!/^stacklok//"
+        "!/^stacklok//",
+        "!kindest/node"
       ],
       "groupName": "demo infrastructure dependencies"
     },
