@@ -38,8 +38,12 @@
       "groupName": "ToolHive dependencies"
     },
     {
-      "matchPackageNames": ["kindest/node", "helm/kind-action", "kubernetes-sigs/kind"],
-      "groupName": "kind"
+      "matchPackageNames": ["kindest/node"],
+      "groupName": "kind node image"
+    },
+    {
+      "matchPackageNames": ["helm/kind-action", "kubernetes-sigs/kind"],
+      "groupName": "kind tooling"
     },
     {
       "matchManagers": ["custom.regex", "kubernetes"],
