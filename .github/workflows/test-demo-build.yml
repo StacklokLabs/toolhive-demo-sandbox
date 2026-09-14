@@ -35,7 +35,7 @@ jobs:
           kubectl get nodes
 
       - name: Install ToolHive CLI
-        uses: StacklokLabs/toolhive-actions/install@792f225b98828e9c4ab4a0af0a20b13be9cdbb18 # v0.0.6
+        uses: StacklokLabs/toolhive-actions/install@0570ceb9fb21c3e1ca0ccb2a62284e1d0762f160 # v0.0.7
 
       - name: Install envsubst
         run: |
