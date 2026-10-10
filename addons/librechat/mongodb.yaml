@@ -35,7 +35,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: mongo:8
+          image: mongo:9
           env:
             # Works around SERVER-121912: mongod refuses to start on
             # Linux kernels 6.19-7.0.13 (TCMalloc/kernel ABI mismatch).
