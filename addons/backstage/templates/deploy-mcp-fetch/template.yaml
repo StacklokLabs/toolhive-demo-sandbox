@@ -35,7 +35,7 @@ spec:
       input:
         name: ${{ parameters.name }}
         namespace: ${{ parameters.namespace }}
-        image: ghcr.io/stackloklabs/gofetch/server:1.0.5
+        image: ghcr.io/stackloklabs/gofetch/server:1.0.6
         transport: stdio
   output:
     links:
