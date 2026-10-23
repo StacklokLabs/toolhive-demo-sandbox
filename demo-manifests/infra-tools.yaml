@@ -11,35 +11,6 @@ spec:
 apiVersion: toolhive.stacklok.dev/v1beta1
 kind: MCPServer
 metadata:
-  name: prometheus
-  namespace: mcp-workloads
-  labels:
-    demo.toolhive.stacklok.dev/vmcp-backend: "true"
-spec:
-  image: ghcr.io/pab1it0/prometheus-mcp-server:1.6.2
-  groupRef:
-    name: infra-tools
-  transport: streamable-http
-  proxyPort: 8080
-  mcpPort: 8080
-  env:
-    - name: PROMETHEUS_URL
-      value: http://prometheus-server.observability
-    - name: PROMETHEUS_MCP_SERVER_TRANSPORT
-      value: http
-    - name: PROMETHEUS_MCP_BIND_HOST
-      value: 0.0.0.0
-    - name: PROMETHEUS_MCP_BIND_PORT
-      value: "8080"
-  telemetryConfigRef:
-    name: shared-otel
-    serviceName: prometheus-server
-  audit:
-    enabled: true
----
-apiVersion: toolhive.stacklok.dev/v1beta1
-kind: MCPServer
-metadata:
   name: grafana
   namespace: mcp-workloads
   labels:

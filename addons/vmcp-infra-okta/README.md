@@ -1,6 +1,6 @@
 # vmcp-infra-okta
 
-Authenticated mirror of the infra vMCP gateway, with **tiered per-tool authorization** driven by Okta group claims. Same Prometheus / Grafana / OSV / OCI / MKP backends as `vmcp-infra`, fronted by ToolHive's embedded OAuth authorization server (which delegates to Okta) and exposed externally over HTTPS via a Cloudflare tunnel.
+Authenticated mirror of the infra vMCP gateway, with **tiered per-tool authorization** driven by Okta group claims. Same Grafana / OSV / OCI / MKP backends as `vmcp-infra`, fronted by ToolHive's embedded OAuth authorization server (which delegates to Okta) and exposed externally over HTTPS via a Cloudflare tunnel.
 
 ## What it does
 
@@ -15,12 +15,12 @@ Sits **alongside** the existing unauthenticated `vmcp-infra` for a clean compare
 
 The shipped Cedar policy (`spec.incomingAuth.authzConfig` in [vmcp.yaml](vmcp.yaml)) defines two tiers:
 
-| Tier            | Okta group    | Tools visible                                                                                                                                          |
-| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Engineering** | `Engineering` | All 33 aggregated tools, including raw Prometheus queries, OSV vulnerability lookups, OCI registry inspection, and the mutating MKP (Kubernetes) tools |
-| **Support**     | `Support`     | Only the curated Grafana dashboard layer (`grafana_*`)                                                                                                 |
+| Tier            | Okta group    | Tools visible                                                                                                                  |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Engineering** | `Engineering` | All 29 aggregated tools, including OSV vulnerability lookups, OCI registry inspection, and the mutating MKP (Kubernetes) tools |
+| **Support**     | `Support`     | Only the curated Grafana dashboard layer (`grafana_*`)                                                                         |
 
-Because Cedar filters `tools/list` responses through the same `call_tool` policy used for invocation, **users only see the tools they're allowed to call** in the first place. Support-tier users don't see `prometheus_*`, `mkp_*`, etc. at all. A direct call to a tool outside your tier returns 403.
+Because Cedar filters `tools/list` responses through the same `call_tool` policy used for invocation, **users only see the tools they're allowed to call** in the first place. Support-tier users don't see `osv_*`, `mkp_*`, etc. at all. A direct call to a tool outside your tier returns 403.
 
 A user in neither group gets no tools at all — both tiers require explicit group membership. Create `Engineering` and `Support` groups in Okta and assign your demo users to one each.
 
@@ -95,11 +95,11 @@ Then test with the ToolHive CLI as two different users. Use distinct workload na
 ```bash
 # Engineering-tier user
 thv run --name vmcp-infra-okta-eng --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
-# Sign in as a user in the Engineering Okta group; expect all 33 tools in tools/list.
+# Sign in as a user in the Engineering Okta group; expect all 29 tools in tools/list.
 
 # Support-tier user
 thv run --name vmcp-infra-okta-support --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
-# Sign in as a user in the Support Okta group; expect only ~15 grafana_* tools.
+# Sign in as a user in the Support Okta group; expect only ~16 grafana_* tools.
 ```
 
 Direct calls to non-permitted tools (e.g. `mkp_apply_resource` as a Support-tier user) return 403. Cedar deny decisions land in the vMCP pod logs and the workflow audit log.

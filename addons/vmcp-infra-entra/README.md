@@ -1,6 +1,6 @@
 # vmcp-infra-entra
 
-Authenticated mirror of the infra vMCP gateway, with **tiered per-tool authorization** driven by Entra ID app-role claims. Same Prometheus / Grafana / OSV / OCI / MKP backends as `vmcp-infra`, fronted by ToolHive's embedded OAuth authorization server (which delegates to Entra ID) and exposed externally over HTTPS via a Cloudflare tunnel.
+Authenticated mirror of the infra vMCP gateway, with **tiered per-tool authorization** driven by Entra ID app-role claims. Same Grafana / OSV / OCI / MKP backends as `vmcp-infra`, fronted by ToolHive's embedded OAuth authorization server (which delegates to Entra ID) and exposed externally over HTTPS via a Cloudflare tunnel.
 
 ## What it does
 
@@ -15,12 +15,12 @@ Sits **alongside** the existing unauthenticated `vmcp-infra` for a clean compare
 
 The shipped Cedar policy (`spec.incomingAuth.authzConfig` in [vmcp.yaml](vmcp.yaml)) defines two tiers, each keyed on an Entra ID app role:
 
-| Tier            | App role value    | Tools visible                                                                                                                                          |
-| --------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Engineering** | `mcp-engineering` | All 33 aggregated tools, including raw Prometheus queries, OSV vulnerability lookups, OCI registry inspection, and the mutating MKP (Kubernetes) tools |
-| **Support**     | `mcp-support`     | Only the curated Grafana dashboard layer (`grafana_*`), and only the read-only ones                                                                    |
+| Tier            | App role value    | Tools visible                                                                                                                  |
+| --------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Engineering** | `mcp-engineering` | All 29 aggregated tools, including OSV vulnerability lookups, OCI registry inspection, and the mutating MKP (Kubernetes) tools |
+| **Support**     | `mcp-support`     | Only the curated Grafana dashboard layer (`grafana_*`), and only the read-only ones                                            |
 
-Because Cedar filters `tools/list` responses through the same `call_tool` policy used for invocation, **users only see the tools they're allowed to call** in the first place. Support users don't see `prometheus_*`, `mkp_*`, etc. at all. A direct call to a tool outside your tier returns 403.
+Because Cedar filters `tools/list` responses through the same `call_tool` policy used for invocation, **users only see the tools they're allowed to call** in the first place. Support users don't see `osv_*`, `mkp_*`, etc. at all. A direct call to a tool outside your tier returns 403.
 
 Entra ID emits app-role assignments in the `roles` claim on the access token. The vMCP is configured (via `primaryUpstreamProvider: entra` on the Cedar authz config) to evaluate `THVGroup` membership from that claim, so an app role value like `mcp-engineering` is what Cedar matches against.
 
@@ -117,7 +117,7 @@ Then test with the ToolHive CLI as two different users. Use distinct workload na
 ```bash
 # Engineering-tier user (assigned to the mcp-engineering app role)
 thv run --name vmcp-infra-entra-eng --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
-# Expect all 33 tools in tools/list.
+# Expect all 29 tools in tools/list.
 
 # Support-tier user (assigned to the mcp-support app role)
 thv run --name vmcp-infra-entra-support --transport streamable-http https://<your-subdomain>.stacklok-demo.com/mcp
