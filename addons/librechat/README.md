@@ -79,10 +79,10 @@ that matches the `librechat` client declared in `infra/keycloak.yaml`.
    in [vmcp-chat-authz.yaml](vmcp-chat-authz.yaml) filter the `tools/list`
    and `tools/call` responses by the `groups` claim, so each persona sees
    a different set of tools in LibreChat:
-   - `alice` / `demo` (engineering): the full catalog (53 tools), mutations
+   - `alice` / `demo` (engineering): the full catalog (47 tools), mutations
      included
-   - `bob` (support): observability only and read-only within it (35 tools) —
-     Grafana, Prometheus, and OSV, but no Kubernetes and no OCI registry.
+   - `bob` (support): observability only and read-only within it (29 tools) —
+     Grafana and OSV, but no Kubernetes and no OCI registry.
      Everything else is absent from `tools/list` and rejected with a 403 if
      called directly
    - anything else: default-deny
@@ -98,8 +98,7 @@ maintained tool list —
 ```
 permit(principal in THVGroup::"support", action == Action::"call_tool", resource)
 when { resource has readOnlyHint && resource.readOnlyHint == true
-       && (resource.name like "grafana_*" || resource.name like "prometheus_*"
-           || resource.name like "osv_*") };
+       && (resource.name like "grafana_*" || resource.name like "osv_*") };
 ```
 
 — domain via the prefix match, capability via the annotation, so it keeps
@@ -162,7 +161,7 @@ the UI first, then re-run.
 
 The `tools` array in `infra-agent.json` is a frozen snapshot — LibreChat does
 not auto-sync agent tools when the underlying MCP server's toolset changes. It
-selects everything `vmcp-chat` aggregates (all 53, including the two composites)
+selects everything `vmcp-chat` aggregates (all 47, including the two composites)
 plus the six `vmcp-docs` tools. Change the `aggregation` filter, rename an MCP
 server in `values.yaml`, or add backends to `infra-tools` / `shared-tools`, and
 this snapshot needs regenerating.

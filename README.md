@@ -12,7 +12,7 @@ So far, it includes:
 - Keycloak for OpenID Connect authentication with demo users and claims-based authorization
 - The ToolHive Cloud UI connected to the registry server with Keycloak authentication
 - Persona-specific vMCP gateways:
-  - **vMCP Infra** (engineering) — Prometheus, Grafana, OSV, OCI registry, and MKP (Kubernetes)
+  - **vMCP Infra** (engineering) — Grafana, OSV, OCI registry, and MKP (Kubernetes)
   - **vMCP Infra (Optimized)** — same backends, but optimizer-enabled: exposes only `find_tool` and `call_tool` via semantic tool search
   - **vMCP Docs** (shared) — Context7, internal docs fetch, and a remote-proxy to hosted ToolHive docs
   - **vMCP Finance** (finance) — stubbed, awaiting real finance backends
@@ -90,7 +90,7 @@ The demo uses Keycloak for OpenID Connect authentication:
   | User    | Password | Groups                                  | Gateways they can reach                                                        |
   | ------- | -------- | --------------------------------------- | ------------------------------------------------------------------------------ |
   | `demo`  | `demo`   | everyone, engineering, finance, support | All gateways + registry superAdmin                                             |
-  | `alice` | `alice`  | everyone, engineering                   | **vMCP Infra** (Prometheus/Grafana/OSV/OCI/MKP), vMCP Docs, vMCP Research, MKP |
+  | `alice` | `alice`  | everyone, engineering                   | **vMCP Infra** (Grafana/OSV/OCI/MKP), vMCP Docs, vMCP Research, MKP |
   | `bob`   | `bob`    | everyone, finance, support              | **vMCP Finance** (stub), vMCP Docs, vMCP Research                              |
 
   All users also see shared catalog entries (Notion, Time, ToolHive docs). Alice additionally sees engineering-only catalog entries (AWS docs, Playwright, GitLab, Figma, Postman). Bob sees finance-only catalog entries (Stripe remote).

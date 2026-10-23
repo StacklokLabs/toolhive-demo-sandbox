@@ -94,7 +94,7 @@ graph LR
     vmcpFin[vmcp-finance]
   end
 
-  InfraTools[(infra-tools<br/>prometheus · grafana<br/>osv · oci-registry · mkp)]
+  InfraTools[(infra-tools<br/>grafana · osv<br/>oci-registry · mkp)]
   SharedTools[(shared-tools<br/>fetch · context7<br/>toolhive-docs proxy)]
   FinTools[(finance-tools<br/>finance-fetch)]
 
@@ -180,7 +180,7 @@ sequenceDiagram
   participant CF as Cloudflare Tunnel
   participant V as vmcp-infra-okta<br/>(embedded auth server)
   participant O as Okta
-  participant B as Backend<br/>(prometheus, grafana, ...)
+  participant B as Backend<br/>(grafana, osv, ...)
 
   C->>CF: POST /mcp (no token)
   CF->>V: forward

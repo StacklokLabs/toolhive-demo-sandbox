@@ -7,8 +7,8 @@
 # each persona sees a different tool list in LibreChat.
 #
 # - engineering (alice, demo): the full catalog, mutations included
-# - support (bob, demo): observability only, and read-only within it — Grafana,
-#   Prometheus, and OSV, but no Kubernetes and no OCI registry
+# - support (bob, demo): observability only, and read-only within it — Grafana
+#   and OSV, but no Kubernetes and no OCI registry
 # - unknown groups: nothing (default-deny)
 #
 # The support group is its own realm group (infra/keycloak.yaml) rather than a
@@ -44,7 +44,7 @@ data:
       "cedar": {
         "policies": [
           "permit(principal in THVGroup::\"engineering\", action == Action::\"call_tool\", resource);",
-          "permit(principal in THVGroup::\"support\", action == Action::\"call_tool\", resource) when { resource has readOnlyHint && resource.readOnlyHint == true && (resource.name like \"grafana_*\" || resource.name like \"prometheus_*\" || resource.name like \"osv_*\") };",
+          "permit(principal in THVGroup::\"support\", action == Action::\"call_tool\", resource) when { resource has readOnlyHint && resource.readOnlyHint == true && (resource.name like \"grafana_*\" || resource.name like \"osv_*\") };",
           "permit(principal in THVGroup::\"support\", action == Action::\"call_tool\", resource == Tool::\"mcp_server_pulse\");"
         ],
         "entities_json": "[]"
