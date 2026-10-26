@@ -21,10 +21,6 @@ loki:
   ruler:
     enable_api: true
 
-# Local filesystem backend; no S3 / minio needed for the demo.
-minio:
-  enabled: false
-
 deploymentMode: SingleBinary
 
 lokiCanary:
@@ -64,8 +60,6 @@ distributor:
 compactor:
   replicas: 0
 indexGateway:
-  replicas: 0
-bloomCompactor:
   replicas: 0
 bloomGateway:
   replicas: 0
